@@ -68,12 +68,10 @@ class Hawk3D:
     def __init__(self, filename):
         self.marker_names, self.keypoints = self.load_data(filename)
 
-    def load_data(filename):
-        data = np.load(open(filename),
-                          delimiter=",",
-                          dtype='str',
-                          skiprows=0)
-
+    def load_data(self,filename):
+        with open(filename, 'r') as file:
+            data = np.loadtxt(file, delimiter=',', skiprows=0, dtype='str')
+        
         # Get the marker names from the first row of the csv file
         # and remove the '_x' from the names
         marker_names = data[0].reshape(-1, 3)
