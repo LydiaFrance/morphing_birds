@@ -1,0 +1,14 @@
+# Changes here will be overwritten by Copier
+_commit: 24a403c
+_src_path: gh:alan-turing-institute/python-project-template
+backend: setuptools
+email: lfrance@turing.ac.uk
+full_name: Lydia France
+license: MIT
+org: LydiaFrance
+pip_name: morphing_birds
+project_name: morphing_birds
+project_short_description: Run PCA on morphing bird wings and tail in flight.
+python_version_range: '>=3.8'
+typing: no_typing
+url: https://github.com/LydiaFrance/morphing_birds
