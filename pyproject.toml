@@ -27,7 +27,13 @@ classifiers = [
   "Topic :: Scientific/Engineering",
 ]
 
-dependencies = []
+dependencies = ["numpy",
+                "pandas",
+                "matplotlib",
+                "scipy",
+                "scikit-learn",
+                "seaborn",
+                "datashader"]
 
 [project.optional-dependencies]
 test = [
