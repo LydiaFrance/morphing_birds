@@ -83,9 +83,9 @@ class KeypointManager:
 
     def is_empty_keypoints(self, keypoints):
         if isinstance(keypoints, np.ndarray) and keypoints.size > 0:
-            return True
-        else:
             return False
+        else:
+            return True
 
     def update_keypoints(self, user_keypoints):
 
@@ -94,31 +94,35 @@ class KeypointManager:
         ASSUMES THAT THE USER KEYPOINTS ARE GIVEN IN THE SAME ORDER AS THE
         NAMES OF THE KEYPOINTS.
         Either just the right or both keypoints can be given. 
+        [expected shape: [1, 4, 3] or [1, 8, 3]
         """
-        if not self.is_empty_keypoints(user_keypoints):
+        if self.is_empty_keypoints(user_keypoints):
+            # Throw error
+            raise ValueError("No keypoints given.")
+        
 
-            # If only the right keypoints are given, mirror them
-            if user_keypoints.shape[1] == len(self.names_right_keypoints):
-                user_keypoints = self._mirror_keypoints(user_keypoints)
+        # If only the right keypoints are given, mirror them
+        if user_keypoints.shape[1] == len(self.names_right_keypoints):
+            user_keypoints = self._mirror_keypoints(user_keypoints)
 
-            # If the left and right keypoints are given. 
-            if user_keypoints.shape[1] == len(self.names_keypoints):
-                
-                # Check the keypoints are valid
-                self._validate_keypoints(user_keypoints)
+        # If the left and right keypoints are given. 
+        if user_keypoints.shape[1] == len(self.names_keypoints):
+            
+            # Check the keypoints are valid
+            user_keypoints = self._validate_keypoints(user_keypoints)
 
-                # Update all_keypoints 
-                for ii, name in enumerate(self.names_keypoints):
-                    index = self.names_all_keypoints.index(name)
-                    self.all_keypoints[index] = user_keypoints[ii]
+            # Update all_keypoints 
+            for ii, name in enumerate(self.names_keypoints):
+                index = self.names_all_keypoints.index(name)
+                self.all_keypoints[index] = user_keypoints[0,ii]
 
-                # Update the keypoints too. 
-                self.keypoints = self.get_keypoints_by_names(self.names_keypoints)
+            # Update the keypoints too. 
+            self.keypoints = self.get_keypoints_by_names(self.names_keypoints)
 
-                # Update the right keypoints too.
-                self.right_keypoints = self.get_keypoints_by_names(self.names_right_keypoints)
-            else:
-                raise ValueError("Wrong number of keypoints given.")
+            # Update the right keypoints too.
+            self.right_keypoints = self.get_keypoints_by_names(self.names_right_keypoints)
+        else:
+            raise ValueError("Wrong number of keypoints given.")
 
     def _validate_keypoints(self, keypoints):
 

@@ -63,4 +63,12 @@ def test_validate_keypoints(hawk3d):
     assert test_keypoints[0,0,0] == -result[0,0,0]
 
 
+def test_update_keypoints(hawk3d):
+    test_keypoints = np.ones((1,4,3))
+
+    hawk3d.keypoint_manager.update_keypoints(test_keypoints)
+    keypoints = hawk3d.keypoint_manager.right_keypoints
+
+    assert np.allclose(keypoints, test_keypoints[0])
+
 
