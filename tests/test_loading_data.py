@@ -42,5 +42,23 @@ def test_polygon(hawk3d_fixture):
 
     assert np.allclose(left_handwing_polygon_coords, expected_coords)
 
+def test_validate_keypoints(hawk3d_fixture):
+
+    # Check works with right markers only
+    test_keypoints = np.ones((4,3))
+    result = hawk3d_fixture._validate_keypoints(test_keypoints) 
+    assert result.shape == (1,8,3)
+
+    # Check works with left & right markers
+    test_keypoints = np.ones((1,8,3))
+    result = hawk3d_fixture._validate_keypoints(test_keypoints) 
+    assert result.shape == (1,8,3)
+
+    # Check the mirroring
+    test_keypoints = np.ones((100,4,3))
+    result = hawk3d_fixture._validate_keypoints(test_keypoints) 
+    assert result.shape == (100,8,3)
+    assert test_keypoints[0,0,0] == -result[0,0,0]
+
 
 

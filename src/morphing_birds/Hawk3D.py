@@ -78,6 +78,8 @@ class Hawk3D:
         self.fixed_keypoints = self.get_keypoints_by_names(self.names_fixed_keypoints)
         self.right_keypoints = self.get_keypoints_by_names(self.names_right_keypoints)
         self.left_keypoints = self.get_keypoints_by_names(self.names_left_keypoints)
+        self.keypoints = self.get_keypoints_by_names(self.names_keypoints)
+
 
         # Initialise polygons for plotting
         self._init_polygons()
@@ -115,6 +117,44 @@ class Hawk3D:
         return keypoints[indices]
     
 
+    def _validate_keypoints(self, keypoints):
+
+        if keypoints.shape[-1] != 3:
+            raise ValueError("Keypoints not in 3D.")
+
+        if len(np.shape(keypoints)) == 2:
+            keypoints = keypoints.reshape(1, -1, 3)
+                
+        if len(keypoints.shape) != 3:
+            keypoints = keypoints.reshape(-1, keypoints.shape[1], 3)
+
+        if keypoints.shape[1] == len(self.names_right_keypoints):
+            keypoints = self._mirror_keypoints(keypoints)
+
+        if keypoints.shape[1] != len(self.names_keypoints):
+            print(keypoints.shape)
+            raise ValueError("Keypoints missing.")
+        
+        return keypoints
+
+    def _mirror_keypoints(self, keypoints):
+        """
+        Mirrors keypoints across the y-axis.
+        """
+        mirrored = np.copy(keypoints)
+        mirrored[:, :, 0] *= -1
+
+        nFrames, nMarkers, nCoords = np.shape(keypoints)
+
+        # Create [n,8,3] array
+        new_keypoints = np.empty((nFrames, nMarkers * 2, nCoords),
+                                 dtype=keypoints.dtype)
+        
+        new_keypoints[:, 0::2, :] = mirrored
+        new_keypoints[:, 1::2, :] = keypoints
+
+        return new_keypoints
+        
     def _init_polygons(self):
         """
         Initialise polygons for plotting. 
@@ -125,4 +165,3 @@ class Hawk3D:
         for section_name, keypoint_names in self.body_sections.items():
             self._polygons[section_name] = self.get_keypoints_by_names(keypoint_names)
 
-    
