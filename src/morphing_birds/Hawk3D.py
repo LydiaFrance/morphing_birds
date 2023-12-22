@@ -96,6 +96,10 @@ class KeypointManager:
         Either just the right or both keypoints can be given. 
         [expected shape: [1, 4, 3] or [1, 8, 3]
         """
+
+        if len(np.shape(user_keypoints)) == 2:
+            user_keypoints = user_keypoints.reshape(1, -1, 3)
+
         if self.is_empty_keypoints(user_keypoints):
             # Throw error
             raise ValueError("No keypoints given.")
@@ -169,7 +173,7 @@ class KeypointManager:
         Just changes the y.
         """
         if horzDist is None:
-            return
+            horzDist = 0
 
         self.all_keypoints[:,1] += horzDist
 
@@ -179,13 +183,14 @@ class KeypointManager:
         # Update the right keypoints too.
         self.right_keypoints = self.get_keypoints_by_names(self.names_right_keypoints)
 
+
     def add_vertDist(self,vertDist):
         """
         Updates the keypoints (all) with a given vertDist. 
         Just changes the z.
         """
         if vertDist is None:
-            return
+            vertDist = 0
         
         self.all_keypoints[:,2] += vertDist
 
@@ -194,6 +199,7 @@ class KeypointManager:
 
         # Update the right keypoints too.
         self.right_keypoints = self.get_keypoints_by_names(self.names_right_keypoints)
+
 
     def add_pitchRotation(self,bodypitch):
         """
@@ -281,7 +287,7 @@ class HawkPlotter:
         colour = self._colour_polygon(section_name, colour)
 
         keypoint_indices = self._polygons[section_name]
-        coords = self.keypoint_manager.get_keypoints_by_indices(keypoint_indices)
+        coords = self.keypoint_manager.all_keypoints[keypoint_indices]
 
         polygon = Poly3DCollection([coords],
                                    alpha=alpha,
@@ -320,7 +326,7 @@ class HawkPlotter:
         """
 
         # Plot each section
-        for section in self.body_sections():
+        for section in self.body_sections.keys():
             polygon = self.get_polygon(section, colour, alpha)
             ax.add_collection3d(polygon)
 
@@ -356,6 +362,7 @@ class HawkPlotter:
         if ax is None:
             fig, ax = self.get_plot3d_view(fig)
 
+
         # Plot the polygons
         ax = self.plot_sections(ax, colour, alpha)
 
@@ -367,10 +374,10 @@ class HawkPlotter:
 
         # Set the plot settings
         ax = self._plot_settings(ax,horzDist)
-
+    
         return ax
     
-    def get_plot3d_view(fig=None, rows=1, cols=1, index=1):
+    def get_plot3d_view(self,fig=None, rows=1, cols=1, index=1):
         """
         From HumanPose by Kevin Schegel
 
@@ -395,16 +402,21 @@ class HawkPlotter:
         """
         if fig is None:
             fig = plt.figure(figsize=(6,6))
+        
         ax = fig.add_subplot(rows, cols, index, projection='3d')
         ax.set_xlabel('X')
         ax.set_ylabel('Z')
         ax.set_zlabel('Y')
-        return (fig, ax)
+        return fig, ax
     
-    def _plot_settings(ax,horzDist=0):
+    def _plot_settings(self,ax,horzDist=None):
         """
         Plot settings & set the azimuth and elev. for camera view of 3D axis.
         """
+
+        if horzDist is None:
+            horzDist = 0
+
         # --- Panel Shading
         ax.xaxis.pane.fill = False
         ax.yaxis.pane.fill = False
@@ -463,8 +475,10 @@ class Hawk3D:
                                                     Expected shape is [1, 4, 3].
         """
 
-        # Update the keypoints if the user has provided them
-        if user_keypoints is not None:
+        # Update the keypoints if the user has provided them. otherwise use the average points. 
+        if user_keypoints is None:
+            self.keypoint_manager.update_keypoints(self.keypoint_manager.avg_keypoints)
+        else:
             self.keypoint_manager.update_keypoints(user_keypoints)
 
         # Use the plotter to display the hawk with the current keypoints. Average from file by default.
