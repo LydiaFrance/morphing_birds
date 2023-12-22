@@ -2,6 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from scipy.spatial.transform import Rotation as R
+import ipywidgets as widgets
+from IPython.display import display
+from IPython.display import clear_output
+
 
 # ----- KeypointManager Class -----
 
@@ -377,6 +381,80 @@ class HawkPlotter:
     
         return ax
     
+
+    def interactive_plot(self, 
+                         keypoints=None, 
+                         fig=None,
+                         ax=None,
+                         el=20,
+                         az=60,
+                         colour=None,
+                         alpha=0.3,
+                         horzDist=None,
+                         bodypitch=None,
+                         vertDist=None):
+        """
+        Interactive plot of the hawk, 
+        sliders to change the azimuth and elevation.
+        """
+        # Initialise the figure and axes if not given
+        plt.ioff()  # Turn off interactive mode
+        
+        if ax is None:
+            fig, ax = self.get_plot3d_view(fig)
+
+        plt.ion()  # Turn on interactive mode
+        
+        az_slider = widgets.IntSlider(min=-90, max=90, step=5, value=az, description='azimuth')
+        el_slider = widgets.IntSlider(min=-90, max=90, step=5, value=el, description='elevation')
+
+        plot_output = widgets.Output()
+
+        def update_plot(change):
+            with plot_output:
+                clear_output(wait=True)
+                # ax.plot([0, 1], [0, 1], [0, 1])  # Initial drawing
+                # ax.view_init(elev=el_slider.value, azim=az_slider.value)  # Update view
+                ax.clear()
+                self.plot(keypoints=keypoints,
+                        fig=fig,
+                        ax=ax,
+                        el=el_slider.value,
+                        az=az_slider.value,
+                        colour=colour,
+                        alpha=alpha,
+                        horzDist=horzDist,
+                        bodypitch=bodypitch,
+                        vertDist=vertDist)  
+    
+                display(fig)
+
+
+        # Update the slider
+        az_slider.observe(update_plot, names='value')
+        el_slider.observe(update_plot, names='value')
+
+       # Initialise the plot
+        # self.plot(keypoints=keypoints,
+        #                 fig=fig,
+        #                 ax=ax,
+        #                 el=el_slider.value,
+        #                 az=az_slider.value,
+        #                 colour=colour,
+        #                 alpha=alpha,
+        #                 horzDist=horzDist,
+        #                 bodypitch=bodypitch,
+        #                 vertDist=vertDist)     
+        
+
+        # Display the sliders
+        display(az_slider, el_slider)
+        display(plot_output)
+
+        # Initial plot
+        update_plot(None)
+        
+
     def get_plot3d_view(self,fig=None, rows=1, cols=1, index=1):
         """
         From HumanPose by Kevin Schegel
@@ -482,7 +560,7 @@ class Hawk3D:
             self.keypoint_manager.update_keypoints(user_keypoints)
 
         # Use the plotter to display the hawk with the current keypoints. Average from file by default.
-        self.plotter.plot()
+        self.plotter.interactive_plot()
 
 
     def animate_hawk(self, keypoint_sequence):
