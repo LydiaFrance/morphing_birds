@@ -3,7 +3,19 @@ morphing_birds: Run PCA on morphing bird wings and tail in flight.
 """
 from __future__ import annotations
 
-from morphing_birds.Hawk3D import Hawk3D
+from .Hawk3D import Hawk3D
+from .HawkData import HawkData
+from .HawkPCA import HawkPCA
+from .Keypoints import KeypointManager
+from .HawkPlotter import HawkPlotter
+from .Animator import HawkAnimator
 
-__all__ = ("__version__",)
+
+__all__ = ("Hawk3D", 
+           "KeypointManager",
+           "HawkData", 
+           "HawkPCA", 
+           "HawkPlotter",
+            "HawkAnimator"
+           "__version__")
 __version__ = "0.1.0"
