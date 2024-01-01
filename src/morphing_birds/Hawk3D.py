@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from scipy.spatial.transform import Rotation as R
@@ -6,9 +7,9 @@ import ipywidgets as widgets
 from IPython.display import display
 from IPython.display import clear_output
 from matplotlib.animation import FuncAnimation
+from sklearn.decomposition import PCA
 
 
-# ----- KeypointManager Class -----
 
 class KeypointManager:
     
@@ -33,6 +34,8 @@ class KeypointManager:
         "left_primary",   "right_primary", 
         "left_secondary", "right_secondary", 
         "left_tailtip",   "right_tailtip"]
+    
+    
 
     def __init__(self, filename):
         self.names_all_keypoints, self.all_keypoints = self.load_data(filename)
@@ -257,7 +260,219 @@ class KeypointManager:
 
         return keypoints
 
+class HawkData:
 
+    def __init__(self, csv_path):
+        self.markers = self.load_marker_frames(csv_path)
+        
+        self.load_frame_data(csv_path)
+
+        self.check_data()
+
+    def load_marker_frames(self, csv_path):
+        """Load the unilateral markers dataset.
+
+        Returns
+        -------
+        data : pandas.DataFrame
+            The data frame containing the unilateral markers dataset.
+        """
+        # Load the data
+        markers_csv = pd.read_csv(csv_path)
+
+        # Rename the columns
+        markers_csv.columns = markers_csv.columns.str.replace("_rot_xyz_1", "_x")
+        markers_csv.columns = markers_csv.columns.str.replace("_rot_xyz_2", "_y")
+        markers_csv.columns = markers_csv.columns.str.replace("_rot_xyz_3", "_z")
+
+        # Get the index of the columns that contain the markers
+        marker_index = markers_csv.columns[markers_csv.columns.str.contains('_x|_y|_z')]
+        markers_csv = markers_csv[marker_index]
+
+        # Make a numpy array with the markers
+        unilateral_markers = markers_csv.to_numpy()
+
+        # Reshape to 3D
+        unilateral_markers = unilateral_markers.reshape(-1,4,3)
+        
+        return unilateral_markers
+
+    def load_frame_data(self, csv_path):
+        """Load the frame info from the dataset.
+
+        Returns
+        -------
+        data : pandas.DataFrame
+            The data frame containing the unilateral markers dataset.
+        """
+        # Load the data
+        markers_csv = pd.read_csv(csv_path)
+
+        self.horzDist = markers_csv['HorzDistance'].to_numpy()
+        self.frameID = markers_csv['frameID']
+        self.leftBool = markers_csv['Left'].to_numpy()
+        self.body_pitch = markers_csv['body_pitch'].to_numpy()
+        self.obstacleBool = markers_csv['Obstacle'].to_numpy()
+        self.IMUBool = markers_csv['IMU'].to_numpy()
+        self.time = markers_csv['time'].to_numpy()
+
+    def check_data(self):
+        """
+        Check that the data are the same length.
+        """
+
+        num_frames = self.markers.shape[0]
+
+        if self.horzDist.shape[0] != num_frames:
+            raise ValueError("horzDist must be the same length as keypoints_frames.")
+        
+        if len(self.frameID) != num_frames:
+            raise ValueError("frameID must be the same length as keypoints_frames.")
+        
+        if self.leftBool.shape[0] != num_frames:
+            raise ValueError("leftBool must be the same length as keypoints_frames.")
+        
+        if self.body_pitch.shape[0] != num_frames:
+            raise ValueError("body_pitch must be the same length as keypoints_frames.")
+        
+        if self.obstacleBool.shape[0] != num_frames:
+            raise ValueError("obstacleBool must be the same length as keypoints_frames.")
+        
+        if self.IMUBool.shape[0] != num_frames:
+            raise ValueError("IMUBool must be the same length as keypoints_frames.")
+        
+    def filter_by(self,
+                  hawk=None,
+                  perchDist=None, 
+                  obstacle=False, 
+                  year=None, 
+                  Left=None,
+                  IMU=False):
+        """
+        Returns boolean array of indices to filter the data.
+        """
+
+        def filter_by_bool(variable, bool_value):
+
+            if bool_value is None:
+                # Simply return the full array bool mask if passed None
+                is_selected = np.ones(variable.shape, dtype=bool)
+                return is_selected
+            
+            is_selected = variable == bool_value
+            return is_selected
+
+        # Initialise the filter
+        filter = np.ones(len(self.frameID), dtype=bool)
+
+        # Filter by hawk_ID
+        if hawk is not None:
+            filter = np.logical_and(filter, self.filter_by_hawk_ID(hawk))
+
+        # Filter by perchDist
+        if perchDist is not None:
+            filter = np.logical_and(filter, self.filter_by_perchDist(perchDist))
+
+        # Filter by obstacleToggle
+        # if obstacle is not None:
+        filter = np.logical_and(filter, filter_by_bool(self.obstacleBool, obstacle))
+
+        # Filter by IMUToggle
+        # if IMU is not None:
+        filter = np.logical_and(filter, filter_by_bool(self.IMUBool, IMU))
+
+        # Filter by Left
+        # if Left is not None:
+        filter = np.logical_and(filter, filter_by_bool(self.leftBool, Left))
+
+        # Filter by year
+        # if year is not None:
+        filter = np.logical_and(filter, self.filter_by_year(year))
+        
+        return filter
+
+
+            
+    def filter_by_hawk_ID(self, hawk: str):
+
+        def get_hawkID(hawk_name):
+
+            if hawk_name.isdigit():
+                # Transform the hawk_ID into a string with the correct format
+                hawk_ID = str(hawk_name).zfill(2) + "_"
+                
+            # The user may have provided the full name of the hawk, or just the first few letters
+            # And so returns the matching ID.
+
+            if "dr" in hawk_name.lower():
+                hawk_ID = "01_"  
+            if "rh" in hawk_name.lower():
+                hawk_ID = "02_"
+            if "ru" in hawk_name.lower():
+                hawk_ID = "03_"  
+            if "to" in hawk_name.lower():
+                hawk_ID = "04_"  
+            if "ch" in hawk_name.lower():
+                hawk_ID = "05_"
+            
+            return hawk_ID
+
+        frameID = self.frameID
+
+        if hawk is None:
+            is_selected = np.ones(len(frameID), dtype=bool)
+            return is_selected
+        else:
+            hawk_ID = get_hawkID(hawk)
+
+        is_selected = frameID.str.startswith(hawk_ID)
+
+        return is_selected
+    
+    def filter_by_perchDist(self, perchDist):
+
+        # If perchDist is None, return the full array bool mask
+        if perchDist is None:
+            is_selected = np.ones(self.horzDist.shape, dtype=bool)
+            return is_selected
+
+        # Get any number from the perchDist string. The user may have given 
+        # "12m" or "12 m" or "12"
+        if perchDist.isdigit():
+            perchDist = int(perchDist)
+        else:
+            perchDist = int(''.join(filter(str.isdigit, perchDist)))
+
+        # Build back up the string to search for
+        # Make sure the integer is padded such that it is 2 digits in length
+        perchDist_str = "_" + str(perchDist).zfill(2) + "_"
+        
+        # Now looks for _05_ or _12_ etc in the frameID. Note, 05_09_ would be 
+        # charmander flying 9m so we need to make sure we don't select that by leading 
+        # and trailing _ . HawkID should always be found with "startswith". 
+
+        is_selected = self.frameID.str.contains(perchDist_str)
+        
+        return is_selected
+
+    def filter_by_year(self, year):
+        frameID = self.frameID
+
+        if year is None:
+            is_selected = np.ones(len(frameID), dtype=bool)
+            return is_selected
+
+        # Data from 2017 and 2020 have different frameID formats, 
+        # there's an extra _ in the frameID for 2020
+        if year == 2017:
+            is_selected = frameID.str.count('_') == 3
+        elif year == 2020:
+            is_selected = frameID.str.count('_') == 4
+        else:
+            raise ValueError("Year must be 2017 or 2020.")
+        
+        return is_selected
+    
 class HawkPlotter:
 
     body_sections = {
@@ -625,7 +840,7 @@ class HawkAnimator:
         animation = FuncAnimation(fig, update_animated_plot, 
                                   frames=num_frames, 
                                   fargs=(fig, ax, keypoints_frames, el_frames, az_frames, alpha, colour, horzDist_frames, bodypitch_frames), 
-                                  interval=20, repeat=False)
+                                  interval=20, repeat=True)
         
         return animation
 
@@ -714,6 +929,112 @@ class HawkAnimator:
 
         return el_frames, az_frames
 
+class HawkPCA:
+    
+    def __init__(self, HawkData, KeypointManager):
+        self.data = HawkData
+        self.mu = KeypointManager.right_keypoints
+        
+        # Make the dimensions fit for PCA
+        self.mu = self.mu.reshape(1,12)
+
+    def get_input(self, data=None):
+
+        if data is None:
+            data = self.data.markers
+
+        # The data is in the shape (n_frames, n_markers*n_dimensions)
+        pca_input = data.reshape(-1,12)
+
+        return pca_input
+    
+    def run_PCA(self, data=None):
+
+        pca_input = self.get_input(data)
+        num_components = pca_input.shape[1]
+
+        pca = PCA()
+        pca_output = pca.fit(pca_input)
+
+
+        # Another word for eigenvectors is components.
+        self.principal_components = pca_output.components_
+
+        # Another word for scores is projections.
+        self.scores = pca_output.transform(pca_input)
+
+
+    def get_score_range(self, num_frames=30):
+
+        num_components = self.scores.shape[1]
+
+        min_score = np.mean(self.scores, axis=0) - (2 * np.std(self.scores, axis=0))
+        max_score = np.mean(self.scores, axis=0) + (2 * np.std(self.scores, axis=0))
+
+        half_length = num_frames // 2 + 1
+
+        # Initialize score_frames with the shape [n, 12]
+        self.score_frames = np.zeros([num_frames, num_components])
+
+
+        for ii in range(num_components):
+        
+            # Create forward and backward ranges for each component using np.linspace
+            forward = np.linspace(min_score[ii], max_score[ii], num=half_length)
+            
+            # # If num_frames is odd, we add an extra element to 'forward'
+            # if num_frames % 2 != 0:
+            #     forward = np.append(forward, max_score[ii])
+            
+            backward = forward[::-1]  # Reverse the forward range
+
+            # Combine forward and backward, and assign to the i-th column
+            self.score_frames[:, ii] = np.concatenate((forward, backward[:num_frames - half_length]))
+
+        
+    def select_components(self, components_list):
+
+        selected_components = self.principal_components[:,components_list]
+        
+        return selected_components
+
+    def reconstruct(self,components_list=None):
+
+        if components_list is None:
+            components_list = range(12)
+        
+        selected_PCs = self.principal_components[components_list]
+        selected_scores = self.score_frames[:,components_list]
+
+        
+        num_frames = self.score_frames.shape[0]
+        reconstructed_frames = np.empty((0,4,3))
+
+        # for ii in range(num_frames):
+        #     score = selected_scores[ii]
+            
+            
+        #     selected_PCs = selected_PCs.reshape(1,4,3)
+        #     mu = self.mu.reshape(1,4,3)
+
+        #     frame = mu + score * selected_PCs
+        #     frame = frame.reshape(-1,4,3)
+
+        #     reconstructed_frames = np.append(reconstructed_frames,frame,axis=0)
+            
+        selected_PCs = selected_PCs.reshape(1, -1, 4, 3)  # [1, nPCs, 4, 3]
+        selected_scores = selected_scores.reshape(num_frames, -1, 1, 1)  # [n, nPCs, 1, 1]
+        mu = self.mu.reshape(1, 4, 3)  # [1, 4, 3]
+
+        reconstructed_frames = mu + np.sum(selected_scores * selected_PCs, axis=1)
+        
+
+        # reconstructed_frames = reconstructed.reshape(-1,4,3)
+
+        return reconstructed_frames
+
+    
+
 
 
 # ----- Hawk3D Class -----
@@ -728,6 +1049,16 @@ class Hawk3D:
         self.keypoint_manager = KeypointManager(filename)
         self.plotter = HawkPlotter(self.keypoint_manager)
         self.animator = HawkAnimator(self.plotter)
+
+        
+
+    def get_data(self, csv_path):
+        
+        self.frames = HawkData(csv_path)
+        self.markers = self.frames.markers
+        self.horzDist = self.frames.horzDist
+
+        self.PCA = HawkPCA(self.frames, self.keypoint_manager)
 
     def display_hawk(self, user_keypoints=None, el = 20, az = 60):
         
@@ -775,7 +1106,15 @@ class Hawk3D:
                                                horzDist_frames=horzDist_frames, 
                                                bodypitch_frames=bodypitch_frames)
 
+       
 
+    def quick_PCA(self, selected_PCs=0,num_frames=30):
+        
+        self.PCA.run_PCA()
+        self.PCA.get_score_range(num_frames)
+        frames = self.PCA.reconstruct(selected_PCs)
+
+        self.animate_hawk(frames)
 
 # ----- Main Function/Script -----
 # def main():
