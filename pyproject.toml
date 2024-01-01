@@ -34,7 +34,9 @@ dependencies = ["numpy",
                 "scikit-learn",
                 "seaborn",
                 "datashader",
-                "ipywidgets"]
+                "ipywidgets",
+                "ipympl",
+                "ipykernel"]
 
 [project.optional-dependencies]
 test = [
