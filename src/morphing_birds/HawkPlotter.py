@@ -52,19 +52,23 @@ class HawkPlotter:
     def __init__(self, keypoint_manager):
 
         """
-        Class for plotting the hawk. Uses Keypoints.py to get and manage the keypoints.
+        Class for plotting the hawk. Uses Keypoints.py to get and 
+        manage the keypoints.
         """
         
         self.keypoint_manager = keypoint_manager
+        self.keypoints = keypoint_manager.keypoints
         self._init_polygons()
 
     def _init_polygons(self):
         """
-        Initialise the polygons for plotting.
+        Initialise the polygons for plotting. 
+        Gets the indices of the keypoints for each section.
         """
         self._polygons = {}
         for name, marker_names in self.body_sections.items():
             self._polygons[name] = self.keypoint_manager.get_keypoint_indices(marker_names)
+
 
     def get_polygon(self, section_name, colour, alpha=1):
         """
@@ -76,8 +80,8 @@ class HawkPlotter:
         
         colour = self._colour_polygon(section_name, colour)
 
-        keypoint_indices = self._polygons[section_name]
-        coords = self.keypoint_manager.all_keypoints[keypoint_indices]
+        polygon_keypoint_indices = self._polygons[section_name]
+        coords = self.keypoints[polygon_keypoint_indices]
 
         polygon = Poly3DCollection([coords],
                                    alpha=alpha,
@@ -97,20 +101,28 @@ class HawkPlotter:
 
         return colour
 
-    def plot_keypoints(self, ax, colour='k', alpha=1):
+    def plot_keypoints(self, 
+                       ax, 
+                       colour='k', 
+                       alpha=1):
         """
         Plots the keypoints of the hawk.
         """
         
-        keypoints = self.keypoint_manager.keypoints
+        # Only plot the markers. 
+        marker_index = self.keypoint_manager.marker_index
+        markers = self.keypoints[marker_index]
 
         # Plot the keypoints
-        ax.scatter(keypoints[:, 0], keypoints[:, 1], keypoints[:, 2],
+        ax.scatter(markers[:, 0], markers[:, 1], markers[:, 2],
                    s = 2, c=colour, alpha=alpha)
-        
+                
         return ax
     
-    def plot_sections(self, ax, colour, alpha=1):
+    def plot_sections(self, 
+                      ax, 
+                      colour, 
+                      alpha=1):
         """
         Plots the polygons representing the different sections of the hawk.
         """
@@ -123,35 +135,20 @@ class HawkPlotter:
         return ax
     
     def plot(self,
-             keypoints=None,
              fig = None,
              ax=None,
              el=20,
              az=60,
              colour=None,
              alpha=0.3,
-             horzDist=None,
-             bodypitch=None,
-             vertDist=None):
+             horzDist=None):
         """
         Plots the hawk.
         """
 
-        # Check if keypoints are given, otherwise use the average. 
-        # Updates the state of the object. 
-        if keypoints is not None and not self.keypoint_manager.is_empty_keypoints(keypoints):
-            self.keypoint_manager.update_keypoints(keypoints)
-
-        # Apply transformations.
-        # (Default: nothing happens)
-        self.keypoint_manager.add_horzDist(horzDist)
-        self.keypoint_manager.add_vertDist(vertDist)
-        self.keypoint_manager.add_pitchRotation(bodypitch)
-
         # Initialise the figure and axes if not given
         if ax is None:
             fig, ax = self.get_plot3d_view(fig)
-
 
         # Plot the polygons
         ax = self.plot_sections(ax, colour, alpha)
@@ -164,25 +161,23 @@ class HawkPlotter:
 
         # Set the plot settings
         ax = self._plot_settings(ax,horzDist)
-    
+
         return ax
     
 
-    def interactive_plot(self, 
-                         keypoints=None, 
+    def interactive_plot(self,  
                          fig=None,
                          ax=None,
                          el=20,
                          az=60,
                          colour=None,
                          alpha=0.3,
-                         horzDist=None,
-                         bodypitch=None,
-                         vertDist=None):
+                         horzDist=None):
         """
         Interactive plot of the hawk, 
         sliders to change the azimuth and elevation.
         """
+
         # Initialise the figure and axes if not given
         plt.ioff()  # Turn off interactive mode
         
@@ -196,23 +191,24 @@ class HawkPlotter:
 
         plot_output = widgets.Output()
 
+        # Initial plot
+        with plot_output:
+            self.plot(fig=fig,
+                    ax=ax,
+                    el=el_slider.value,
+                    az=az_slider.value,
+                    colour=colour,
+                    alpha=alpha,
+                    horzDist=horzDist) 
+
         def update_plot(change):
             with plot_output:
                 clear_output(wait=True)
-                # ax.plot([0, 1], [0, 1], [0, 1])  # Initial drawing
-                # ax.view_init(elev=el_slider.value, azim=az_slider.value)  # Update view
-                ax.clear()
-                self.plot(keypoints=keypoints,
-                        fig=fig,
-                        ax=ax,
-                        el=el_slider.value,
-                        az=az_slider.value,
-                        colour=colour,
-                        alpha=alpha,
-                        horzDist=horzDist,
-                        bodypitch=bodypitch,
-                        vertDist=vertDist)  
-    
+            
+                ax.view_init(elev=el_slider.value, azim=az_slider.value)
+                
+                fig.canvas.draw_idle()  # Redraw the figure
+                    
                 display(fig)
 
 
@@ -220,16 +216,14 @@ class HawkPlotter:
         az_slider.observe(update_plot, names='value')
         el_slider.observe(update_plot, names='value')
 
-        
-
         # Display the sliders
         display(az_slider, el_slider)
         display(plot_output)
-
+    
         # Initial plot
         update_plot(None)
-        
 
+       
     def get_plot3d_view(self,fig=None, rows=1, cols=1, index=1):
         """
         From HumanPose by Kevin Schegel

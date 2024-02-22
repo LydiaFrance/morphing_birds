@@ -1,14 +1,3 @@
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-from scipy.spatial.transform import Rotation as R
-import ipywidgets as widgets
-from IPython.display import display
-from IPython.display import clear_output
-from matplotlib.animation import FuncAnimation
-from sklearn.decomposition import PCA
-
 from .Keypoints import KeypointManager
 from .HawkData import HawkData
 from .HawkPCA import HawkPCA
@@ -30,7 +19,7 @@ class Hawk3D:
         self.plotter = HawkPlotter(self.keypoint_manager)
         self.animator = HawkAnimator(self.plotter)
 
-        
+        self.keypoint_manager.keypoints_no_translation = None
 
     def get_data(self, csv_path):
         
@@ -44,7 +33,15 @@ class Hawk3D:
 
         self.PCA = HawkPCA(self.frames, self.keypoint_manager)
 
-    def display_hawk(self, user_keypoints=None, el = 20, az = 60):
+    def display_hawk(self, 
+                     user_keypoints=None, 
+                     el = 20, 
+                     az = 60, 
+                     alpha = 0.3, 
+                     colour = None,
+                     horzDist = None, 
+                     bodypitch = None, 
+                     vertDist = None):
         
         """
         Displays the hawk using either the default keypoints or user-provided keypoints.
@@ -54,15 +51,24 @@ class Hawk3D:
                                                     Expected shape is [1, 4, 3].
         """
 
-        # Update the keypoints if the user has provided them. otherwise use the average points. 
-        if user_keypoints is None:
-            self.keypoint_manager.update_keypoints(self.keypoint_manager.avg_keypoints)
-        else:
+        if user_keypoints is not None:
             self.keypoint_manager.update_keypoints(user_keypoints)
 
+        # Transforms the keypoints if horzdist or bodypitch is given
+        # Saves a copy of the untransformed keypoints to restore later
+        self.keypoint_manager.keypoints = self.keypoint_manager.transform_keypoints(horzDist=horzDist, 
+                                                    bodypitch=bodypitch, 
+                                                    vertDist=vertDist)
+        
         # Use the plotter to display the hawk with the current keypoints. Average from file by default.
-        self.plotter.interactive_plot()
-
+        self.plotter.interactive_plot(el=el, 
+                                      az=az, 
+                                      alpha=alpha, 
+                                      colour=colour,
+                                      horzDist=horzDist)
+        # 2024-01-04 22:49 SERIOUSLY CAN'T UNDERSTAND WHY THIS WON'T WORK
+        # The keypoints are not updating when I call the function again.
+        # And the keypoints won't rotate.
 
     def animate_hawk(self, keypoint_sequence,
                 rotation_type="static", 

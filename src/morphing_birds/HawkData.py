@@ -32,6 +32,9 @@ class HawkData:
         marker_index = markers_csv.columns[markers_csv.columns.str.contains('_x|_y|_z')]
         markers_csv = markers_csv[marker_index]
 
+        # Save the cleaned up dataframe
+        self.dataframe = markers_csv
+
         # Make a numpy array with the markers
         unilateral_markers = markers_csv.to_numpy()
 
@@ -51,6 +54,9 @@ class HawkData:
         # Load the data
         markers_csv = pd.read_csv(csv_path)
 
+        # Makes horizontal distance NEGATIVE
+        markers_csv['HorzDistance'] = -markers_csv['HorzDistance']
+        
         self.horzDist = markers_csv['HorzDistance'].to_numpy()
         self.frameID = markers_csv['frameID']
         self.leftBool = markers_csv['Left'].to_numpy()
@@ -58,6 +64,21 @@ class HawkData:
         self.obstacleBool = markers_csv['Obstacle'].to_numpy()
         self.IMUBool = markers_csv['IMU'].to_numpy()
         self.time = markers_csv['time'].to_numpy()
+
+        # Add variables to dataframe
+        self.dataframe['frameID'] = self.frameID
+        self.dataframe['time'] = self.time
+        self.dataframe['HorzDistance'] = self.horzDist
+        self.dataframe['body_pitch'] = self.body_pitch
+        self.dataframe['Obstacle'] = self.obstacleBool
+        self.dataframe['IMU'] = self.IMUBool
+        self.dataframe['Left'] = self.leftBool
+
+
+    def get_data_table(self):
+
+        # Create a dataframe with the data
+        data = pd.DataFrame(self.markers.reshape(-1,12), columns=self.marker_names)
 
     def check_data(self):
         """
@@ -105,16 +126,19 @@ class HawkData:
             is_selected = variable == bool_value
             return is_selected
 
+        # Get frameID
+        frameID = self.frameID
+
         # Initialise the filter
         filter = np.ones(len(self.frameID), dtype=bool)
 
         # Filter by hawk_ID
         if hawk is not None:
-            filter = np.logical_and(filter, self.filter_by_hawk_ID(hawk))
+            filter = np.logical_and(filter, HawkData.filter_by_hawk_ID(frameID, hawk))
 
         # Filter by perchDist
         if perchDist is not None:
-            filter = np.logical_and(filter, self.filter_by_perchDist(perchDist))
+            filter = np.logical_and(filter, HawkData.filter_by_perchDist(frameID, perchDist))
 
         # Filter by obstacleToggle
         # if obstacle is not None:
@@ -130,13 +154,12 @@ class HawkData:
 
         # Filter by year
         # if year is not None:
-        filter = np.logical_and(filter, self.filter_by_year(year))
+        filter = np.logical_and(filter, HawkData.filter_by_year(frameID,year))
         
         return filter
 
-
-            
-    def filter_by_hawk_ID(self, hawk: str):
+    @staticmethod  
+    def filter_by_hawk_ID(frameID, hawk: str):
 
         def get_hawkID(hawk_name):
 
@@ -159,9 +182,7 @@ class HawkData:
                 hawk_ID = "05_"
             
             return hawk_ID
-
-        frameID = self.frameID
-
+        
         if hawk is None:
             is_selected = np.ones(len(frameID), dtype=bool)
             return is_selected
@@ -172,12 +193,14 @@ class HawkData:
 
         return is_selected
     
-    def filter_by_perchDist(self, perchDist):
+    @staticmethod
+    def filter_by_perchDist(frameID, perchDist):
 
         # If perchDist is None, return the full array bool mask
         if perchDist is None:
-            is_selected = np.ones(self.horzDist.shape, dtype=bool)
+            is_selected = np.ones(frameID, dtype=bool)
             return is_selected
+        
 
         # Get any number from the perchDist string. The user may have given 
         # "12m" or "12 m" or "12"
@@ -194,13 +217,13 @@ class HawkData:
         # charmander flying 9m so we need to make sure we don't select that by leading 
         # and trailing _ . HawkID should always be found with "startswith". 
 
-        is_selected = self.frameID.str.contains(perchDist_str)
+        is_selected = frameID.str.contains(perchDist_str)
         
         return is_selected
 
-    def filter_by_year(self, year):
-        frameID = self.frameID
-
+    @staticmethod
+    def filter_by_year(frameID, year):
+        
         if year is None:
             is_selected = np.ones(len(frameID), dtype=bool)
             return is_selected
@@ -215,3 +238,4 @@ class HawkData:
             raise ValueError("Year must be 2017 or 2020.")
         
         return is_selected
+    
