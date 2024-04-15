@@ -26,6 +26,9 @@ class Hawk3Dtest:
         # Unless there are any tranformations, this is the origin for the markers. 
         self.origin = np.array([0,0,0])
 
+        # Initialise the polygons for plotting
+        self.init_polygons()
+
 
     right_marker_names = [
         "right_wingtip", 
@@ -54,6 +57,54 @@ class Hawk3Dtest:
         "tailpack"
     ]
     
+    body_sections = {
+        "left_handwing": [
+            "left_wingtip", 
+            "left_primary", 
+            "left_secondary",
+        ],
+        "right_handwing": [
+            "right_wingtip", 
+            "right_primary", 
+            "right_secondary",
+        ],
+        "left_armwing": [
+            "left_primary", 
+            "left_secondary", 
+            "left_tailbase", 
+            "left_shoulder",
+        ],
+        "right_armwing": [
+            "right_primary", 
+            "right_secondary", 
+            "right_tailbase",
+            "right_shoulder",
+        ],
+        "body": [
+            "right_shoulder", 
+            "left_shoulder", 
+            "left_tailbase", 
+            "right_tailbase",
+        ],
+        "head": [
+            "right_shoulder", 
+            "hood", 
+            "left_shoulder",
+        ],
+        "tail": [
+            "right_tailtip", 
+            "left_tailtip", 
+            "left_tailbase", 
+            "right_tailbase",
+        ],
+    }
+
+    current_transformations = {
+        "horzDist": None,
+        "bodypitch": None,
+        "vertDist": None
+    }
+
     def load_shape(self, csv_path):
 
         # load the data
@@ -93,6 +144,27 @@ class Hawk3Dtest:
         indices = [csv_marker_names.index(name) for name in names_to_find]
 
         return indices
+
+    def init_polygons(self):
+        """
+        Initialise the polygons for plotting. 
+        Gets the indices of the keypoints for each section.
+        """
+        self.polygons = {}
+        for name, marker_names in self.body_sections.items():
+            self.polygons[name] = self.get_keypoint_indices(marker_names)
+
+    def get_polygon_coords(self, section_name):
+
+        if section_name not in self.body_sections.keys():
+            raise ValueError(f"Section name {section_name} not recognised.")
+
+        polygon_keypoint_indices = self.polygons[section_name]
+        coords = self.current_shape[:,polygon_keypoint_indices,:]
+        coords = coords[0] # Convert from [1, 4, 3] to [4, 3]
+
+        return coords
+
 
     def validate_keypoints(self, keypoints):
         """
@@ -138,6 +210,30 @@ class Hawk3Dtest:
         # Only non fixed markers are updated.
         self.current_shape[:,self.marker_index,:] = user_keypoints
         
+    def untransform_keypoints(self):
+
+        untransformed_points = self.current_shape.copy()
+
+        if self.current_transformations["horzDist"] is not None:
+            horzDist = -self.current_transformations["horzDist"]
+            untransformed_points = self.add_horzDist(untransformed_points,horzDist)
+            self.current_transformations["horzDist"] = None
+            print("Horizontal translation undone.")
+
+        if self.current_transformations["vertDist"] is not None:
+            vertDist = -self.current_transformations["vertDist"]
+            untransformed_points = self.add_vertDist(untransformed_points,vertDist)
+            self.current_transformations["vertDist"] = None
+            print("Vertical translation undone.")
+
+        if self.current_transformations["bodypitch"] is not None:
+            bodypitch = -self.current_transformations["bodypitch"]
+            untransformed_points = self.add_pitchRotation(untransformed_points,bodypitch)
+            self.current_transformations["bodypitch"] = None
+            print("Pitch rotation undone.")
+        
+
+        self.current_shape = untransformed_points           
 
     def transform_keypoints(self,
                             horzDist=None,
@@ -146,22 +242,30 @@ class Hawk3Dtest:
         if horzDist is None and bodypitch is None and vertDist is None:
             print("No transformation applied.")
             return self.current_shape
-        
+         
+        # Undo any previous transformations
+        self.untransform_keypoints()
+
         # Start with the current shape
         transformed_points = self.current_shape.copy()
         
-        if horzDist is not None:
-            transformed_points = self.add_horzDist(transformed_points,horzDist)
-            print("Horizontal translation applied.")
-    
         if bodypitch is not None:
             transformed_points = self.add_pitchRotation(transformed_points,bodypitch)
+            self.current_transformations["bodypitch"] = bodypitch
             print("Rotation applied.")
         
+        if horzDist is not None:
+            transformed_points = self.add_horzDist(transformed_points,horzDist)
+            self.current_transformations["horzDist"] = horzDist
+            print(f"Horizontal translation applied {horzDist}m.")
+    
         if vertDist is not None:
             transformed_points = self.add_vertDist(transformed_points,vertDist)
+            self.current_transformations["vertDist"] = vertDist
             print("Vertical translation applied.")
         
+        self.current_shape = transformed_points
+
         return transformed_points
 
     def restore_keypoints(self):
@@ -229,9 +333,11 @@ class Hawk3Dtest:
         if bodypitch is None or bodypitch == 0 or np.isnan(bodypitch):
             return keypoints
     
-        current_shape = keypoints
+        current_shape = keypoints[0]
         rotmat = R.from_euler('x', bodypitch, degrees=True)
         rot_shape = rotmat.apply(current_shape)
+
+        rot_shape = rot_shape.reshape(1, -1, 3)
 
         return rot_shape
    
@@ -278,49 +384,12 @@ class Hawk3Dtest:
         return new_keypoints
 
 
+# Plotting Functions
+ 
+
 class HawkPlotterTest:
 
-    body_sections = {
-        "left_handwing": [
-            "left_wingtip", 
-            "left_primary", 
-            "left_secondary",
-        ],
-        "right_handwing": [
-            "right_wingtip", 
-            "right_primary", 
-            "right_secondary",
-        ],
-        "left_armwing": [
-            "left_primary", 
-            "left_secondary", 
-            "left_tailbase", 
-            "left_shoulder",
-        ],
-        "right_armwing": [
-            "right_primary", 
-            "right_secondary", 
-            "right_tailbase",
-            "right_shoulder",
-        ],
-        "body": [
-            "right_shoulder", 
-            "left_shoulder", 
-            "left_tailbase", 
-            "right_tailbase",
-        ],
-        "head": [
-            "right_shoulder", 
-            "hood", 
-            "left_shoulder",
-        ],
-        "tail": [
-            "right_tailtip", 
-            "left_tailtip", 
-            "left_tailbase", 
-            "right_tailbase",
-        ],
-    }
+    
 
     def __init__(self, hawk3d:Hawk3Dtest):
 
@@ -334,25 +403,19 @@ class HawkPlotterTest:
         self.markers = hawk3d.markers
         self._init_polygons()
 
-    def _init_polygons(self):
-        """
-        Initialise the polygons for plotting. 
-        Gets the indices of the keypoints for each section.
-        """
-        self._polygons = {}
-        for name, marker_names in self.body_sections.items():
-            self._polygons[name] = self.Hawk3D.get_keypoint_indices(marker_names)
 
-    def get_coords(self, section_name):
+    def colour_polygon(self, section_name, colour):
+        
+        # The colour of the polygon is determined by whether the landmarks are
+        # estimated or measured.
+        if "handwing" in section_name or "tail" in section_name:
+            colour = colour
+        else:
+            colour = np.array((0.5, 0.5, 0.5, 0.5))
 
-        if section_name not in self.body_sections.keys():
-            raise ValueError(f"Section name {section_name} not recognised.")
+        return colour
+    
 
-        polygon_keypoint_indices = self._polygons[section_name]
-        coords = self.current_shape[:,polygon_keypoint_indices,:]
-        coords = coords[0] # Convert from [1, 4, 3] to [4, 3]
-
-        return coords
     
     def get_polygon(self, section_name, colour, alpha=1):
         """
