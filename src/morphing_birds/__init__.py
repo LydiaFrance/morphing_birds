@@ -10,7 +10,7 @@ from __future__ import annotations
 # from .HawkPlotter import HawkPlotter
 # from .Animator import HawkAnimator
 # from .PCAFigures import PCAFigures
-from .trytofix import Hawk3Dtest, HawkPlotterTest, HawkAnimatorTest, HawkDataTest, HawkPCATest
+from .trytofix import Hawk3Dtest, HawkPlotterTest, HawkAnimatorTest, HawkDataTest, HawkPCATest, plot
 
 # from .Figures import plot_components
 
