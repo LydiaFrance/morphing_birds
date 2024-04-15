@@ -384,7 +384,7 @@ class Hawk3Dtest:
         return new_keypoints
 
 
-# Plotting Functions
+# ----- Plot Functions -----
  
 def interactive_plot(Hawk3D_instance, ax=None, el=20, az=60, colour=None, alpha=0.3):
 
@@ -433,7 +433,6 @@ def interactive_plot(Hawk3D_instance, ax=None, el=20, az=60, colour=None, alpha=
         # Initial plot
         update_plot(None)
 
-
 def plot(Hawk3D_instance, ax=None, el=20, az=60, colour=None, alpha=0.3):
 
     if ax is None:
@@ -453,6 +452,8 @@ def plot(Hawk3D_instance, ax=None, el=20, az=60, colour=None, alpha=0.3):
     ax = plot_settings(ax,Hawk3D_instance)
 
     return ax
+
+# ....... Helper Plot Functions ........
 
 def plot_keypoints(ax,Hawk3D_instance, colour='k', alpha=1):
 
@@ -573,283 +574,9 @@ def get_plot3d_view(fig=None, rows=1, cols=1, index=1):
 
 
 
+# ----- Animation Functions -----
 
-# Animation Functions
-
-class HawkPlotterTest:
-
-    
-
-    def __init__(self, hawk3d:Hawk3Dtest):
-
-        """
-        Class for plotting the hawk. Uses Keypoints.py to get and 
-        manage the keypoints.
-        """
-        
-        self.Hawk3D = hawk3d
-        self.current_shape = hawk3d.current_shape
-        self.markers = hawk3d.markers
-        self._init_polygons()
-
-
-    def colour_polygon(self, section_name, colour):
-        
-        # The colour of the polygon is determined by whether the landmarks are
-        # estimated or measured.
-        if "handwing" in section_name or "tail" in section_name:
-            colour = colour
-        else:
-            colour = np.array((0.5, 0.5, 0.5, 0.5))
-
-        return colour
-    
-
-    
-    def get_polygon(self, section_name, colour, alpha=1):
-        """
-        Returns the coordinates of the polygon representing the given section.
-        """
-        
-        if section_name not in self.body_sections.keys():
-            raise ValueError(f"Section name {section_name} not recognised.")
-        
-        colour = self._colour_polygon(section_name, colour)
-
-        coords = self.get_coords(section_name)
-
-        polygon = Poly3DCollection([coords],
-                                   alpha=alpha,
-                                   facecolor=colour,
-                                   edgecolor='k',
-                                   linewidths=0.5)
-        return polygon
-
-    def _colour_polygon(self, section_name, colour):
-        
-        # The colour of the polygon is determined by whether the landmarks are
-        # estimated or measured.
-        if "handwing" in section_name or "tail" in section_name:
-            colour = colour
-        else:
-            colour = np.array((0.5, 0.5, 0.5, 0.5))
-
-        return colour
-
-    def plot_keypoints(self, 
-                       ax, 
-                       colour='k', 
-                       alpha=1):
-        """
-        Plots the keypoints of the hawk.
-        """
-        
-        # Only plot the markers. 
-        coords = self.current_shape[:,self.Hawk3D.marker_index,:][0]
-        
-        # Plot the keypoints
-        ax.scatter(coords[:, 0], coords[:, 1], coords[:, 2],
-                   s = 5, c=colour, alpha=alpha)
-                
-        return ax
-    
-    def plot_sections(self, 
-                      ax, 
-                      colour, 
-                      alpha=1):
-        """
-        Plots the polygons representing the different sections of the hawk.
-        """
-
-        # Plot each section
-        for section in self.body_sections.keys():
-            polygon = self.get_polygon(section, colour, alpha)
-            ax.add_collection3d(polygon)
-
-        return ax
-    
-    def plot(self,
-             ax=None,
-             el=20,
-             az=60,
-             colour=None,
-             alpha=0.3):
-        """
-        Plots the hawk.
-        """
-
-        if ax is None:
-            fig, ax = self.get_plot3d_view()
-            print("No axes given, creating new figure inside plot.")
-
-
-        # Plot the polygons
-        ax = self.plot_sections(ax, colour, alpha)
-
-        # Plot the keypoints (only the measured markers)
-        ax = self.plot_keypoints(ax, colour, alpha)
-
-        # Set the azimuth and elev. for camera view of 3D axis.
-        ax.view_init(elev=el, azim=az)
-
-        # Set the plot settings
-        ax = self._plot_settings(ax)
-
-        return ax
-    
-    def interactive_plot(self,
-                         ax=None,
-                         el=20,
-                         az=60,
-                         colour=None,
-                         alpha=0.3):
-        """
-        Interactive plot of the hawk, 
-        sliders to change the azimuth and elevation.
-        """
-
-        plt.ioff()  # Turn off interactive mode
-        
-        if ax is None:
-            fig, ax = self.get_plot3d_view()
-            print("No axes given, creating new figure inside interactive_plot.")
-
-        plt.ion()  # Turn on interactive mode
-        
-        az_slider = widgets.IntSlider(min=-90, max=90, step=5, value=az, description='azimuth')
-        el_slider = widgets.IntSlider(min=-15, max=90, step=5, value=el, description='elevation')
-
-        plot_output = widgets.Output()
-
-        # Initial plot
-        with plot_output:
-            self.plot(ax=ax,
-                    el=el_slider.value,
-                    az=az_slider.value,
-                    colour=colour,
-                    alpha=alpha) 
-
-        def update_plot(change):
-            with plot_output:
-                clear_output(wait=True)
-            
-                ax.view_init(elev=el_slider.value, azim=az_slider.value)
-                
-                fig.canvas.draw_idle()  # Redraw the figure
-                    
-                display(fig)
-
-
-        # Update the slider
-        az_slider.observe(update_plot, names='value')
-        el_slider.observe(update_plot, names='value')
-
-        # Display the sliders
-        display(az_slider, el_slider)
-        display(plot_output)
-    
-        # Initial plot
-        update_plot(None)
-    
-    def get_plot3d_view(self,fig=None, rows=1, cols=1, index=1):
-        """
-        From HumanPose by Kevin Schegel
-
-        Convenience function to create 3d matplotlib axis object.
-        Wraps figure creation if need be and add_subplot.
-        Parameters
-        ----------
-        fig : matplotlib.figure object, optional
-            For re-use of an existing figure object. A new one is created if
-            not given.
-        rows : int
-            Number of subplot rows. Like fig.add_subplot
-        cols : int
-            Number of subplot cols. Like fig.add_subplot
-        index : int
-            Index of subplot to use. Like fig.add_subplot
-        Returns
-        -------
-        (fig, ax)
-            fig : matplotlib.figure object
-            ax : matplotlib.Axes object
-        """
-        if fig is None:
-            fig = plt.figure(figsize=(6,6))
-
-        
-        ax = fig.add_subplot(rows, cols, index, projection='3d')
-        ax.set_xlabel('X')
-        ax.set_ylabel('Z')
-        ax.set_zlabel('Y')
-        return fig, ax
-    
-    def _plot_settings(self,ax):
-        """
-        Plot settings & set the azimuth and elev. for camera view of 3D axis.
-        """
-
-        # --- Panel Shading
-        ax.xaxis.pane.fill = False
-        ax.yaxis.pane.fill = False
-        ax.xaxis.pane.set_edgecolor('w')
-        ax.yaxis.pane.set_edgecolor('w')
-        ax.zaxis.pane.set_edgecolor('w')
-
-        # --- Axis Limits
-        minbound = -0.28
-        maxbound = 0.28
-
-        origin = self.Hawk3D.origin
-
-        ax.auto_scale_xyz(  [minbound, maxbound], 
-                            [origin[1]-minbound, origin[1]+maxbound],
-                            [origin[2]-minbound, origin[2]+maxbound])
-
-        # --- Axis labels and Ticks
-        ax.set_xlabel('x (m)', fontsize=12)
-        ax.set_ylabel('y (m)', fontsize=12)
-        ax.set_zlabel('z (m)', fontsize=12)
-        ax.tick_params(axis='both', which='major', labelsize=10)
-        ax.tick_params(axis='both', which='minor', labelsize=10)
-        ax.set_xticks(np.linspace(-0.25, 0.25, 3))
-        ax.set_yticks(np.linspace(origin[1]-0.25,origin[1]+0.25, 3))
-        ax.set_zticks(np.linspace(origin[2]-0.25, origin[2]+0.25, 3))
-
-        return ax
-
-
-class HawkAnimatorTest:
-    def __init__(self, 
-                 Hawk3d_instance: Hawk3Dtest, 
-                 HawkPlotter_instance: HawkPlotterTest):
-
-        """ 
-        Uses the HawkPlotter class to create an animated 3D plot of a hawk video.
-        
-        """
-        self.Hawk3D = Hawk3d_instance
-        self.HawkPlotter = HawkPlotter_instance
-
-    def format_keypoint_frames(self, keypoints_frames):
-
-        """
-        Formats the keypoints_frames to be [n,8,3] where n is the number of frames 
-        and 8 is the number of keypoints and 3 is the number of dimensions.
-        If just 4 keypoints are given, the function will mirror the keypoints to make the left side.
-        """
-
-        if len(np.shape(keypoints_frames)) == 2:
-            keypoints_frames = keypoints_frames.reshape(1, -1, 3)
-            print("Warning: Only one frame given.")
-
-    # Mirror the keypoints_frames if only the right is given. 
-        if keypoints_frames.shape[1] == len(self.Hawk3D.right_marker_names):
-            keypoints_frames = self.Hawk3D.mirror_keypoints(keypoints_frames)
-
-        return keypoints_frames
-        
-    def animate(self, 
+def animate(Hawk3D_instance, 
                 keypoints_frames, 
                 fig=None, 
                 ax=None, 
@@ -866,21 +593,21 @@ class HawkAnimatorTest:
         """
 
         # Check dimensions and mirror the keypoints if only the right is given.
-        keypoints_frames = self.format_keypoint_frames(keypoints_frames)
+        keypoints_frames = format_keypoint_frames(Hawk3D_instance,keypoints_frames)
 
         # Find the number of frames 
         num_frames = keypoints_frames.shape[0]
 
         # Initialize figure and axes
         if ax is None or fig is None:
-            fig, ax = self.HawkPlotter.get_plot3d_view(fig)
+            fig, ax = get_plot3d_view(fig)
             print("No axes given, creating new figure inside animate.")
         
         print("Fig ID:", id(fig), "Ax ID:", id(ax))
 
 
         # Prepare camera angles
-        el_frames, az_frames = self.get_camera_angles(num_frames=num_frames, 
+        el_frames, az_frames = get_camera_angles(num_frames=num_frames, 
                                                       rotation_type=rotation_type, 
                                                       el=el, 
                                                       az=az)
@@ -896,7 +623,7 @@ class HawkAnimatorTest:
                 raise ValueError("bodypitch_frames must be the same length as keypoints_frames.")
             
         # Plot settings
-        self.HawkPlotter._plot_settings(ax)
+        plot_settings(ax, Hawk3D_instance)
 
         
         def update_animated_plot(frame):
@@ -907,22 +634,22 @@ class HawkAnimatorTest:
             ax.clear()
 
             # Update the keypoints for the current frame
-            self.Hawk3D.update_keypoints(keypoints_frames[frame])
+            Hawk3D_instance.update_keypoints(keypoints_frames[frame])
             
 
             # Transform the keypoints if necessary
             if horzDist_frames is not None or bodypitch_frames is not None or vertDist_frames is not None:
-                self.Hawk3D.transform_keypoints(horzDist=horzDist_frames[frame],
-                                                bodypitch=bodypitch_frames[frame],
-                                                vertDist=vertDist_frames[frame])
+                Hawk3D_instance.transform_keypoints(horzDist=horzDist_frames[frame],
+                                                    bodypitch=bodypitch_frames[frame],
+                                                    vertDist=vertDist_frames[frame])
 
             # Then plot the current frame
-            self.HawkPlotter.plot( 
-                              ax=ax, 
-                              el=el_frames[frame], 
-                              az=az_frames[frame], 
-                              alpha=alpha, 
-                              colour=colour)
+            plot(Hawk3D_instance, 
+                    ax=ax, 
+                    el=el_frames[frame], 
+                    az=az_frames[frame], 
+                    alpha=alpha, 
+                    colour=colour)
             
             ax.set_title(f"Frame {frame+1}/{num_frames}")
             
@@ -938,7 +665,27 @@ class HawkAnimatorTest:
         
         return animation
 
-    def get_camera_angles(self,num_frames, rotation_type, el=20, az=60):
+# ....... Helper Animation Functions ........
+
+def format_keypoint_frames(Hawk3D_instance, keypoints_frames):
+
+        """
+        Formats the keypoints_frames to be [n,8,3] where n is the number of frames 
+        and 8 is the number of keypoints and 3 is the number of dimensions.
+        If just 4 keypoints are given, the function will mirror the keypoints to make the left side.
+        """
+
+        if len(np.shape(keypoints_frames)) == 2:
+            keypoints_frames = keypoints_frames.reshape(1, -1, 3)
+            print("Warning: Only one frame given.")
+
+    # Mirror the keypoints_frames if only the right is given. 
+        if keypoints_frames.shape[1] == len(Hawk3D_instance.right_marker_names):
+            keypoints_frames = Hawk3D_instance.mirror_keypoints(keypoints_frames)
+
+        return keypoints_frames
+
+def get_camera_angles(num_frames, rotation_type, el=20, az=60):
         """
         Creates two arrays of camera angles for the length of the animation.
 
@@ -1022,6 +769,10 @@ class HawkAnimatorTest:
             az_frames = np.linspace(az, az, num_frames)
 
         return el_frames, az_frames
+
+
+
+
 
 
 class HawkDataTest:
