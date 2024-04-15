@@ -386,6 +386,54 @@ class Hawk3Dtest:
 
 # Plotting Functions
  
+def interactive_plot(Hawk3D_instance, ax=None, el=20, az=60, colour=None, alpha=0.3):
+
+
+        plt.ioff()  # Turn off interactive mode
+        
+        if ax is None:
+            fig, ax = get_plot3d_view()
+            print("No axes given, creating new figure inside interactive_plot.")
+
+        plt.ion()  # Turn on interactive mode
+        
+        az_slider = widgets.IntSlider(min=-90, max=90, step=5, value=az, description='azimuth')
+        el_slider = widgets.IntSlider(min=-15, max=90, step=5, value=el, description='elevation')
+
+        plot_output = widgets.Output()
+
+        # Initial plot
+        with plot_output:
+            plot(Hawk3D_instance, 
+                    ax=ax,
+                    el=el_slider.value,
+                    az=az_slider.value,
+                    colour=colour,
+                    alpha=alpha) 
+
+        def update_plot(change):
+            with plot_output:
+                clear_output(wait=True)
+            
+                ax.view_init(elev=el_slider.value, azim=az_slider.value)
+                
+                fig.canvas.draw_idle()  # Redraw the figure
+                    
+                display(fig)
+
+
+        # Update the slider
+        az_slider.observe(update_plot, names='value')
+        el_slider.observe(update_plot, names='value')
+
+        # Display the sliders
+        display(az_slider, el_slider)
+        display(plot_output)
+    
+        # Initial plot
+        update_plot(None)
+
+
 def plot(Hawk3D_instance, ax=None, el=20, az=60, colour=None, alpha=0.3):
 
     if ax is None:
@@ -416,7 +464,6 @@ def plot_keypoints(ax,Hawk3D_instance, colour='k', alpha=1):
                 s = 5, c=colour, alpha=alpha)
 
     return ax
-
 
 def plot_sections(ax, Hawk3D_instance, colour, alpha=1):
 
@@ -524,6 +571,10 @@ def get_plot3d_view(fig=None, rows=1, cols=1, index=1):
         ax.set_zlabel('Y')
         return fig, ax
 
+
+
+
+# Animation Functions
 
 class HawkPlotterTest:
 
