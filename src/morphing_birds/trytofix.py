@@ -26,8 +26,8 @@ class Hawk3Dtest:
         # An untransformed shape
         self.untransformed_shape = self.current_shape.copy()
 
-        # Unless there are any tranformations, this is the origin for the markers. 
-        self.origin = np.array([0,0,0])
+        # # Unless there are any tranformations, this is the origin for the markers. 
+        # self.origin = np.array([0,0,0])
 
         # Initialise the polygons for plotting
         self.init_polygons()
@@ -236,8 +236,6 @@ class Hawk3Dtest:
         """
         # self.current_shape = self.default_shape.copy()
 
-        self.origin = np.array([0,0,0])
-
         self.current_shape = self.untransformed_shape.copy()
 
     @property
@@ -279,6 +277,16 @@ class Hawk3Dtest:
         right_marker_index = self.right_marker_index
         
         return self.default_shape[:,right_marker_index,:]
+
+    @property
+    def origin(self):
+        current_nose = self.current_shape[0,self.get_keypoint_indices(["hood"]),:]
+        
+        default_nose = self.default_shape[0,self.get_keypoint_indices(["hood"]),:]
+        
+        origin = current_nose - default_nose
+
+        return origin[0]
 
     def get_csv_marker_names(self,data):
         """
@@ -584,8 +592,8 @@ def animate(Hawk3D_instance,
                 raise ValueError("bodypitch_frames must be the same length as keypoints_frames.")
             
         # Plot settings
-        # origin = Hawk3D_instance.origin
-        plot_settings(ax, [0,0,0])
+        origin = Hawk3D_instance.origin
+        plot_settings(ax, origin)
 
         
         def update_animated_plot(frame):
@@ -609,9 +617,11 @@ def animate(Hawk3D_instance,
 
             if horzDist_frames is not None:
                 Hawk3D_instance.transform_keypoints(horzDist=horzDist_frames[frame])
+                origin[1] = horzDist_frames[frame]
 
             if vertDist_frames is not None:
                 Hawk3D_instance.transform_keypoints(vertDist=vertDist_frames[frame])
+                origin[2] = vertDist_frames[frame]
 
             
             # Then plot the current frame
@@ -627,8 +637,7 @@ def animate(Hawk3D_instance,
             # Finally, restore the hawk to the default shape
             Hawk3D_instance.restore_keypoints()
 
-
-            plot_settings(ax, [0,0,0])
+            plot_settings(ax, origin)
 
             return fig, ax
 
