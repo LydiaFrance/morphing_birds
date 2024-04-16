@@ -24,10 +24,11 @@ class Hawk3Dtest:
         self.current_shape = np.copy(self.default_shape)
 
         # An untransformed shape
-        self.untransformed_shape = self.current_shape.copy()
+        self.transformation_matrix = np.eye(4)
+        self.untransformed_shape = np.copy(self.current_shape)
 
         # # Unless there are any tranformations, this is the origin for the markers. 
-        # self.origin = np.array([0,0,0])
+        self.origin = np.array([0,0,0])
 
         # Initialise the polygons for plotting
         self.init_polygons()
@@ -104,12 +105,22 @@ class Hawk3Dtest:
 
     def load_shape(self, csv_path):
 
+        def get_csv_marker_names(data):
+            """
+            Get the marker names from the first row of the csv file, 
+            get every 3rd name and remove the '_x' from the names
+            """
+            csv_marker_names = data[0].reshape(-1, 3)
+            csv_marker_names = list(np.char.strip(csv_marker_names[:, 0], '_x'))
+
+            return csv_marker_names
+
         # load the data
         with open(csv_path, 'r') as file:
             data = np.loadtxt(file, delimiter=',', skiprows=0, dtype='str')
 
         # Get the marker names from the first row of the csv file
-        self.csv_marker_names = self.get_csv_marker_names(data)
+        self.csv_marker_names = get_csv_marker_names(data)
 
         # Load marker coordinates and reshape to [n,3] matrix where n is the
         # number of markers
@@ -121,7 +132,7 @@ class Hawk3Dtest:
         
         # Save the default shape as keypoints. 
         return keypoints
-    
+     
     def define_indices(self):
         self.right_marker_index = self.get_keypoint_indices(self.right_marker_names)
         self.left_marker_index  = self.get_keypoint_indices(self.left_marker_names)
@@ -184,7 +195,25 @@ class Hawk3Dtest:
             keypoints = self.mirror_keypoints(keypoints)
 
         return keypoints
-    
+
+    def mirror_keypoints(self,keypoints):
+        """
+        Mirrors keypoints across the y-axis.
+        """
+        mirrored = np.copy(keypoints)
+        mirrored[:, :, 0] *= -1
+
+        nFrames, nMarkers, nCoords = np.shape(keypoints)
+
+        # Create [n,8,3] array
+        new_keypoints = np.empty((nFrames, nMarkers * 2, nCoords),
+                                 dtype=keypoints.dtype)
+        
+        new_keypoints[:, 0::2, :] = mirrored
+        new_keypoints[:, 1::2, :] = keypoints
+
+        return new_keypoints
+
     def update_keypoints(self,user_keypoints):
         """ 
         Assumes the keypoints from the user are in the same order as the
@@ -207,36 +236,82 @@ class Hawk3Dtest:
         self.current_shape[:,self.marker_index,:] = user_keypoints      
 
         # Save the untransformed shape
-        self.untransformed_shape = self.current_shape.copy()   
+        self.untransformed_shape = self.current_shape.copy()
 
-    def transform_keypoints(self,
-                            horzDist=None,
-                            bodypitch=None,
-                            vertDist=None):
-        if horzDist is None and bodypitch is None and vertDist is None:
-            print("No transformation applied.")
-            return self.current_shape
-         
-        # Make sure current shape is not transformed
-        self.current_shape = self.untransformed_shape.copy()
+        # Apply transformations
+        self.apply_transformation()
 
-        if bodypitch is not None:
-            self.add_pitchRotation(bodypitch)
+    def transform_keypoints(self, bodypitch=0, horzDist=0, vertDist=0):
+        """
+        Transforms the keypoints by rotating them around the body pitch, 
+        and translating them by the horizontal and vertical distances.
+        """
+
+        # Reset the transformation matrix
+        self.reset_transformation()
+
+        # Apply any translations
+        self.update_translation(horzDist, vertDist)
+
+        # Apply any rotations
+        self.update_rotation(bodypitch)
+
+        # Apply the transformation
+        self.apply_transformation()
+
+    def update_rotation(self, degrees=0):
+        radians = np.deg2rad(degrees)
+        rotation_matrix = np.array([
+            [1,0,0,0],
+            [0, np.cos(radians), -np.sin(radians), 0],
+            [0, np.sin(radians),  np.cos(radians), 0],
+            [0,0,0,1]
+        ])
+        self.transformation_matrix = self.transformation_matrix @ rotation_matrix
+
+    def update_translation(self, horzDist=0, vertDist=0):
+
+        translation_matrix = np.array([
+            [1,0,0,0],
+            [0,1,0,horzDist],
+            [0,0,1,vertDist],
+            [0,0,0,1]
+        ])
+        self.transformation_matrix = self.transformation_matrix @ translation_matrix
+
+        # Also update the origin
+        self.origin[1] = horzDist
+        self.origin[2] = vertDist
+
+    def apply_transformation(self):
+
+        current_shape = np.copy(self.current_shape) # Should be [1,14,3]
+        current_shape = np.reshape(current_shape, (-1, 3)) # [1,14,3] -> [14,3]
         
-        if horzDist is not None:
-            self.add_horzDist(horzDist)
-    
-        if vertDist is not None:
-            self.add_vertDist(vertDist)
+        # Create an array of ones that matches the number of keypoints (14)
+        ones = np.ones((current_shape.shape[0], 1))  # Correctly size the array to [14, 1]
 
+        homogeneous_keypoints = np.hstack((current_shape, ones))
 
-    def restore_keypoints(self):
+        transformed_keypoints = np.dot(homogeneous_keypoints, self.transformation_matrix.T)
+
+        self.current_shape = np.reshape(transformed_keypoints[:, :3], (1, current_shape.shape[0], 3))      
+
+    def reset_transformation(self):
+        self.transformation_matrix = np.eye(4)
+        self.current_shape = self.untransformed_shape
+
+        # Also reset the origin
+        self.origin = np.array([0,0,0])
+
+    def restore_keypoints_to_average(self):
         """
         Restores the keypoints and origin to the default shape.
         """
-        # self.current_shape = self.default_shape.copy()
+        self.current_shape = self.default_shape.copy()
 
-        self.current_shape = self.untransformed_shape.copy()
+        # Also update the origin
+        self.origin = np.array([0,0,0])
 
     @property
     def markers(self):
@@ -278,85 +353,9 @@ class Hawk3Dtest:
         
         return self.default_shape[:,right_marker_index,:]
 
-    @property
-    def origin(self):
-        current_nose = self.current_shape[0,self.get_keypoint_indices(["hood"]),:]
-        
-        default_nose = self.default_shape[0,self.get_keypoint_indices(["hood"]),:]
-        
-        origin = current_nose - default_nose
 
-        return origin[0]
 
-    def get_csv_marker_names(self,data):
-        """
-        Get the marker names from the first row of the csv file, 
-        get every 3rd name and remove the '_x' from the names
-        """
-        csv_marker_names = data[0].reshape(-1, 3)
-        csv_marker_names = list(np.char.strip(csv_marker_names[:, 0], '_x'))
-
-        return csv_marker_names
-
-    def add_pitchRotation(self,bodypitch):
-        """
-        Rotates the keypoints about the x-axis by the given angle.
-        """
-        if bodypitch is None or bodypitch == 0 or np.isnan(bodypitch):
-            pass
-    
-        keypoints = self.current_shape.copy()
-        current_shape = keypoints[0]
-        rotmat = R.from_euler('x', bodypitch, degrees=True)
-        transformed_keypoints = rotmat.apply(current_shape)
-
-        transformed_keypoints = transformed_keypoints.reshape(1, -1, 3)
-
-        self.current_shape = transformed_keypoints.copy()
-   
-    def add_horzDist(self, horzDist):
-        if horzDist is None:
-            pass
-            # return keypoints
-
-        transformed_keypoints = self.current_shape.copy()
-        transformed_keypoints[:,:,1] += horzDist
-
-        # Alter the origin
-        self.origin[1] += horzDist
-
-        self.current_shape = transformed_keypoints
-    
-    def add_vertDist(self, vertDist):
-        if vertDist is None:
-            pass
-
-        transformed_keypoints = self.current_shape.copy()
-        transformed_keypoints[:,:,2] += vertDist
-
-        # Alter the origin
-        self.origin[2] += vertDist
-        self.current_shape = transformed_keypoints.copy()
-
-    
-    def mirror_keypoints(self,keypoints):
-        """
-        Mirrors keypoints across the y-axis.
-        """
-        mirrored = np.copy(keypoints)
-        mirrored[:, :, 0] *= -1
-
-        nFrames, nMarkers, nCoords = np.shape(keypoints)
-
-        # Create [n,8,3] array
-        new_keypoints = np.empty((nFrames, nMarkers * 2, nCoords),
-                                 dtype=keypoints.dtype)
-        
-        new_keypoints[:, 0::2, :] = mirrored
-        new_keypoints[:, 1::2, :] = keypoints
-
-        return new_keypoints
-
+     
 
 # ----- Plot Functions -----
  
@@ -495,7 +494,7 @@ def plot_settings(ax,origin):
         # --- Axis Limits
         increment = 0.28
 
-        ax.auto_scale_xyz(  [-increment, increment], 
+        ax.auto_scale_xyz(  [origin[0]-increment, origin[0]+increment], 
                             [origin[1]-increment, origin[1]+increment],
                             [origin[2]-increment, origin[2]+increment])
 
@@ -505,9 +504,10 @@ def plot_settings(ax,origin):
         ax.set_zlabel('z (m)', fontsize=12)
         ax.tick_params(axis='both', which='major', labelsize=10)
         ax.tick_params(axis='both', which='minor', labelsize=10)
-        ax.set_xticks(np.linspace(-increment, increment, 3))
-        ax.set_yticks(np.linspace(origin[1]-increment,origin[1]+increment, 3))
-        ax.set_zticks(np.linspace(origin[2]-increment, origin[2]+increment, 3))
+
+        # ax.set_xticks(np.linspace(-increment, increment, 3))
+        # ax.set_yticks(np.linspace(origin[1]-increment,origin[1]+increment, 3))
+        # ax.set_zticks(np.linspace(origin[2]-increment,origin[2]+increment, 3))
 
         return ax
 
@@ -582,18 +582,14 @@ def animate(Hawk3D_instance,
                                                       az=az)
         
         # Check if the horzDist_frames is given, if so check it is the correct length
-        if horzDist_frames is not None:
-            if len(horzDist_frames) != num_frames:
-                raise ValueError("horzDist_frames must be the same length as keypoints_frames.")
+        # If none given, return a zero array of the correct length.
+        horzDist_frames  = check_transformation_frames(num_frames, horzDist_frames)
+        vertDist_frames  = check_transformation_frames(num_frames, vertDist_frames)
+        bodypitch_frames = check_transformation_frames(num_frames, bodypitch_frames)
+
             
-        # Check if the bodypitch_frames is given, if so check it is the correct length
-        if bodypitch_frames is not None:
-            if len(bodypitch_frames) != num_frames:
-                raise ValueError("bodypitch_frames must be the same length as keypoints_frames.")
-            
-        # Plot settings
-        origin = Hawk3D_instance.origin
-        plot_settings(ax, origin)
+        # # Plot settings
+        plot_settings(ax, Hawk3D_instance.origin)
 
         
         def update_animated_plot(frame):
@@ -606,23 +602,16 @@ def animate(Hawk3D_instance,
             # Update the keypoints for the current frame
 
             # Make sure the keypoints are restored to the default shape to remove any transformations
-            Hawk3D_instance.restore_keypoints()
+            Hawk3D_instance.reset_transformation()
 
             # Update the keypoints for the current frame
             Hawk3D_instance.update_keypoints(keypoints_frames[frame])
 
-            # Transform the keypoints if necessary
-            if bodypitch_frames is not None:
-                Hawk3D_instance.transform_keypoints(bodypitch=bodypitch_frames[frame])
-
-            if horzDist_frames is not None:
-                Hawk3D_instance.transform_keypoints(horzDist=horzDist_frames[frame])
-                origin[1] = horzDist_frames[frame]
-
-            if vertDist_frames is not None:
-                Hawk3D_instance.transform_keypoints(vertDist=vertDist_frames[frame])
-                origin[2] = vertDist_frames[frame]
-
+            # Transform the keypoints
+            # If none provided, uses 0 to transform the keypoints
+            Hawk3D_instance.transform_keypoints(bodypitch = bodypitch_frames[frame],
+                                                horzDist  = horzDist_frames[frame],
+                                                vertDist  = vertDist_frames[frame])
             
             # Then plot the current frame
             plot(Hawk3D_instance, 
@@ -634,10 +623,7 @@ def animate(Hawk3D_instance,
             
             # ax.set_title(f"Frame {frame+1}/{num_frames}")
             ax.set_title(Hawk3D_instance.origin)
-            # Finally, restore the hawk to the default shape
-            Hawk3D_instance.restore_keypoints()
-
-            plot_settings(ax, origin)
+            plot_settings(ax, Hawk3D_instance.origin)
 
             return fig, ax
 
@@ -667,6 +653,22 @@ def format_keypoint_frames(Hawk3D_instance, keypoints_frames):
             keypoints_frames = Hawk3D_instance.mirror_keypoints(keypoints_frames)
 
         return keypoints_frames
+
+def check_transformation_frames(num_frames, transformation_frames):
+
+        """
+        Checks that the transformation frames are the same length as the keypoints frames.
+        If passed None, create an array of zeros for the transformation.
+        """
+
+        if transformation_frames is None:
+            transformation_frames = np.zeros(num_frames)
+        
+        if len(transformation_frames) != num_frames:
+            raise ValueError("Transformation frames must be the same length as keypoints_frames.")
+        
+        
+        return transformation_frames
 
 def get_camera_angles(num_frames, rotation_type, el=20, az=60):
         """
