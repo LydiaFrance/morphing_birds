@@ -3,14 +3,14 @@ morphing_birds: Run PCA on morphing bird wings and tail in flight.
 """
 from __future__ import annotations
 
-# from .Hawk3D import Hawk3D
+from .Hawk3D import Hawk3D, plot, interactive_plot, animate
 # from .HawkData import HawkData
 # from .HawkPCA import HawkPCA
 # from .Keypoints import KeypointManager
 # from .HawkPlotter import HawkPlotter
 # from .Animator import HawkAnimator
 # from .PCAFigures import PCAFigures
-from .trytofix import Hawk3Dtest, HawkDataTest, HawkPCATest, plot, interactive_plot, animate
+from .trytofix import HawkDataTest, HawkPCATest
 
 # from .Figures import plot_components
 
