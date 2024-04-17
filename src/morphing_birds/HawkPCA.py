@@ -217,6 +217,72 @@ def filter_by_perchDist(frameID, perchDist):
         """
         return self.markers_df.columns.tolist()
 
+
+# ------- PCA -------
+
+def run_PCA(markers):
+
+    pca_input = get_PCA_input(markers)
+    mu = get_mu(pca_input)
+
+    
+    pca = PCA()
+    pca_output = pca.fit(pca_input)
+
+    # Another word for eigenvectors is components.
+    principal_components = pca_output.components_
+    
+    # Another word for scores is projections.
+    scores = pca_output.transform(pca_input)
+
+    # Check the shape of the output
+    test_PCA_output(pca_input, mu, principal_components, scores)
+
+    return principal_components, scores, mu
+
+
+# ....... Helper functions .......
+
+def get_PCA_input_sizes(pca_input):
+    """
+    Get the sizes of the input data.
+    """
+    n_frames = pca_input.shape[0]
+    n_markers = pca_input.shape[1]/3
+    n_vars = pca_input.shape[1]
+
+    return n_frames, n_markers, n_vars
+
+def get_PCA_input(markers):
+    """
+    Reshape the data to be [n, nMarkers*3]
+    """
+    n_markers = markers.shape[1]
+    pca_input = markers.reshape(-1, n_markers*3)
+
+    return pca_input
+
+def get_mu(pca_input):
+    """
+    Get the mean of the input data.
+    """
+    mu = np.mean(pca_input, axis=0)
+
+    return mu
+
+def test_PCA_output(pca_input, mu, principal_components, scores):
+    """
+    Test the shape of the PCA output.
+    """
+    n_frames, n_markers, n_vars = get_PCA_input_sizes(pca_input)
+
+    assert n_vars == n_markers*3, "n_vars is not equal to n_markers*3."
+    assert mu.shape[0] == n_vars, "mu is not the right shape."
+    assert principal_components.shape[0] == n_vars, "principal_components is not the right shape."
+    assert principal_components.shape[1] == n_vars, "principal_components is not the right shape."
+    assert scores.shape[0] == n_frames, "scores first dim is not the right shape."
+    assert scores.shape[1] == n_vars, "scores second dim is not the right shape."
+
 class HawkPCATest:
 
     def __init__(self,
