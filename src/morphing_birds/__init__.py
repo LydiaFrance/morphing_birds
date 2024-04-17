@@ -7,8 +7,6 @@ from .Hawk3D import Hawk3D, plot, interactive_plot, animate
 # from .HawkData import HawkData
 # from .HawkPCA import HawkPCA
 # from .Keypoints import KeypointManager
-# from .HawkPlotter import HawkPlotter
-# from .Animator import HawkAnimator
 # from .PCAFigures import PCAFigures
 from .trytofix import HawkDataTest, HawkPCATest
 
