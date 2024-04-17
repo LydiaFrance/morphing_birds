@@ -5,9 +5,9 @@ from __future__ import annotations
 
 from .Hawk3D import Hawk3D, plot, interactive_plot, animate
 # from .HawkData import HawkData
-# from .HawkPCA import HawkPCA
+from .HawkPCA import HawkDataTest, HawkPCATest
 # from .PCAFigures import PCAFigures
-from .trytofix import HawkDataTest, HawkPCATest
+# from .trytofix import 
 
 # from .Figures import plot_components
 
