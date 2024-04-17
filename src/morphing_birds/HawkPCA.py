@@ -2,252 +2,212 @@ import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
 
+# ------- Loading data -------
 
+def process_data(csv_path):
+    markers, markers_df = load_marker_frames(csv_path)
+    frame_info, frame_info_df = load_frame_info(csv_path)
 
+    if check_data(markers, frame_info):
+        print("Data verified.")
+    else:
+        print("Data verification failed.")
 
-class HawkDataTest:
-    def __init__(self, csv_path):
-        self.load_marker_frames(csv_path)
-        
-        self.load_frame_info(csv_path)
+    return markers, frame_info, markers_df, frame_info_df
 
-        self.check_data()
+# ....... Helper functions .......
+def load_marker_frames(csv_path):
+    markers_csv = pd.read_csv(csv_path)
+    markers_csv.columns = markers_csv.columns.str.replace("_rot_xyz_1", "_x")
+    markers_csv.columns = markers_csv.columns.str.replace("_rot_xyz_2", "_y")
+    markers_csv.columns = markers_csv.columns.str.replace("_rot_xyz_3", "_z")
+
+    print("Loaded marker data and renamed columns.")
     
-    def load_marker_frames(self, csv_path):
-        """Load the unilateral markers dataset.
+    marker_cols = markers_csv.columns[markers_csv.columns.str.contains('_x|_y|_z')]
+    markers_csv = markers_csv[marker_cols]
+    n_markers = len(marker_cols) // 3
 
-        Returns
-        -------
-        data : pandas.DataFrame
-            The data frame containing the unilateral markers dataset.
-        """
-        # Load the data
-        markers_csv = pd.read_csv(csv_path)
-
-        # Rename the columns
-        markers_csv.columns = markers_csv.columns.str.replace("_rot_xyz_1", "_x")
-        markers_csv.columns = markers_csv.columns.str.replace("_rot_xyz_2", "_y")
-        markers_csv.columns = markers_csv.columns.str.replace("_rot_xyz_3", "_z")
-
-        # Get the index of the columns that contain the markers
-        marker_index = markers_csv.columns[markers_csv.columns.str.contains('_x|_y|_z')]
-        markers_csv = markers_csv[marker_index]
-
-        # Save the number of markers
-        # Should be 4 if these are unilateral data and 8 if bilateral
-        self.n_markers = len(markers_csv.columns) // 3
-
-        # Save the cleaned up dataframe
-        self.markers_df = markers_csv.copy()
-        
-        # Make a numpy array with the markers
-        markers = markers_csv.to_numpy()
-
-        # Reshape to 3D
-        markers = markers.reshape(-1,self.n_markers,3)
-        
-        # Save numpy array of markers
-        self.markers = markers
-
-        return markers
-
-    def load_frame_info(self,csv_path):
-        """
-        Load the frame info from the dataset.
-        """
-        
-        info_csv = pd.read_csv(csv_path).copy()
-
-        # Remove marker data (they are stored separately)
-        # Drop everything with "rot_xyz" in the name
-        info_csv = info_csv.drop(info_csv.columns[info_csv.columns.str.contains('rot_xyz')], axis=1)
-
-        # Makes horizontal distance NEGATIVE
-        info_csv['HorzDistance'] = -info_csv['HorzDistance']
-        
-        self.frameinfo = info_csv.copy()
-
-        self.time       = info_csv['time'].to_numpy()
-        self.horzDist   = info_csv['HorzDistance'].to_numpy()
-        self.vertDist   = info_csv['VertDistance'].to_numpy()
-        self.body_pitch = info_csv['body_pitch'].to_numpy()
-        self.frameID    = info_csv['frameID']
-        self.seqID      = info_csv['seqID']
-        self.birdID     = info_csv['BirdID'].to_numpy()
-        self.perchDist  = info_csv['PerchDistance'].to_numpy()
-        self.year       = info_csv['Year'].to_numpy()
-        self.obstacleBool = info_csv['Obstacle'].to_numpy()
-        self.IMUBool    = info_csv['IMU'].to_numpy()
-        self.naiveBool  = info_csv['Naive'].to_numpy()
-        
-        # If the data is unilateral, there will be a left column
-        if 'Left' in info_csv.columns:
-            self.leftBool   = info_csv['Left'].to_numpy()
-
-    def check_data(self):
-        """
-        Check that the data are the same length.
-        """
-
-        num_frames = self.markers.shape[0]
-
-        if self.horzDist.shape[0] != num_frames:
-            raise ValueError("horzDist must be the same length as keypoints_frames.")
-        
-        if len(self.frameID) != num_frames:
-            raise ValueError("frameID must be the same length as keypoints_frames.")
-        
-        if "Left" in self.frameinfo.columns:
-            if self.leftBool.shape[0] != num_frames:
-                raise ValueError("leftBool must be the same length as keypoints_frames.")
-        
-        if self.body_pitch.shape[0] != num_frames:
-            raise ValueError("body_pitch must be the same length as keypoints_frames.")
-        
-        if self.obstacleBool.shape[0] != num_frames:
-            raise ValueError("obstacleBool must be the same length as keypoints_frames.")
-        
-        if self.IMUBool.shape[0] != num_frames:
-            raise ValueError("IMUBool must be the same length as keypoints_frames.")
-        
-        if self.naiveBool.shape[0] != num_frames:
-            raise ValueError("naiveBool must be the same length as keypoints_frames.")
-        
-        if self.vertDist.shape[0] != num_frames:
-            raise ValueError("vertDist must be the same length as keypoints_frames.")
-
-    def filter_by(self,
-                  hawkname=None,
-                  birdID=None,
-                  perchDist=None, 
-                  obstacle=None, 
-                  year=None, 
-                  Left=None,
-                  IMU=None,
-                  naive=None):
-        """
-        Returns boolean array of indices to filter the data.
-        """
-
-        def filter_by_bool(variable, bool_value):
-
-            if bool_value is None:
-                # Simply return the full array bool mask if passed None
-                is_selected = np.ones(variable.shape, dtype=bool)
-                return is_selected
-            
-            is_selected = variable == bool_value
-            return is_selected
-
-        
-        # Initialise the filter
-        filter = np.ones(len(self.frameID), dtype=bool)
-
-        # Filter by hawk name
-        if hawkname is not None:
-            filter = np.logical_and(filter, self.filter_by_hawkname(hawkname))
-
-        # Filter by birdID
-        if birdID is not None:
-            filter = np.logical_and(filter, filter_by_bool(self.birdID, birdID))
-
-        # Filter by perchDist
-        if perchDist is not None:
-            # Check if int
-            if isinstance(perchDist, int):
-                # If the user has just given a number (5)
-                filter = np.logical_and(filter, filter_by_bool(self.perchDist, perchDist))
-            else:
-                # If the user has given a string (5m)
-                filter = np.logical_and(filter, self.filter_by_perchDist(perchDist))
-
-        # Filter by obstacleToggle
-        if obstacle is not None:
-            filter = np.logical_and(filter, filter_by_bool(self.obstacleBool, obstacle))
-
-        # Filter by IMUToggle
-        if IMU is not None:
-            filter = np.logical_and(filter, filter_by_bool(self.IMUBool, IMU))
-
-        # Filter by Left
-        # if Left is not None:
-        if self.n_markers == 4:
-            filter = np.logical_and(filter, filter_by_bool(self.leftBool, Left))
-
-        # Filter by year
-        # if year is not None:
-        filter = np.logical_and(filter, filter_by_bool(self.year, year))
-        
-        # Filter by naive
-        # if year is not None:
-        filter = np.logical_and(filter, filter_by_bool(self.naiveBool, naive))
-        
-
-        return filter
-
- 
-    def filter_by_hawkname(self, hawk: str):
-
-        def get_hawkID(hawk_name):
-
-            if hawk_name.isdigit():
-                # Transform the hawk_ID into a string with the correct format
-                hawk_ID = str(hawk_name).zfill(2) + "_"
-                
-            # The user may have provided the full name of the hawk, or just the first few letters
-            # And so returns the matching ID.
-
-            if "dr" in hawk_name.lower():
-                hawk_ID = "01_"  
-            if "rh" in hawk_name.lower():
-                hawk_ID = "02_"
-            if "ru" in hawk_name.lower():
-                hawk_ID = "03_"  
-            if "to" in hawk_name.lower():
-                hawk_ID = "04_"  
-            if "ch" in hawk_name.lower():
-                hawk_ID = "05_"
-            
-            return hawk_ID
-        
-        if hawk is None:
-            is_selected = np.ones(len(self.frameID), dtype=bool)
-            return is_selected
-        else:
-            hawk_ID = get_hawkID(hawk)
-
-        is_selected = self.frameID.str.startswith(hawk_ID)
-
-        return is_selected
+    markers = markers_csv.to_numpy().reshape(-1, n_markers, 3)
     
+    return markers, markers_csv
 
-    def filter_by_perchDist(self, perchDist):
+def load_frame_info(csv_path):
+    """Load and return frame info from a CSV file, cleaning as necessary."""
+    frame_info_csv = pd.read_csv(csv_path)
+    frame_info_csv.drop(columns=frame_info_csv.columns[frame_info_csv.columns.str.contains('rot_xyz')], inplace=True)
+    
+    frame_info_csv['HorzDistance'] *= -1  # Make horizontal distance negative
 
-        
-        # If perchDist is None, return the full array bool mask
-        if perchDist is None:
-            is_selected = np.ones(self.frameID, dtype=bool)
-            return is_selected
-        
+    frame_info = {
+        'time':         frame_info_csv.get('time').to_numpy(),
+        'horzDist':     frame_info_csv.get('HorzDistance').to_numpy(),
+        'vertDist':     frame_info_csv.get('VertDistance').to_numpy(),
+        'body_pitch':   frame_info_csv.get('body_pitch').to_numpy(),
+        'frameID':      frame_info_csv.get('frameID'),
+        'seqID':        frame_info_csv.get('seqID'),
+        'birdID':       frame_info_csv.get('BirdID').to_numpy(),
+        'perchDist':    frame_info_csv.get('PerchDistance').to_numpy(),
+        'year':         frame_info_csv.get('Year').to_numpy(),
+        'obstacleBool': frame_info_csv.get('Obstacle').to_numpy(),
+        'IMUBool':      frame_info_csv.get('IMU').to_numpy(),
+        'naiveBool':    frame_info_csv.get('Naive').to_numpy(),
+        'leftBool':     frame_info_csv.get('Left') if 'Left' in frame_info_csv.columns else None
+    }
 
-        # Get any number from the perchDist string. The user may have given 
-        # "12m" or "12 m" or "12"
-        if perchDist.isdigit():
-            perchDist = int(perchDist)
-        else:
-            perchDist = int(''.join(filter(str.isdigit, perchDist)))
+    print("Loaded frame info and cleaned columns.")
 
-        # Build back up the string to search for
-        # Make sure the integer is padded such that it is 2 digits in length
-        perchDist_str = "_" + str(perchDist).zfill(2) + "_"
-        
-        # Now looks for _05_ or _12_ etc in the frameID. Note, 05_09_ would be 
-        # charmander flying 9m so we need to make sure we don't select that by leading 
-        # and trailing _ . HawkID should always be found with "startswith". 
+    return frame_info, frame_info_csv
 
-        is_selected = self.frameID.str.contains(perchDist_str)
-        
-        return is_selected
+def check_data(markers, frame_info):
+    """
+    Check if all numpy array data elements in frame_info and markers have the same length.
+
+    Parameters:
+    - frame_info (dict): A dictionary containing various pieces of frame-related data, some of which are numpy arrays.
+    - markers (numpy.ndarray): A numpy array containing markers data.
+
+    Returns:
+    - bool: True if all arrays have the same length, False otherwise.
+    """
+    # Gather all numpy arrays including markers
+    all_data = list(frame_info.values()) + [markers]
+    
+    # Filter the list to include only numpy arrays and get their lengths
+    array_lengths = [len(data) for data in all_data if isinstance(data, np.ndarray)]
+    
+    # Check if all numpy array lengths are the same
+    if len(set(array_lengths)) == 1:
+        return True
+    else:
+        # If lengths differ, print the mismatch information
+        mismatch_info = {key: len(value) for key, value in frame_info.items() if isinstance(value, np.ndarray)}
+        mismatch_info['markers'] = len(markers)
+        print("Mismatch in data lengths found:", mismatch_info)
+        return False
+
+
+# ------- Filtering data -------
+
+def filter_by(frame_info, 
+              hawkname=None, 
+              birdID=None, 
+              perchDist=None, 
+              obstacle=None, 
+              year=None, 
+              Left=None, 
+              IMU=None, 
+              naive=None):
+    """ 
+    Apply multiple filters based on given criteria and return indices as a boolean array. 
+    """
+    
+    filter_mask = np.ones(len(frame_info['frameID']), dtype=bool)
+
+    if hawkname is not None:
+        filter_mask &= filter_by_hawkname(frame_info['frameID'], hawkname)
+
+    if birdID is not None:
+        filter_mask &= filter_by_bool(frame_info['birdID'], birdID)
+
+    if perchDist is not None:
+        filter_mask &= filter_by_perchDist(frame_info['frameID'], perchDist)
+
+    if obstacle is not None:
+        filter_mask &= filter_by_bool(frame_info['obstacleBool'], obstacle)
+
+    if IMU is not None:
+        filter_mask &= filter_by_bool(frame_info['IMUBool'], IMU)
+
+    if Left is not None:
+        # Check it is a unilateral dataset
+        if frame_info["leftBool"] is None:
+            raise ValueError("Left filter is only available for unilateral datasets.")
+        filter_mask &= filter_by_bool(frame_info['leftBool'], Left)
+
+    if year is not None:
+        filter_mask &= filter_by_bool(frame_info['year'], year)
+
+    if naive is not None:
+        filter_mask &= filter_by_bool(frame_info['naiveBool'], naive)
+
+    return filter_mask
+
+# ....... Helper functions .......
+def filter_by_bool(variable, bool_value):
+    """ Helper function to filter data based on a boolean value. """
+    if bool_value is None:
+        return np.ones(variable.shape, dtype=bool)
+    return variable == bool_value
+
+def get_hawkID(hawk_name):
+    """Determine the hawk ID from the provided name or numerical identifier."""
+    if hawk_name.isdigit():
+        # Transform the hawk_ID into a string with the correct format
+        return hawk_name.zfill(2) + "_"
+
+    # Mapping from hawk name initials to their IDs
+    hawk_map = {
+        "dr": "01_",
+        "rh": "02_",
+        "ru": "03_",
+        "to": "04_",
+        "ch": "05_"
+    }
+
+    # Return the matching ID based on the first two characters (lowercased)
+    for key, value in hawk_map.items():
+        if key in hawk_name.lower():
+            return value
+
+    # Return an empty string if no match is found (this should be handled carefully)
+    return ""
+
+def filter_by_hawkname(frameID, hawk):
+    """Filter frameID entries based on a hawk name or ID."""
+    if hawk is None:
+        # Return a boolean array of True values if no specific hawk is specified
+        return np.ones(len(frameID), dtype=bool)
+    
+    hawk_ID = get_hawkID(hawk)
+    # Return a boolean array where the frameID starts with the determined hawk_ID
+    return frameID.str.startswith(hawk_ID)
+
+def filter_by_perchDist(frameID, perchDist):
+    """
+    Filter frameID entries based on a specified perch distance.
+    
+    Parameters:
+    - frameID (pandas.Series): A Series containing frame identifiers.
+    - perchDist (str or int): A string or integer indicating the perch distance,
+      which may include non-digit characters (e.g., '12m', '12 m').
+    
+    Returns:
+    - np.array: A boolean array where True indicates the frameID that matches
+      the specified perch distance.
+    """
+    
+    # If perchDist is None, return the full array bool mask
+    if perchDist is None:
+        return np.ones(len(frameID), dtype=bool)
+
+    # Normalize perchDist to an integer
+    if isinstance(perchDist, str):
+        # Extract digits from the string and convert to integer
+        perchDist = int(''.join(filter(str.isdigit, perchDist)))
+    elif isinstance(perchDist, int):
+        perchDist = perchDist
+    else:
+        raise ValueError("perchDist must be either an integer or a string containing digits.")
+
+    # Format the perch distance as a string padded to 2 digits within underscores
+    perchDist_str = "_" + str(perchDist).zfill(2) + "_"
+    
+    # Search for this pattern in frameID using str.contains
+    is_selected = frameID.str.contains(perchDist_str)
+
+    return is_selected
+
 
 
     @property

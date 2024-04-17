@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from .Hawk3D import Hawk3D, plot, interactive_plot, animate
 # from .HawkData import HawkData
-from .HawkPCA import HawkDataTest, HawkPCATest
+from .HawkPCA import process_data, filter_by, HawkDataTest, HawkPCATest
 # from .PCAFigures import PCAFigures
 # from .trytofix import 
 
