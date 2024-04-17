@@ -6,7 +6,6 @@ from __future__ import annotations
 from .Hawk3D import Hawk3D, plot, interactive_plot, animate
 # from .HawkData import HawkData
 # from .HawkPCA import HawkPCA
-# from .Keypoints import KeypointManager
 # from .PCAFigures import PCAFigures
 from .trytofix import HawkDataTest, HawkPCATest
 
