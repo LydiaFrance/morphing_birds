@@ -6,34 +6,11 @@ import ipywidgets as widgets
 from IPython.display import display, clear_output
 from matplotlib.animation import FuncAnimation
 from sklearn.decomposition import PCA
-from scipy.spatial.transform import Rotation as R
+
 
 
 class Hawk3Dtest:
-
-    def __init__(self, csv_path):
-        keypoints = self.load_shape(csv_path)
-
-        # Check the keypoints are valid
-        keypoints = self.validate_keypoints(keypoints)
-
-        # Save the keypoints as the default shape.
-        self.default_shape = keypoints
-
-        # For now, the current shape is the default shape
-        self.current_shape = np.copy(self.default_shape)
-
-        # An untransformed shape
-        self.transformation_matrix = np.eye(4)
-        self.untransformed_shape = np.copy(self.current_shape)
-
-        # # Unless there are any tranformations, this is the origin for the markers. 
-        self.origin = np.array([0,0,0])
-
-        # Initialise the polygons for plotting
-        self.init_polygons()
-
-
+    # Class attributes
     right_marker_names = [
         "right_wingtip", 
         "right_primary", 
@@ -103,9 +80,56 @@ class Hawk3Dtest:
         ],
     }
 
-    def load_shape(self, csv_path):
+    def __init__(self, csv_path):
+        """
+        Initialise the Hawk3D class.
+        Loads default keypoint shape from external csv file. 
+        Initialises polygon shapes drawn from the keypoints. 
+        """
+        # Create default shape from loaded csv file. 
+        self.load_and_initialise_keypoints(csv_path)
 
-        def get_csv_marker_names(data):
+        self.init_polygons()
+
+    def load_and_initialise_keypoints(self, csv_path):
+        data = self.load_csv_data(csv_path)
+        self.csv_marker_names = self.get_csv_marker_names(data)
+        keypoints = self.get_csv_keypoints(data)
+
+        # Define the indices of the markers
+        self.define_indices()
+
+        # The default shape is loaded from the csv file
+        self.default_shape = self.validate_keypoints(keypoints)
+
+        # The user may update the keypoints. For now, the current shape
+        # is the default shape
+        self.current_shape = np.copy(self.default_shape)
+        
+        # For now, set up the transformation matrix as the identity matrix
+        # This will be updated when the user applies transformations.
+        self.transformation_matrix = np.eye(4)
+        self.origin = np.array([0,0,0])
+
+        # Store an untransformed copy useful for resetting.
+        self.untransformed_shape = np.copy(self.current_shape)
+
+    def load_csv_data(self, csv_path):
+
+        # load the data
+        with open(csv_path, 'r') as file:
+            return np.loadtxt(file, delimiter=',', skiprows=0, dtype='str')
+
+    def get_csv_keypoints(self,data):
+        # Load marker coordinates and reshape to [n,3] matrix where n is the
+        # number of markers
+        keypoints = data[1].astype(float)
+        keypoints = keypoints.reshape(-1, 3) # [n,3]
+
+        # Save the default shape as keypoints. 
+        return keypoints
+
+    def get_csv_marker_names(self,data):
             """
             Get the marker names from the first row of the csv file, 
             get every 3rd name and remove the '_x' from the names
@@ -115,24 +139,6 @@ class Hawk3Dtest:
 
             return csv_marker_names
 
-        # load the data
-        with open(csv_path, 'r') as file:
-            data = np.loadtxt(file, delimiter=',', skiprows=0, dtype='str')
-
-        # Get the marker names from the first row of the csv file
-        self.csv_marker_names = get_csv_marker_names(data)
-
-        # Load marker coordinates and reshape to [n,3] matrix where n is the
-        # number of markers
-        keypoints = data[1].astype(float)
-        keypoints = keypoints.reshape(-1, 3) # [n,3]
-
-        # Get the indices of the markers
-        self.define_indices()
-        
-        # Save the default shape as keypoints. 
-        return keypoints
-     
     def define_indices(self):
         self.right_marker_index = self.get_keypoint_indices(self.right_marker_names)
         self.left_marker_index  = self.get_keypoint_indices(self.left_marker_names)
@@ -167,24 +173,28 @@ class Hawk3Dtest:
         if section_name not in self.body_sections.keys():
             raise ValueError(f"Section name {section_name} not recognised.")
 
-        polygon_keypoint_indices = self.polygons[section_name]
-        coords = self.current_shape[:,polygon_keypoint_indices,:]
-        coords = coords[0] # Convert from [1, 4, 3] to [4, 3]
+        indices = self.polygons[section_name]
+        coords = self.current_shape[0, indices, :]
 
         return coords
 
     def validate_keypoints(self, keypoints):
         """
-        Validates the keypoints, reshapes and mirrors if necessary.
+        Validates the keypoints, ensuring they are three-dimensional and reshapes/mirrors them if necessary.
+
+        Parameters:
+        - keypoints (numpy.ndarray): The keypoints array to validate.
+
+        Returns:
+        - numpy.ndarray: The validated and potentially reshaped and mirrored keypoints.
         """
 
-        # # First check they are not empty
-        # if self.is_empty_keypoints(keypoints):
-        #     raise ValueError("No keypoints given.")
+        if keypoints.size == 0:
+            raise ValueError("No keypoints provided.")
         
         # Check they are in 3D
         if keypoints.shape[-1] != 3:
-            raise ValueError("Keypoints not in 3D.")
+            raise ValueError("Keypoints must be in 3D space.")
         
         # If [4,3] or [8,3] is given, reshape to [1,4,3] or [1,8,3]
         if len(np.shape(keypoints)) == 2:
@@ -198,7 +208,13 @@ class Hawk3Dtest:
 
     def mirror_keypoints(self,keypoints):
         """
-        Mirrors keypoints across the y-axis.
+        Mirrors keypoints across the y-axis to create a symmetrical set.
+
+        Parameters:
+        - keypoints (numpy.ndarray): Keypoints in shape [1, n, 3].
+
+        Returns:
+        - numpy.ndarray: Mirrored keypoints array in shape [1, 2*n, 3].
         """
         mirrored = np.copy(keypoints)
         mirrored[:, :, 0] *= -1
@@ -215,25 +231,34 @@ class Hawk3Dtest:
         return new_keypoints
 
     def update_keypoints(self,user_keypoints):
-        """ 
-        Assumes the keypoints from the user are in the same order as the
-        marker names.
-        State changes Hawk3D.keypoints. 
+        """
+        Updates the keypoints based on user-provided data. Resets to default if no keypoints are provided.
+        Validates and mirrors the keypoints if necessary, and applies transformations.
+
+        Parameters:
+        - user_keypoints (numpy.ndarray or None): Array of keypoints provided by the user. 
+        If None, resets to the default keypoints setup.
         """
 
         # Make sure the current_shape starts as default to reset it
         if user_keypoints is None:
-            self.current_shape = self.default_shape.copy()
+            # Reset to default shape if no user keypoints are provided
+            self.restore_keypoints_to_average()
+            return
 
         # First validate the keypoints. This will mirror them 
         # if only the right side is given. Also checks they are in 3D and 
         # will return [n,8,3]. 
 
-        user_keypoints = self.validate_keypoints(user_keypoints)
+        # Validate and possibly mirror the user keypoints -- returns [n,8,3] 
+        # If only the right side is given, the left side is created by mirroring.
+        # Also checks in 3D space. 
+        validated_keypoints = self.validate_keypoints(user_keypoints)
+
 
         # Update the keypoints with the user marker info. 
         # Only non fixed markers are updated.
-        self.current_shape[:,self.marker_index,:] = user_keypoints      
+        self.current_shape[:,self.marker_index,:] = validated_keypoints      
 
         # Save the untransformed shape
         self.untransformed_shape = self.current_shape.copy()
@@ -260,6 +285,9 @@ class Hawk3Dtest:
         self.apply_transformation()
 
     def update_rotation(self, degrees=0):
+        """
+        Updates the transformation matrix with a rotation around the x-axis.
+        """
         radians = np.deg2rad(degrees)
         rotation_matrix = np.array([
             [1,0,0,0],
@@ -269,8 +297,10 @@ class Hawk3Dtest:
         ])
         self.transformation_matrix = self.transformation_matrix @ rotation_matrix
 
-    def update_translation(self, horzDist=0, vertDist=0):
-
+    def update_translation(self,horzDist=0, vertDist=0):
+        """
+        Updates the transformation matrix with horizontal and vertical translations.
+        """
         translation_matrix = np.array([
             [1,0,0,0],
             [0,1,0,horzDist],
@@ -279,23 +309,18 @@ class Hawk3Dtest:
         ])
         self.transformation_matrix = self.transformation_matrix @ translation_matrix
 
-        # Also update the origin
-        self.origin[1] = horzDist
-        self.origin[2] = vertDist
+        # Update origin
+        self.origin += np.array([0, horzDist, vertDist])
 
     def apply_transformation(self):
 
-        current_shape = np.copy(self.current_shape) # Should be [1,14,3]
-        current_shape = np.reshape(current_shape, (-1, 3)) # [1,14,3] -> [14,3]
-        
-        # Create an array of ones that matches the number of keypoints (14)
-        ones = np.ones((current_shape.shape[0], 1))  # Correctly size the array to [14, 1]
-
-        homogeneous_keypoints = np.hstack((current_shape, ones))
-
+        """
+        Applies the current transformation matrix to the keypoints.
+        """
+        # Adding a homogeneous coordinate directly to the current_shape
+        homogeneous_keypoints = np.hstack((self.current_shape.reshape(-1, 3), np.ones((self.current_shape.shape[1], 1))))
         transformed_keypoints = np.dot(homogeneous_keypoints, self.transformation_matrix.T)
-
-        self.current_shape = np.reshape(transformed_keypoints[:, :3], (1, current_shape.shape[0], 3))      
+        self.current_shape = transformed_keypoints[:, :3].reshape(1, -1, 3)
 
     def reset_transformation(self):
         self.transformation_matrix = np.eye(4)
@@ -309,6 +334,7 @@ class Hawk3Dtest:
         Restores the keypoints and origin to the default shape.
         """
         self.current_shape = self.default_shape.copy()
+        self.untransformed_shape = self.current_shape.copy()
 
         # Also update the origin
         self.origin = np.array([0,0,0])
