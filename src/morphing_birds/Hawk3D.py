@@ -657,7 +657,10 @@ def animate(Hawk3D_instance,
             plot_settings(ax, Hawk3D_instance.origin)
 
             return fig, ax
-        
+        # Make sure the keypoints are restored to the default shape to remove any transformations
+        Hawk3D_instance.restore_keypoints_to_average()
+
+
         # Creating the animation
         animation = FuncAnimation(fig, update_animated_plot, 
                                   frames=num_frames, 

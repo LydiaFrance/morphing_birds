@@ -131,6 +131,7 @@ def filter_by(frame_info,
     if naive is not None:
         filter_mask &= filter_by_bool(frame_info['naiveBool'], naive)
 
+
     return filter_mask
 
 # ....... Helper functions .......
@@ -217,19 +218,14 @@ def filter_by_perchDist(frameID, perchDist):
         """
         return self.markers_df.columns.tolist()
 
-
 # ------- PCA -------
 
-def run_PCA(markers, average_shape):
+def run_PCA(markers):
 
+    # Reshape the data to be [n, nMarkers*3]
     pca_input = get_PCA_input(markers)
-    # mu = get_mu(pca_input)
 
-    mu = average_shape.reshape(-1,)
-
-    pca_input = pca_input - mu
-
-    
+    # Run PCA
     pca = PCA()
     pca_output = pca.fit(pca_input)
 
@@ -240,9 +236,9 @@ def run_PCA(markers, average_shape):
     scores = pca_output.transform(pca_input)
 
     # Check the shape of the output
-    test_PCA_output(pca_input, mu, principal_components, scores)
+    test_PCA_output(pca_input, principal_components, scores)
 
-    return principal_components, scores, mu
+    return principal_components, scores, pca
 
 
 # ....... Helper functions .......
@@ -251,7 +247,7 @@ def get_PCA_input_sizes(pca_input):
     """
     Get the sizes of the input data.
     """
-    print(pca_input.shape)
+    
     n_frames = pca_input.shape[0]
     n_markers = pca_input.shape[1]/3
     n_vars = pca_input.shape[1]
@@ -267,21 +263,14 @@ def get_PCA_input(markers):
 
     return pca_input
 
-def get_mu(data):
-    """
-    Get the mean of the input data.
-    """
-    # mu = np.mean(data, axis=0)
-    pass
 
-def test_PCA_output(pca_input, mu, principal_components, scores):
+def test_PCA_output(pca_input, principal_components, scores):
     """
     Test the shape of the PCA output.
     """
     n_frames, n_markers, n_vars = get_PCA_input_sizes(pca_input)
 
     assert n_vars == n_markers*3, "n_vars is not equal to n_markers*3."
-    assert mu.shape[0] == n_vars, "mu is not the right shape."
     assert principal_components.shape[0] == n_vars, "principal_components is not the right shape."
     assert principal_components.shape[1] == n_vars, "principal_components is not the right shape."
     assert scores.shape[0] == n_frames, "scores first dim is not the right shape."
@@ -341,19 +330,29 @@ def reconstruct(score_frames, principal_components, mu, components_list=None):
     if len(score_frames.shape) != 2:
         raise ValueError("score_frames must be 2d.")
 
+    assert score_frames.shape[1] == principal_components.shape[0], "score_frames must have the same number of columns as components_list."
+    assert len(components_list) <= principal_components.shape[1], "components_list must not exceed the number of principal components."
+    assert len(mu.shape)==3, "mu must be a 3d array: [1,nMarkers,3]."
+
+    n_markers = mu.shape[1]
+    n_dims = mu.shape[2]
+    n_frames = score_frames.shape[0]
+
+
     # Select principal components and scores based on the provided list
-    selected_PCs = principal_components[:, components_list]
+    # principal_components is [n_components, n_markers*3]
+    selected_PCs = principal_components[components_list,:]
+    # score_frames is [n_frames, n_components]
     selected_scores = score_frames[:, components_list]
 
+    reconstruction = np.dot(selected_scores,selected_PCs)  # [n, 12]
+    reconstruction = reconstruction.reshape(-1, n_markers, n_dims)  # Reshape to [n, 4, 3]
 
-    n_markers = mu.shape[0] // 3
-    # Reshape selected PCs and scores for broadcasting in reconstruction
-    selected_PCs = selected_PCs.reshape(1, -1, n_markers, 3)  # [1, nPCs, n_markers, 3]
-    selected_scores = selected_scores.reshape(score_frames.shape[0], -1, 1, 1)  # [nFrames, nPCs, 1, 1]
-    mu = mu.reshape(1, n_markers, 3)  # [1, n_markers, 3]
+    reconstructed_frames = mu + reconstruction  # Broadcasting [1, 4, 3] over [n, 4, 3]
 
-    # Reconstruct frames by combining mean shape with contributions from each principal component
-    reconstructed_frames = mu + np.sum(selected_scores * selected_PCs, axis=1)
+    assert reconstructed_frames.shape[0] == n_frames, "Reconstructed frames do not match the number of frames."
+    assert reconstructed_frames.shape[1] == n_markers, "Reconstructed frames do not match the number of markers."
+    assert reconstructed_frames.shape[2] == n_dims, "Reconstructed frames do not match the number of dimensions."
 
     return reconstructed_frames
 
