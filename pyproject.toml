@@ -7,7 +7,7 @@ version = "0.1.0"  # need to also update version in src/morphing_birds/__init__.
 authors = [
   { name = "Lydia France", email = "lfrance@turing.ac.uk" },
 ]
-description = "Run PCA on morphing bird wings and tail in flight."
+description = "Plot and animate morphing bird wings and tail shapes in flight."
 readme = "README.md"
 requires-python = ">=3.8"
 classifiers = [
@@ -28,15 +28,8 @@ classifiers = [
 ]
 
 dependencies = ["numpy",
-                "pandas",
                 "matplotlib",
-                "scipy",
-                "scikit-learn",
-                "seaborn",
-                "datashader",
-                "ipywidgets",
-                "ipympl",
-                "ipykernel"]
+                "ipywidgets"]
 
 [project.optional-dependencies]
 test = [
