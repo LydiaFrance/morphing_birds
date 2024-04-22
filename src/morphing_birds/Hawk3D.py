@@ -392,8 +392,7 @@ def interactive_plot(Hawk3D_instance, ax=None, el=20, az=60, colour=None, alpha=
         
         if ax is None:
             fig, ax = get_plot3d_view()
-            print("No axes given, creating new figure inside interactive_plot.")
-
+            
         plt.ion()  # Turn on interactive mode
         
         az_slider = widgets.IntSlider(min=-90, max=90, step=5, value=az, description='azimuth')
@@ -530,6 +529,26 @@ def plot_settings(ax,origin):
         ax.set_zlabel('z (m)', fontsize=12)
         ax.tick_params(axis='both', which='major', labelsize=10)
         ax.tick_params(axis='both', which='minor', labelsize=10)
+
+        # Get the max and min values of the current axis
+        x_min, x_max = ax.get_xlim()
+        y_min, y_max = ax.get_ylim()
+        z_min, z_max = ax.get_zlim()
+
+        # Round to the nearest 0.1
+        x_min, x_max = round(x_min, 1)+0.05, round(x_max, 1)-0.05
+        y_min, y_max = round(y_min, 1)+0.05, round(y_max, 1)-0.05
+        z_min, z_max = round(z_min, 1)+0.05, round(z_max, 1)-0.05
+
+        # Make sure there are just three ticks on each axis
+        ax.set_xticks(np.linspace(x_min, x_max, 3))
+        ax.set_yticks(np.linspace(y_min, y_max, 3))
+        ax.set_zticks(np.linspace(z_min, z_max, 3))
+
+        # Change limits
+        # ax.set_xlim(x_min, x_max)
+        # ax.set_ylim(y_min, y_max)
+        # ax.set_zlim(z_min, z_max)
 
         # ax.set_xticks(np.linspace(-increment, increment, 3))
         # ax.set_yticks(np.linspace(origin[1]-increment,origin[1]+increment, 3))
