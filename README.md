@@ -1,10 +1,13 @@
-# morphing_birds
+# Morphing Birds
+
+Initial version.
 
 [![Actions Status][actions-badge]][actions-link]
 [![PyPI version][pypi-version]][pypi-link]
 [![PyPI platforms][pypi-platforms]][pypi-link]
 
-Run PCA on morphing bird wings and tail in flight.
+Package to plot and animate a hawk shape. Loads a default shape and produces polygons. 
+
 
 ## Installation
 
@@ -19,8 +22,33 @@ cd morphing_birds
 python -m pip install .
 ```
 
+To add to pyproject.toml:
+```toml
+...
+dependencies = ["morphing_birds @ git+https://github.com/LydiaFrance/morphing_birds"]
+```
+
+Then to install the dependencies, navigate to your directory, create and/or activate your Python environment, then install. 
+
+```bash
+cd path/to/TargetProject
+python -m venv venv
+source venv/bin/activate
+pip install -e .
+```
+
 ## Usage
 
+[A basic tutorial of the features are here](https://github.com/LydiaFrance/morphing_birds/blob/main/examples/animate-morphing.ipynb). 
+
+The average shape can be translated, and the body pitch altered with `transform_keypoints`. 
+
+To change the shape of the hawk, use `update_keypoints`. It accepts `[4,3]` or `[8,3]` shape keypoints with the order:
+
+- `wingtip, `primary`, `secondary`, `tailtip` (if points are unilateral, will be mirrored on the left side)
+- `left wingtip`, `right wingtip`, `left primary`, ..., `right tailtip` (if points are bilateral)
+
+To animate, it accepts `[n,4,3]` or `[n,8,3]` where n is the number of frames -- same order as before. 
 
 ## Contributing
 
