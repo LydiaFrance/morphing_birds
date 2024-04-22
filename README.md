@@ -44,7 +44,7 @@ The average shape can be translated, and the body pitch altered with `transform_
 
 To change the shape of the hawk, use `update_keypoints`. It accepts `[4,3]` or `[8,3]` shape keypoints with the order:
 
-- `wingtip, `primary`, `secondary`, `tailtip` (if points are unilateral, will be mirrored on the left side)
+- `wingtip`, `primary`, `secondary`, `tailtip` (if points are unilateral, will be mirrored on the left side)
 - `left wingtip`, `right wingtip`, `left primary`, ..., `right tailtip` (if points are bilateral)
 
 To animate, it accepts `[n,4,3]` or `[n,8,3]` where n is the number of frames -- same order as before. 
