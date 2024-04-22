@@ -24,7 +24,6 @@ python -m pip install .
 
 To add to pyproject.toml:
 ```toml
-...
 dependencies = ["morphing_birds @ git+https://github.com/LydiaFrance/morphing_birds"]
 ```
 
