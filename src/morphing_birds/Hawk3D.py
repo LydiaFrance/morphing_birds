@@ -481,7 +481,7 @@ def plot(Hawk3D_instance, ax=None, el=20, az=60, colour=None, alpha=0.3, axisOn=
 
     return ax
 
-def plot_multiple(Hawk3D_instance, keypoints, num_plots, spacing = (0.4, 0.7), cut_off=0.2, el=20, az=0, rot=90, colour=None, alpha=0.3):
+def plot_multiple(Hawk3D_instance, keypoints, num_plots, spacing = (0.4, 0.7), cut_off=0.2, el=20, az=0, rot=90, colour=None, alpha=0.5):
     """
     Plots multiple frames of the hawk video.
     """
@@ -586,6 +586,8 @@ def get_polygon(Hawk3D_instance, section_name, colour, alpha=1):
 
     colour = colour_polygon(section_name, colour)
 
+    alpha = alpha_polygon(section_name, alpha)
+
     coords = Hawk3D_instance.get_polygon_coords(section_name)
 
     polygon = Poly3DCollection([coords],
@@ -594,6 +596,17 @@ def get_polygon(Hawk3D_instance, section_name, colour, alpha=1):
                                edgecolor='k',
                                linewidths=0.5)
     return polygon
+
+def alpha_polygon(section_name, alpha):
+
+        # The alpha of the polygon is determined by whether the landmarks are
+        # estimated or measured.
+        if "handwing" in section_name or "tail" in section_name:
+            alpha = alpha
+        else:
+            alpha = 0.3
+
+        return alpha
 
 def colour_polygon(section_name, colour):
     
