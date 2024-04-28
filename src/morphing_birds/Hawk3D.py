@@ -265,7 +265,7 @@ class Hawk3D:
         # Apply transformations
         self.apply_transformation()
 
-    def transform_keypoints(self, bodypitch=0, horzDist=0, vertDist=0):
+    def transform_keypoints(self, bodypitch=0, horzDist=0, vertDist=0, yaw=0):
         """
         Transforms the keypoints by rotating them around the body pitch, 
         and translating them by the horizontal and vertical distances.
@@ -280,21 +280,48 @@ class Hawk3D:
         # Apply any rotations
         self.update_rotation(bodypitch)
 
+        self.update_rotation(yaw, which='z')
+
         # Apply the transformation
         self.apply_transformation()
 
-    def update_rotation(self, degrees=0):
+    def update_rotation(self, degrees=0, which='x'):
         """
         Updates the transformation matrix with a rotation around the x-axis.
         """
         radians = np.deg2rad(degrees)
-        rotation_matrix = np.array([
-            [1,0,0,0],
-            [0, np.cos(radians), -np.sin(radians), 0],
-            [0, np.sin(radians),  np.cos(radians), 0],
-            [0,0,0,1]
-        ])
+        if which == "x":
+            rotation_matrix = np.array([
+                [1,0,0,0],
+                [0, np.cos(radians), -np.sin(radians), 0],
+                [0, np.sin(radians),  np.cos(radians), 0],
+                [0,0,0,1]
+            ])
+        elif which == "y":
+            rotation_matrix = np.array([
+                [np.cos(radians), 0, np.sin(radians), 0],
+                [0,1,0,0],
+                [-np.sin(radians), 0, np.cos(radians), 0],
+                [0,0,0,1]
+            ])
+        elif which == "z":
+            rotation_matrix = np.array([
+                [np.cos(radians), -np.sin(radians), 0, 0],
+                [np.sin(radians),  np.cos(radians), 0, 0],
+                [0,0,1,0],
+                [0,0,0,1]
+            ])
+
+        # rotation_matrix = np.array([
+        #     [1,0,0,0],
+        #     [0, np.cos(radians), -np.sin(radians), 0],
+        #     [0, np.sin(radians),  np.cos(radians), 0],
+        #     [0,0,0,1]
+        # ])
+
         self.transformation_matrix = self.transformation_matrix @ rotation_matrix
+
+
 
     def update_translation(self,horzDist=0, vertDist=0):
         """
@@ -454,7 +481,7 @@ def plot(Hawk3D_instance, ax=None, el=20, az=60, colour=None, alpha=0.3, axisOn=
 
     return ax
 
-def plot_multiple(Hawk3D_instance, keypoints, num_plots, spacing = 0.2, cut_off=0.2, el=20, az=60, colour=None, alpha=0.3):
+def plot_multiple(Hawk3D_instance, keypoints, num_plots, spacing = (0.4, 0.7), cut_off=0.2, el=20, az=0, rot=90, colour=None, alpha=0.3):
     """
     Plots multiple frames of the hawk video.
     """
@@ -463,38 +490,64 @@ def plot_multiple(Hawk3D_instance, keypoints, num_plots, spacing = 0.2, cut_off=
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(projection='3d')
 
-    # Calculate the index of the "middle" point, adjusted for even/odd numbers of plots
-    if num_plots % 2 == 0:
-        middle_index = num_plots / 2 - 0.5
-    else:
-        middle_index = (num_plots - 1) / 2
+
+    grid_cols = int(np.ceil(np.sqrt(num_plots)))  # Set number of columns to square root of num_plots, rounded up
+    grid_rows = int(np.ceil(num_plots / grid_cols))  # Calculate number of rows needed
+
+    # Calculate middle indices for centering
+    middle_row = (grid_rows - 1) / 2
+    middle_col = (grid_cols - 1) / 2
+
 
     for i in range(num_plots):
         Hawk3D_instance.restore_keypoints_to_average()
         Hawk3D_instance.update_keypoints(keypoints[i])
         Hawk3D_instance.reset_transformation()
 
-        # Calculate the vertical displacement so the middle plot is at the origin
-        vertDist = (i - middle_index) * spacing
+        # Calculate grid position
+        row = i // grid_cols
+        col = i % grid_cols
 
-        Hawk3D_instance.transform_keypoints(vertDist=vertDist)
+        # Get the colour from the Set3 colormap
+        colour = plt.cm.Set3(i)
+
+        # Calculate displacements centered around the origin
+        vertDist = (row - middle_row) * spacing[0]
+        horzDist = (col - middle_col) * spacing[1]
+
+
+        Hawk3D_instance.transform_keypoints(vertDist=vertDist, horzDist=horzDist, yaw=rot)
         plot(Hawk3D_instance, ax=ax, el=el, az=az, colour=colour, alpha=alpha, axisOn=False)
-        
+
 
     # Max vertical displacement
-    max_axis = (num_plots*0.5)*spacing
-    ax.set_zlim(-max_axis,max_axis)
-    ax.set_ylim(-0.5,0.5)
+    max_vert_axis = (num_plots*0.15)*spacing[0]
+    max_horz_axis = (num_plots*0.15)*spacing[1]
+    ax.set_ylim(-max_horz_axis,max_horz_axis)
+    ax.set_zlim(-max_vert_axis,max_vert_axis)
     ax.set_xlim(-0.5,0.5)
 
     # Set axis equal
     ax.set_aspect('equal', 'box')
     # Remove axes entirely and just leave polygons
-    ax.axis('off')
-    # ax.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False, labelbottom=False, labeltop=False, labelleft=False, labelright=False)
-    # ax.set_xticks([])
-    # ax.set_yticks([])
-    # ax.set_zticks([])
+    # ax.axis('off')
+    # Make grid area white
+            # --- Panel Shading
+    ax.xaxis.pane.fill = False
+    ax.yaxis.pane.fill = False
+    ax.xaxis.pane.set_edgecolor('w')
+    ax.yaxis.pane.set_edgecolor('w')
+    ax.zaxis.pane.set_edgecolor('k')
+
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    ax.set_zticklabels([])
+
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_zticks([])
+
+    ax.grid(False)
 
     cropped_img = save_plot_as_image(fig, cut_off)
 
