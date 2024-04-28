@@ -29,7 +29,9 @@ classifiers = [
 
 dependencies = ["numpy",
                 "matplotlib",
-                "ipywidgets"]
+                "ipywidgets", 
+                "ipynb", 
+                'notebook==6.1.5']
 
 [project.optional-dependencies]
 test = [

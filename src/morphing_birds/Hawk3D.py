@@ -4,7 +4,8 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import ipywidgets as widgets
 from IPython.display import display, clear_output
 from matplotlib.animation import FuncAnimation
-
+from PIL import Image
+import io
 
 
 class Hawk3D:
@@ -431,7 +432,7 @@ def interactive_plot(Hawk3D_instance, ax=None, el=20, az=60, colour=None, alpha=
         # Initial plot
         update_plot(None)
 
-def plot(Hawk3D_instance, ax=None, el=20, az=60, colour=None, alpha=0.3):
+def plot(Hawk3D_instance, ax=None, el=20, az=60, colour=None, alpha=0.3, axisOn=True):
 
     if ax is None:
         fig, ax = get_plot3d_view()
@@ -447,10 +448,58 @@ def plot(Hawk3D_instance, ax=None, el=20, az=60, colour=None, alpha=0.3):
     ax.view_init(elev=el, azim=az)
 
     # Set the plot settings
-    origin = Hawk3D_instance.origin
-    ax = plot_settings(ax,origin)
+    if axisOn:
+        origin = Hawk3D_instance.origin
+        ax = plot_settings(ax,origin)
 
     return ax
+
+def plot_multiple(Hawk3D_instance, keypoints, num_plots, spacing = 0.2, cut_off=0.2, el=20, az=60, colour=None, alpha=0.3):
+    """
+    Plots multiple frames of the hawk video.
+    """
+
+    # Create the figure and axes
+    fig = plt.figure(figsize=(10, 10))
+    ax = fig.add_subplot(projection='3d')
+
+    # Calculate the index of the "middle" point, adjusted for even/odd numbers of plots
+    if num_plots % 2 == 0:
+        middle_index = num_plots / 2 - 0.5
+    else:
+        middle_index = (num_plots - 1) / 2
+
+    for i in range(num_plots):
+        Hawk3D_instance.restore_keypoints_to_average()
+        Hawk3D_instance.update_keypoints(keypoints[i])
+        Hawk3D_instance.reset_transformation()
+
+        # Calculate the vertical displacement so the middle plot is at the origin
+        vertDist = (i - middle_index) * spacing
+
+        Hawk3D_instance.transform_keypoints(vertDist=vertDist)
+        plot(Hawk3D_instance, ax=ax, el=el, az=az, colour=colour, alpha=alpha, axisOn=False)
+        
+
+    # Max vertical displacement
+    max_axis = (num_plots*0.5)*spacing
+    ax.set_zlim(-max_axis,max_axis)
+    ax.set_ylim(-0.5,0.5)
+    ax.set_xlim(-0.5,0.5)
+
+    # Set axis equal
+    ax.set_aspect('equal', 'box')
+    # Remove axes entirely and just leave polygons
+    ax.axis('off')
+    # ax.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False, labelbottom=False, labeltop=False, labelleft=False, labelright=False)
+    # ax.set_xticks([])
+    # ax.set_yticks([])
+    # ax.set_zticks([])
+
+    cropped_img = save_plot_as_image(fig, cut_off)
+
+    return cropped_img
+
 
 # ....... Helper Plot Functions ........
 
@@ -589,7 +638,30 @@ def get_plot3d_view(fig=None, rows=1, cols=1, index=1):
         ax.set_zlabel('Y')
         return fig, ax
 
+def save_plot_as_image(fig, cut_off=0.2):
+     
+    # Save the figure to a BytesIO object
+    buf = io.BytesIO()
+    fig.savefig(buf, format='png', dpi=500, bbox_inches='tight')
+    buf.seek(0)  # Rewind the buffer
 
+    # Load the image from the buffer using PIL
+    img = Image.open(buf)
+
+
+    # Crop the image: Define the left, top, right, and bottom pixel coordinates
+    width, height = img.size
+    left = width * cut_off
+    right = width * (1-cut_off)
+    top = 0
+    bottom = height
+    cropped_img = img.crop((left, top, right, bottom))
+
+    # Close the buffer and the plot
+    buf.close()
+    plt.close(fig)
+
+    return cropped_img
 
 # ----- Animation Functions -----
 
