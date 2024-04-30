@@ -774,7 +774,7 @@ def animate(Hawk3D_instance,
         bodypitch_frames = check_transformation_frames(num_frames, bodypitch_frames)
 
         # # Plot settings
-        plot_settings(ax, Hawk3D_instance.origin)
+        ax = plot_settings(ax, Hawk3D_instance.origin)
 
         
         
@@ -808,7 +808,7 @@ def animate(Hawk3D_instance,
                     alpha=alpha, 
                     colour=colour)
             
-            ax.set_title(f"Frame {frame+1}/{num_frames}")
+            # ax.set_title(f"Frame {frame+1}/{num_frames}")
             # ax.set_title(Hawk3D_instance.origin)
             plot_settings(ax, Hawk3D_instance.origin)
 
