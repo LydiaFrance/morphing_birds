@@ -481,7 +481,7 @@ def plot(Hawk3D_instance, ax=None, el=20, az=60, colour=None, alpha=0.3, axisOn=
 
     return ax
 
-def plot_multiple(Hawk3D_instance, keypoints, num_plots, spacing = (0.4, 0.7), cut_off=0.2, el=20, az=0, rot=90, colour=None, alpha=0.5):
+def plot_multiple(Hawk3D_instance, keypoints, num_plots, spacing = (0.4, 0.7), cut_off=0.2, el=20, az=0, rot=90, colour_list=None, alpha=0.5):
     """
     Plots multiple frames of the hawk video.
     """
@@ -505,11 +505,14 @@ def plot_multiple(Hawk3D_instance, keypoints, num_plots, spacing = (0.4, 0.7), c
         Hawk3D_instance.reset_transformation()
 
         # Calculate grid position
-        row = i // grid_cols
+        row = grid_rows - 1 - (i // grid_cols)  # Inverts the order
         col = i % grid_cols
 
         # Get the colour from the Set3 colormap
-        colour = plt.cm.Set3(i)
+        if colour_list is None:
+            colour = plt.cm.Set3(i)
+        else:
+            colour = colour_list[i]
 
         # Calculate displacements centered around the origin
         vertDist = (row - middle_row) * spacing[0]
