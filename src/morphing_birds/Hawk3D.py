@@ -630,9 +630,23 @@ def plot_settings(ax,origin):
         # --- Panel Shading
         ax.xaxis.pane.fill = False
         ax.yaxis.pane.fill = False
+        ax.zaxis.pane.fill = True
         ax.xaxis.pane.set_edgecolor('w')
         ax.yaxis.pane.set_edgecolor('w')
         ax.zaxis.pane.set_edgecolor('w')
+
+        # Put a line in the back corner of the plot
+        corner = 0.32
+        # ax.plot([-corner,-corner], [-corner,-corner], [-corner,corner], color='grey', linestyle=':', linewidth=0.5, zorder = -10)
+
+        # Grid colour
+        ax.xaxis._axinfo['grid'].update(color = 'grey', linestyle = ':', linewidth = 0.5)
+        ax.yaxis._axinfo['grid'].update(color = 'grey', linestyle = ':',linewidth = 0.5)
+        ax.zaxis._axinfo['grid'].update(color = 'grey', linestyle = ':',linewidth = 0.5)
+
+        ax.set_xlim(-0.3, 0.3)
+        ax.set_ylim(-0.3, 0.3)
+        ax.set_zlim(-0.3, 0.3)
 
         # --- Axis Limits
         increment = 0.28
@@ -648,30 +662,12 @@ def plot_settings(ax,origin):
         ax.tick_params(axis='both', which='major', labelsize=10)
         ax.tick_params(axis='both', which='minor', labelsize=10)
 
-        # Get the max and min values of the current axis
-        x_min, x_max = ax.get_xlim()
-        y_min, y_max = ax.get_ylim()
-        z_min, z_max = ax.get_zlim()
+        ax.set_xticks(np.linspace(-0.2, 0.2, 3))
+        ax.set_yticks(np.linspace(-0.2, 0.2, 3))
+        ax.set_zticks(np.linspace(-0.2, 0.2, 3))
 
-        # Round to the nearest 0.1
-        x_min, x_max = round(x_min, 1)+0.05, round(x_max, 1)-0.05
-        y_min, y_max = round(y_min, 1)+0.05, round(y_max, 1)-0.05
-        z_min, z_max = round(z_min, 1)+0.05, round(z_max, 1)-0.05
-
-        # Make sure there are just three ticks on each axis
-        ax.set_xticks(np.linspace(x_min, x_max, 3))
-        ax.set_yticks(np.linspace(y_min, y_max, 3))
-        ax.set_zticks(np.linspace(z_min, z_max, 3))
-
-        # Change limits
-        # ax.set_xlim(x_min, x_max)
-        # ax.set_ylim(y_min, y_max)
-        # ax.set_zlim(z_min, z_max)
-
-        # ax.set_xticks(np.linspace(-increment, increment, 3))
-        # ax.set_yticks(np.linspace(origin[1]-increment,origin[1]+increment, 3))
-        # ax.set_zticks(np.linspace(origin[2]-increment,origin[2]+increment, 3))
-
+        # --- Axis Equal
+        ax.set_aspect('equal', 'box')
         return ax
 
 def get_plot3d_view(fig=None, rows=1, cols=1, index=1):
