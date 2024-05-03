@@ -892,7 +892,7 @@ def animate_compare(Hawk3D_instance,
             for ii, keypoints_frames in enumerate(formatted_keypoints_frames_list):
                 
                 # Get a colour from matplotlib Set 2 using ii
-                colour = plt.cm.Set2(ii)
+                colour = plt.cm.Set1(ii)
 
                 # Make sure the keypoints are restored to the default shape to remove any transformations
                 Hawk3D_instance.reset_transformation()
@@ -932,108 +932,6 @@ def animate_compare(Hawk3D_instance,
         return animation
 
 
-        # """
-        # Create an animated 3D plot of a hawk video.
-        # """
-        
-        # # Check dimensions and mirror the keypoints if only the right is given.
-        # keypoints_frames = format_keypoint_frames(Hawk3D_instance,keypoints_frames)
-        # compare_keypoints_frames = format_keypoint_frames(Hawk3D_instance,compare_keypoints_frames)
-
-        # if keypoints_frames.shape[0] == 0:
-        #     raise ValueError("No frames to animate. Check the keypoints_frames input.")
-
-        # # Find the number of frames 
-        # num_frames = keypoints_frames.shape[0]
-
-        # # Initialize figure and axes
-        # if ax is None or fig is None:
-        #     fig, ax = get_plot3d_view(fig)
-        # print("Figure and axes initialized.")
-
-
-        # # Prepare camera angles
-        # el_frames, az_frames = get_camera_angles(num_frames=num_frames, 
-        #                                               rotation_type=rotation_type, 
-        #                                               el=el, 
-        #                                               az=az)
-        
-        # # Check if the horzDist_frames is given, if so check it is the correct length
-        # # If none given, return a zero array of the correct length.
-        # horzDist_frames  = check_transformation_frames(num_frames, horzDist_frames)
-        # vertDist_frames  = check_transformation_frames(num_frames, vertDist_frames)
-        # bodypitch_frames = check_transformation_frames(num_frames, bodypitch_frames)
-
-        # # # Plot settings
-        # ax = plot_settings(ax, Hawk3D_instance.origin)
-
-        
-        
-        # def update_animated_plot(frame):
-        #     """
-        #     Function to update the animated plot.
-        #     """
-            
-        #     ax.clear()
-
-        #     # Update the keypoints for the current frame
-
-        #     # Make sure the keypoints are restored to the default shape to remove any transformations
-        #     Hawk3D_instance.reset_transformation()
-
-        #     # Update the keypoints for the current frame
-        #     Hawk3D_instance.update_keypoints(keypoints_frames[frame])
-
-            
-        #     # Transform the keypoints
-        #     # If none provided, uses 0 to transform the keypoints
-        #     Hawk3D_instance.transform_keypoints(bodypitch = bodypitch_frames[frame],
-        #                                         horzDist  = horzDist_frames[frame],
-        #                                         vertDist  = vertDist_frames[frame])
-            
-        #     # Then plot the current frame
-        #     plot(Hawk3D_instance, 
-        #             ax=ax, 
-        #             el=el_frames[frame], 
-        #             az=az_frames[frame], 
-        #             alpha=alpha, 
-        #             colour="firebrick")
-            
-        #     Hawk3D_instance.reset_transformation()
-
-        #     # Update the keypoints for the current frame
-        #     Hawk3D_instance.update_keypoints(compare_keypoints_frames[frame])
-
-        #     Hawk3D_instance.transform_keypoints(bodypitch = bodypitch_frames[frame],
-        #                                         horzDist  = horzDist_frames[frame],
-        #                                         vertDist  = vertDist_frames[frame])
-            
-        #     # Then plot the current frame
-        #     plot(Hawk3D_instance, 
-        #             ax=ax, 
-        #             el=el_frames[frame], 
-        #             az=az_frames[frame], 
-        #             alpha=alpha, 
-        #             colour="skyblue")
-            
-            
-            
-        #     # ax.set_title(f"Frame {frame+1}/{num_frames}")
-        #     # ax.set_title(Hawk3D_instance.origin)
-        #     plot_settings(ax, Hawk3D_instance.origin)
-
-        #     return fig, ax
-        # # Make sure the keypoints are restored to the default shape to remove any transformations
-        # Hawk3D_instance.restore_keypoints_to_average()
-
-
-        # # Creating the animation
-        # animation = FuncAnimation(fig, update_animated_plot, 
-        #                           frames=num_frames, 
-        #                           interval=20, repeat=True)
-        
-        # return animation
-    
 
 # ....... Helper Animation Functions ........
 
