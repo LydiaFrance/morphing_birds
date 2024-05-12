@@ -7,6 +7,7 @@ from dash import dcc, html
 from dash.dependencies import Input, Output, State
 from timeit import default_timer as timer
 from dash import callback_context
+from dash.exceptions import PreventUpdate
 
 from morphing_birds import Hawk3D
 
@@ -175,6 +176,8 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
 
     # Set up the layout for the Dash application
     app.layout = html.Div([
+        dcc.Store(id='lock-store', data={'locked': False}),  # Adding the dcc.Store component
+
         html.Div([
             dcc.Graph(id='2d-subplots', figure=fig_2d)
         ], style={
@@ -198,15 +201,33 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
 })
 
 
+    # Callback to toggle the lock state
+    @app.callback(
+        Output('lock-store', 'data'),
+        [Input('2d-subplots', 'clickData')],
+        [State('lock-store', 'data')]
+    )
+    def toggle_lock(clickData, lock_data):
+        if clickData:
+            # Toggle the lock state
+            lock_data['locked'] = not lock_data['locked']
+        return lock_data
+
+
     # Callback to update plots based on hover interactions and manage 3D plot camera settings
     @app.callback(
-    [Output('2d-subplots', 'figure'), Output('3d-scatter-plot', 'figure')],
-    [Input('2d-subplots', 'hoverData'), Input('3d-scatter-plot', 'relayoutData')],
-    [State('2d-subplots', 'figure'), State('3d-scatter-plot', 'figure')]
-    )
+        [Output('2d-subplots', 'figure'), Output('3d-scatter-plot', 'figure')],
+        [Input('2d-subplots', 'hoverData'), Input('3d-scatter-plot', 'relayoutData')],
+        [State('2d-subplots', 'figure'), State('3d-scatter-plot', 'figure'), State('lock-store', 'data')]
+        )
 
 
-    def update_plots(hoverData, relayoutData, current_2d_fig, current_3d_fig):
+    def update_plots(hoverData, relayoutData, current_2d_fig, current_3d_fig, lock_data):
+
+        # Check if the lock state is active
+        if lock_data['locked']:
+            raise PreventUpdate
+
         # Determine if the update was triggered by a hover event
         ctx = dash.callback_context
 
