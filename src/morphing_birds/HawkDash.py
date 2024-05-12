@@ -38,7 +38,7 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
 
     # Function to create a 2D subplot figure with 8x8 scatter plots
     def create_2d_subplots(mean_scores, binned_horzDist):
-        nScores = 8
+        nScores = 5
 
         # The specific colours for each score
         colour_list = ['#B5E675', '#6ED8A9', '#51B3D4', 
@@ -46,9 +46,6 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
                        '#5A488B', '#888888', '#888888', 
                        '#888888', '#888888', '#888888']
         
-        # Assume  new_keypoints and time are defined properly
-        time = np.ones(100)  # Example time data
-
         # Define an 8x9 grid to accommodate the new column on the left for time
         specs = [
             [{'type': 'scatter'} for _ in range(nScores+1)]  # Initialize all cells as scatter plot cells
@@ -72,7 +69,10 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
                     mode='markers',
                     marker=dict(
                         size=3,
-                        color=colour_list[ii] ),
+                        color=colour_list[ii], 
+                        line=dict(
+                        width=0  # No border around the markers
+                    )),
                     showlegend=False,
                     hoverinfo='none'
                 ),
@@ -89,7 +89,10 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
                     mode='markers',
                     marker=dict(
                         size=3,
-                        color=colour_list[ii] ),
+                        color=colour_list[ii], 
+                        line=dict(
+                        width=0  # No border around the markers
+                    )),
                     showlegend=False,
                     hoverinfo='none'
                 ),
@@ -107,7 +110,10 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
                         mode='markers',
                         marker=dict(
                             size=3,
-                            color=colour_list[ii] ),
+                            color=colour_list[ii], 
+                            line=dict(
+                            width=0  # No border around the markers
+                        )),
                         showlegend=False, 
                         hoverinfo='none'
                     ),
@@ -119,6 +125,21 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
         fig.update_xaxes(visible=False)
         fig.update_yaxes(visible=False)
         fig.update_layout(height=800, width=900, hovermode='closest')
+
+        fig.update_layout(
+        plot_bgcolor='white',  # Background color within the plot area
+        paper_bgcolor='white',  # Background color around the plot area
+        xaxis=dict(
+            showgrid=False,  # No gridlines
+            zeroline=True  # No zero line for the X-axis
+        ),
+        yaxis=dict(
+            showgrid=False,  # No gridlines
+            zeroline=True  # No zero line for the Y-axis
+        )
+    )
+
+
         return fig
 
     # Function to create a 3D scatter plot figure
