@@ -38,6 +38,7 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
 
     # Function to create a 2D subplot figure with 8x8 scatter plots
     def create_2d_subplots(mean_scores, binned_horzDist):
+        nScores = 8
 
         # The specific colours for each score
         colour_list = ['#B5E675', '#6ED8A9', '#51B3D4', 
@@ -50,19 +51,20 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
 
         # Define an 8x9 grid to accommodate the new column on the left for time
         specs = [
-            [{'type': 'scatter'} for _ in range(9)]  # Initialize all cells as scatter plot cells
-            for _ in range(8)
+            [{'type': 'scatter'} for _ in range(nScores+1)]  # Initialize all cells as scatter plot cells
+            for _ in range(nScores)
         ]
+
 
         # Create the subplots with the specified layout
         fig = make_subplots(
-            rows=8,
-            cols=9,  # Include the new column on the left
+            rows=nScores,
+            cols=nScores+1,  # Include the new column on the left
             specs=specs
             )
 
         # Plotting variable against time in the first column
-        for ii in range(8):
+        for ii in range(nScores):
             fig.add_trace(
                 go.Scattergl(
                     x= binned_horzDist,
@@ -79,7 +81,7 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
             )
 
         # Plotting each variable against itself on the diagonal starting from column 3 (second position)
-        for ii in range(8):
+        for ii in range(nScores):
             fig.add_trace(
                 go.Scattergl(
                     x= mean_scores[:, ii],
@@ -96,7 +98,7 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
             )
 
         # Filling the lower triangle for variable vs variable plots, adjust as per new column arrangement
-        for ii in range(8):
+        for ii in range(nScores):
             for jj in range(ii):
                 fig.add_trace(
                     go.Scattergl(
@@ -198,11 +200,12 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
         ctx.record_timing('update_camera_settings', timer() - start_camera, 'Time to update camera settings')
 
         # Update the 2D subplot marker sizes based on hover
+        nPoints = new_keypoints.shape[0]
         if input_id == '2d-subplots' and hoverData:
             start_2d = timer()
             updated_2d_fig = go.Figure(current_2d_fig)
             for ii in range(len(updated_2d_fig.data)):
-                sizes = [8 if idx == point_index else 3 for idx in range(100)]
+                sizes = [8 if idx == point_index else 3 for idx in range(nPoints)]
                 updated_2d_fig.data[ii].marker.size = sizes
             ctx.record_timing('update_2d_plots', timer() - start_2d, 'Time to update 2D plots')
 
