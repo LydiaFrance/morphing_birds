@@ -413,7 +413,11 @@ class Hawk3D:
 
 # ----- Plot Functions -----
  
-def interactive_plot(Hawk3D_instance, ax=None, el=20, az=60, colour=None, alpha=0.3):
+def interactive_plot(Hawk3D_instance, keypoints = None, fig = None, ax=None, el=20, az=60, colour=None, alpha=0.3):
+
+        if keypoints is not None:
+            Hawk3D_instance.update_keypoints(keypoints)
+            Hawk3D_instance.reset_transformation()
 
 
         plt.ioff()  # Turn off interactive mode
