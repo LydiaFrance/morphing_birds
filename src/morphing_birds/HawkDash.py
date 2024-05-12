@@ -49,16 +49,34 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
         # Define an 8x9 grid to accommodate the new column on the left for time
         specs = [
             [{'type': 'scatter'} for _ in range(nScores+1)]  # Initialize all cells as scatter plot cells
-            for _ in range(nScores)
+            for _ in range(nScores+1)
         ]
 
 
         # Create the subplots with the specified layout
         fig = make_subplots(
-            rows=nScores,
+            rows=nScores+1,
             cols=nScores+1,  # Include the new column on the left
             specs=specs
             )
+        
+        # Plot time as a straight line in the first column top row
+        fig.add_trace(
+            go.Scattergl(
+                x= binned_horzDist,
+                y= np.zeros_like(binned_horzDist),
+                mode='markers',
+                marker=dict(
+                    size=3,
+                    color='black', 
+                    line=dict(
+                    width=0  # No border around the markers
+                )),
+                showlegend=False,
+                hoverinfo='none'
+            ),
+            row = 1, 
+            col = 1)  # First column for time plots
 
         # Plotting variable against time in the first column
         for ii in range(nScores):
@@ -76,7 +94,7 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
                     showlegend=False,
                     hoverinfo='none'
                 ),
-                row = ii + 1,
+                row = ii + 2,
                 col = 1  # First column for time plots
             )
 
@@ -96,7 +114,7 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
                     showlegend=False,
                     hoverinfo='none'
                 ),
-                row = ii + 1,
+                row = ii + 2,
                 col = ii + 2  # Shift the self-comparison plot to the right
             )
 
@@ -117,7 +135,7 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
                         showlegend=False, 
                         hoverinfo='none'
                     ),
-                    row = ii + 1,
+                    row = ii + 2,
                     col = jj + 2  # Adjust for the new first column
                 )
 
@@ -344,7 +362,7 @@ def plot_settings_plotly(fig, origin):
      
 
     # Axis Ranges and Grid Customization
-    axis_range = [-0.32, 0.32]
+    axis_range = [-0.35, 0.35]
     tickvals = np.linspace(-0.2, 0.2, 3)
     
     fig.update_layout(
@@ -384,7 +402,7 @@ def plot_settings_plotly(fig, origin):
     )
 
     # Updating axis limits based on custom 'origin' and 'increment'
-    increment = 0.32
+    increment = 0.35
 
     fig.update_layout(scene_aspectmode='cube')
     fig.update_layout(scene=dict(
