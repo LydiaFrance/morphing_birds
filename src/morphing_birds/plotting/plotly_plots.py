@@ -1,19 +1,46 @@
-
 import numpy as np
 import plotly.graph_objs as go
 
 from .plotly_helpers import calculate_axis_limits
 
-def plot_plotly(Hawk3D_instance, colour='lightblue', alpha=0.3, axisOn=True):
-    # Create a new 3D Plotly figure
-    fig = go.Figure()
+def plot_plotly(Hawk3D_instance, colour='lightblue', alpha=0.3, axisOn=True,
+                horzDist=None, vertDist=None, bodypitch=None, bodyroll=None, bodyyaw=None):
+    """
+    Create a static 3D plot of a hawk using Plotly.
+    
+    Parameters:
+    -----------
+    Hawk3D_instance : Animal3D
+        Instance of the Animal3D class
+    colour : str, optional
+        Colour for the plot
+    alpha : float, optional
+        Transparency of the plot
+    axisOn : bool, optional
+        Whether to show axes
+    horzDist : float, optional
+        Horizontal distance transformation
+    vertDist : float, optional
+        Vertical distance transformation
+    bodypitch : float, optional
+        Body pitch transformation
+    """
+    # Store the current state
+    current_state = Hawk3D_instance.current_shape.copy()
+    current_scaling = Hawk3D_instance.fixed_marker_scaling.copy()
 
-    # Plot sections and keypoints
+    # Apply transformations if provided
+    Hawk3D_instance.reset_transformation()
+    Hawk3D_instance.transform_keypoints(bodypitch=bodypitch,
+                                      horzDist=horzDist,
+                                      vertDist=vertDist, 
+                                      bodyyaw=bodyyaw,
+                                      bodyroll=bodyroll)
+
+    # Create plot
+    fig = go.Figure()
     fig = plot_sections_plotly(fig, Hawk3D_instance, colour, alpha)
     fig = plot_keypoints_plotly(fig, Hawk3D_instance, colour, alpha)
-
-    # Update camera view
-    # fig.update_layout(scene_camera=dict(eye=dict(x=az, y=el, z=20)))
 
     # Set axis visibility
     if not axisOn:
@@ -23,11 +50,98 @@ def plot_plotly(Hawk3D_instance, colour='lightblue', alpha=0.3, axisOn=True):
             zaxis=dict(visible=False)
         ))
     
-    origin = Hawk3D_instance.origin
-    fig = plot_settings_plotly(fig,Hawk3D_instance)
+    fig = plot_settings_plotly(fig, Hawk3D_instance)
 
+    # Restore the original state
+    Hawk3D_instance.current_shape = current_state
+    Hawk3D_instance.set_fixed_marker_scaling(current_scaling)
 
     return fig
+
+
+def plot_compare_plotly(animal3d_instance, 
+                       keypoints_list,
+                       alpha=0.3, 
+                       colours=None, 
+                       horzDist=None, 
+                       bodypitch=None, 
+                       vertDist=None,
+                       bodyyaw=None,
+                       bodyroll=None,
+                       axisOn=True):
+    """
+    Create a static 3D plot comparing multiple hawk poses using Plotly.
+    
+    Parameters:
+    -----------
+    animal3d_instance : Animal3D
+        Instance of the Animal3D class
+    keypoints_list : list
+        List of keypoint arrays to compare
+    alpha : float, optional
+        Transparency of the plots
+    colours : list, optional
+        List of colours for each set of keypoints. If None, uses default colour scheme
+    horzDist : float, optional
+        Horizontal distance transformation
+    bodypitch : float, optional
+        Body pitch transformation
+    vertDist : float, optional
+        Vertical distance transformation
+    bodyyaw : float, optional
+        Body yaw transformation
+    bodyroll : float, optional
+        Body roll transformation
+    axisOn : bool, optional
+        Whether to show axes
+    """
+    # If colours not provided, use default colour scheme
+    if colours is None:
+        colours = [None, 'red']  # First shape default colour, second shape red
+    
+    # Store the current state
+    current_state = animal3d_instance.current_shape.copy()
+    current_scaling = animal3d_instance.fixed_marker_scaling.copy()
+    
+    # Create figure
+    fig = go.Figure()
+    
+    # Plot each set of keypoints
+    for idx, keypoints in enumerate(keypoints_list):
+        animal3d_instance.reset_transformation()
+        animal3d_instance.update_keypoints(keypoints)
+        animal3d_instance.transform_keypoints(
+            bodypitch=bodypitch,
+            horzDist=horzDist,
+            vertDist=vertDist, 
+            bodyyaw=bodyyaw,
+            bodyroll=bodyroll
+        )
+        
+        # Plot sections and keypoints for this set
+        fig = plot_sections_plotly(fig, animal3d_instance, 
+                                 colour=colours[idx], alpha=alpha)
+        fig = plot_keypoints_plotly(fig, animal3d_instance, 
+                                  colour=colours[idx], alpha=1)
+    
+    # Set axis visibility
+    if not axisOn:
+        fig.update_layout(scene=dict(
+            xaxis=dict(visible=False),
+            yaxis=dict(visible=False),
+            zaxis=dict(visible=False)
+        ))
+    
+    # Apply plot settings
+    fig = plot_settings_plotly(fig, animal3d_instance)
+    
+    # Restore the original state
+    animal3d_instance.current_shape = current_state
+    animal3d_instance.set_fixed_marker_scaling(current_scaling)
+    
+    return fig
+
+
 
 def plot_keypoints_plotly(fig, Hawk3D_instance, colour='black', alpha=1):
     # Extract keypoint coordinates

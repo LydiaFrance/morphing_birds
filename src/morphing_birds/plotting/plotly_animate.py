@@ -17,6 +17,8 @@ def animate_plotly(animal3d_instance,
                    horzDist_frames=None, 
                    bodypitch_frames=None, 
                    vertDist_frames=None, 
+                   bodyyaw_frames=None,
+                   bodyroll_frames=None,
                    score_vals=None):
     """
     Create an animated 3D plot of a hawk video using Plotly.
@@ -34,7 +36,9 @@ def animate_plotly(animal3d_instance,
             # animal3d_instance.set_fixed_marker_scaling(current_scaling)
             animal3d_instance.transform_keypoints(bodypitch=bodypitch_frames[frame],
                                                 horzDist=horzDist_frames[frame],
-                                                vertDist=vertDist_frames[frame])
+                                                vertDist=vertDist_frames[frame],
+                                                bodyyaw=bodyyaw_frames[frame],
+                                                bodyroll=bodyroll_frames[frame])
 
             fig = go.Figure()
             fig = plot_sections_plotly(fig, animal3d_instance, colour=colour, alpha=alpha)
@@ -66,6 +70,8 @@ def animate_plotly(animal3d_instance,
     horzDist_frames = check_transformation_frames(num_frames, horzDist_frames)
     vertDist_frames = check_transformation_frames(num_frames, vertDist_frames)
     bodypitch_frames = check_transformation_frames(num_frames, bodypitch_frames)
+    bodyyaw_frames = check_transformation_frames(num_frames, bodyyaw_frames)
+    bodyroll_frames = check_transformation_frames(num_frames, bodyroll_frames)
 
     limit = keypoints_frames.max().round(2)
     fixed_range = [-limit, limit]  # Adjust these limits based on your data
@@ -114,6 +120,8 @@ def animate_plotly_compare(animal3d_instance,
                          horzDist_frames_list=None, 
                          bodypitch_frames_list=None, 
                          vertDist_frames_list=None, 
+                         bodyyaw_frames_list=None,
+                         bodyroll_frames_list=None,
                          score_vals=None):
     """
     Create an animated 3D plot comparing multiple hawk animations using Plotly.
@@ -134,12 +142,16 @@ def animate_plotly_compare(animal3d_instance,
         List of body pitch transformations for each keypoint set
     vertDist_frames_list : list of array-like, optional
         List of vertical distance transformations for each keypoint set
+    bodyyaw_frames_list : list of array-like, optional
+        List of body yaw transformations for each keypoint set
+    bodyroll_frames_list : list of array-like, optional
+        List of body roll transformations for each keypoint set
     score_vals : array-like, optional
         Values to show in the slider
     """
     
     def create_comparison_frames(animal3d_instance, keypoints_frames_list, horzDist_frames_list, 
-                               vertDist_frames_list, bodypitch_frames_list, colours, alpha):
+                               vertDist_frames_list, bodypitch_frames_list, bodyyaw_frames_list, bodyroll_frames_list, colours, alpha):
         frames = []
         
         # If colours not provided, use default colour scheme
@@ -165,6 +177,10 @@ def animate_plotly_compare(animal3d_instance,
             vertDist_frames_list = [check_transformation_frames(num_frames, frames) for frames in vertDist_frames_list]
         if bodypitch_frames_list:
             bodypitch_frames_list = [check_transformation_frames(num_frames, frames) for frames in bodypitch_frames_list]
+        if bodyyaw_frames_list:
+            bodyyaw_frames_list = [check_transformation_frames(num_frames, frames) for frames in bodyyaw_frames_list]
+        if bodyroll_frames_list:
+            bodyroll_frames_list = [check_transformation_frames(num_frames, frames) for frames in bodyroll_frames_list]
            
 
         # Create frames
@@ -180,11 +196,14 @@ def animate_plotly_compare(animal3d_instance,
                 horz = horzDist_frames_list[idx][frame] if horzDist_frames_list else 0
                 vert = vertDist_frames_list[idx][frame] if vertDist_frames_list else 0
                 pitch = bodypitch_frames_list[idx][frame] if bodypitch_frames_list else 0
-                
+                bodyyaw = bodyyaw_frames_list[idx][frame] if bodyyaw_frames_list else 0
+                bodyroll = bodyroll_frames_list[idx][frame] if bodyroll_frames_list else 0
                 animal3d_instance.transform_keypoints(
                     bodypitch=pitch,
                     horzDist=horz,
-                    vertDist=vert
+                    vertDist=vert,
+                    bodyyaw=bodyyaw,
+                    bodyroll=bodyroll
                 )
                 
                 # Plot sections and keypoints for this set
