@@ -226,7 +226,7 @@ def animate_plotly_compare(animal3d_instance,
     frames = create_comparison_frames(
         animal3d_instance, keypoints_frames_list, 
         horzDist_frames_list, vertDist_frames_list, bodypitch_frames_list, 
-        colours, alpha
+        bodyyaw_frames_list, bodyroll_frames_list, colours, alpha
     )
 
     # Create initial figure
