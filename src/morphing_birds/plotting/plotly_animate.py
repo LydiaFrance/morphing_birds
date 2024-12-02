@@ -24,9 +24,14 @@ def animate_plotly(animal3d_instance,
     
     def create_frames(animal3d_instance, keypoints_frames, horzDist_frames, vertDist_frames, bodypitch_frames, colour, alpha):
         frames = []
+
+        # Store the current scaling factors
+        # current_scaling = animal3d_instance.fixed_marker_scaling.copy()
+    
         for frame in range(len(keypoints_frames)):
             animal3d_instance.reset_transformation()
             animal3d_instance.update_keypoints(keypoints_frames[frame])
+            # animal3d_instance.set_fixed_marker_scaling(current_scaling)
             animal3d_instance.transform_keypoints(bodypitch=bodypitch_frames[frame],
                                                 horzDist=horzDist_frames[frame],
                                                 vertDist=vertDist_frames[frame])
@@ -106,9 +111,9 @@ def animate_plotly_compare(animal3d_instance,
                          keypoints_frames_list,
                          alpha=0.3, 
                          colours=None, 
-                         horzDist_frames=None, 
-                         bodypitch_frames=None, 
-                         vertDist_frames=None, 
+                         horzDist_frames_list=None, 
+                         bodypitch_frames_list=None, 
+                         vertDist_frames_list=None, 
                          score_vals=None):
     """
     Create an animated 3D plot comparing multiple hawk animations using Plotly.
@@ -122,19 +127,19 @@ def animate_plotly_compare(animal3d_instance,
     alpha : float, optional
         Transparency of the plots
     colours : list, optional
-        List of colours for each set of keypoints. If None, uses default colour scheme
-    horzDist_frames : array-like, optional
-        Horizontal distance transformations
-    bodypitch_frames : array-like, optional
-        Body pitch transformations
-    vertDist_frames : array-like, optional
-        Vertical distance transformations
+        List of colours for each set of keypoints
+    horzDist_frames_list : list of array-like, optional
+        List of horizontal distance transformations for each keypoint set
+    bodypitch_frames_list : list of array-like, optional
+        List of body pitch transformations for each keypoint set
+    vertDist_frames_list : list of array-like, optional
+        List of vertical distance transformations for each keypoint set
     score_vals : array-like, optional
         Values to show in the slider
     """
     
-    def create_comparison_frames(animal3d_instance, keypoints_frames_list, horzDist_frames, 
-                               vertDist_frames, bodypitch_frames, colours, alpha):
+    def create_comparison_frames(animal3d_instance, keypoints_frames_list, horzDist_frames_list, 
+                               vertDist_frames_list, bodypitch_frames_list, colours, alpha):
         frames = []
         
         # If colours not provided, use default colour scheme
@@ -153,7 +158,15 @@ def animate_plotly_compare(animal3d_instance,
         num_frames = formatted_keypoints_list[0].shape[0]
         if not all(kp.shape[0] == num_frames for kp in formatted_keypoints_list):
             raise ValueError("All keypoint sets must have the same number of frames.")
-            
+        # Check transformation frames
+        if horzDist_frames_list:
+            horzDist_frames_list = [check_transformation_frames(num_frames, frames) for frames in horzDist_frames_list]
+        if vertDist_frames_list:
+            vertDist_frames_list = [check_transformation_frames(num_frames, frames) for frames in vertDist_frames_list]
+        if bodypitch_frames_list:
+            bodypitch_frames_list = [check_transformation_frames(num_frames, frames) for frames in bodypitch_frames_list]
+           
+
         # Create frames
         for frame in range(num_frames):
             fig = go.Figure()
@@ -162,10 +175,16 @@ def animate_plotly_compare(animal3d_instance,
             for idx, keypoints in enumerate(formatted_keypoints_list):
                 animal3d_instance.reset_transformation()
                 animal3d_instance.update_keypoints(keypoints[frame])
+                
+                # Get transformations for this keypoint set if available
+                horz = horzDist_frames_list[idx][frame] if horzDist_frames_list else 0
+                vert = vertDist_frames_list[idx][frame] if vertDist_frames_list else 0
+                pitch = bodypitch_frames_list[idx][frame] if bodypitch_frames_list else 0
+                
                 animal3d_instance.transform_keypoints(
-                    bodypitch=bodypitch_frames[frame],
-                    horzDist=horzDist_frames[frame],
-                    vertDist=vertDist_frames[frame]
+                    bodypitch=pitch,
+                    horzDist=horz,
+                    vertDist=vert
                 )
                 
                 # Plot sections and keypoints for this set
@@ -184,18 +203,10 @@ def animate_plotly_compare(animal3d_instance,
             ))
         return frames
 
-    # Find number of frames from first keypoint set
-    num_frames = format_keypoint_frames(animal3d_instance, keypoints_frames_list[0]).shape[0]
-
-    # Check transformation frames
-    horzDist_frames = check_transformation_frames(num_frames, horzDist_frames)
-    vertDist_frames = check_transformation_frames(num_frames, vertDist_frames)
-    bodypitch_frames = check_transformation_frames(num_frames, bodypitch_frames)
-
     # Create frames for animation
     frames = create_comparison_frames(
         animal3d_instance, keypoints_frames_list, 
-        horzDist_frames, vertDist_frames, bodypitch_frames, 
+        horzDist_frames_list, vertDist_frames_list, bodypitch_frames_list, 
         colours, alpha
     )
 
@@ -205,6 +216,8 @@ def animate_plotly_compare(animal3d_instance,
 
     # Apply plot settings
     initial_fig = plot_settings_animateplotly(initial_fig, animal3d_instance)
+
+    num_frames = len(frames)
 
     # Set up slider values
     if score_vals is not None:
@@ -230,7 +243,6 @@ def animate_plotly_compare(animal3d_instance,
     )
 
     return initial_fig
-# First, let's add a helper function to AnimalAnimate.py to handle saving animations:
 
 def save_plotly_animation(fig, filename, format='gif', fps=10, width=800, height=700):
     """
