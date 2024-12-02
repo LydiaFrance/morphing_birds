@@ -233,40 +233,31 @@ class Animal3D:
         # Save the untransformed shape
         self.untransformed_shape = self.current_shape.copy()
 
-        # # Apply transformations
-        # self.apply_transformation()
+        # Apply transformations
+        self.apply_transformation()
 
     def transform_keypoints(self, bodypitch=0, horzDist=0, vertDist=0, yaw=0):
         """
-        Transforms the keypoints by applying scaling to fixed markers,
-        rotating around the body pitch, and translating by the horizontal 
-        and vertical distances.
+        Transforms the keypoints by rotating them around the body pitch, 
+        and translating them by the horizontal and vertical distances.
         """
+
         # Reset the transformation matrix
         self.reset_transformation()
 
-        # Store the current scaling
-        current_scaling = self.fixed_marker_scaling.copy()
-        
-        # Apply fixed marker scaling
-        if not np.array_equal(current_scaling, np.ones(3)):
-            self.apply_fixed_marker_scaling()
+        # Rescale the fixed markers
+        self.apply_fixed_marker_scaling()
 
         # Ensure horzDist and vertDist are scalar values
-        if horzDist is not None:
-            horzDist = float(horzDist) if np.isscalar(horzDist) else float(horzDist[0])
-        if vertDist is not None:    
-            vertDist = float(vertDist) if np.isscalar(vertDist) else float(vertDist[0])
+        horzDist = float(horzDist) if np.isscalar(horzDist) else float(horzDist[0])
+        vertDist = float(vertDist) if np.isscalar(vertDist) else float(vertDist[0])
 
         # Apply any translations
-        if horzDist is not None or vertDist is not None:
-            self.update_translation(horzDist, vertDist)
+        self.update_translation(horzDist, vertDist)
 
         # Apply any rotations
-        if bodypitch is not None:
-            self.update_rotation(bodypitch)
-        if yaw is not None:
-            self.update_rotation(yaw, which='z')
+        self.update_rotation(bodypitch)
+        self.update_rotation(yaw, which='z')
 
         # Apply the transformation
         self.apply_transformation()
@@ -344,10 +335,10 @@ class Animal3D:
 
     def reset_transformation(self):
         self.transformation_matrix = np.eye(4)
-        self.current_shape = self.untransformed_shape.copy()
-        # Reset the origin
-        self.origin = np.array([0,0,0])
+        self.current_shape = self.untransformed_shape
 
+        # Also reset the origin
+        self.origin = np.array([0,0,0])
 
     def restore_keypoints_to_average(self):
         """
@@ -465,6 +456,5 @@ class Animal3D:
 
 # ----- Plot Functions -----
  
-
 
 

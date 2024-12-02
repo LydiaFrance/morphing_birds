@@ -8,8 +8,7 @@ from .matplotlib_animate import (
     animate_compare
 )
 from .plotly_plots import (
-    plot_plotly, 
-    plot_compare_plotly
+    plot_plotly
 )
 from .plotly_animate import (
     animate_plotly, 
@@ -25,7 +24,6 @@ __all__ = [
     "animate", 
     "animate_compare",
     "plot_plotly",
-    "plot_compare_plotly",
     "animate_plotly",
     "animate_plotly_compare",
     "save_plotly_animation",

@@ -24,14 +24,9 @@ def animate_plotly(animal3d_instance,
     
     def create_frames(animal3d_instance, keypoints_frames, horzDist_frames, vertDist_frames, bodypitch_frames, colour, alpha):
         frames = []
-
-        # Store the current scaling factors
-        current_scaling = animal3d_instance.fixed_marker_scaling.copy()
-    
         for frame in range(len(keypoints_frames)):
             animal3d_instance.reset_transformation()
             animal3d_instance.update_keypoints(keypoints_frames[frame])
-            animal3d_instance.set_fixed_marker_scaling(current_scaling)
             animal3d_instance.transform_keypoints(bodypitch=bodypitch_frames[frame],
                                                 horzDist=horzDist_frames[frame],
                                                 vertDist=vertDist_frames[frame])
