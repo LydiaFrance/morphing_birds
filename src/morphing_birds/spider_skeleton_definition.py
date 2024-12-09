@@ -75,3 +75,17 @@ class SpiderSkeletonDefinition(SkeletonDefinition):
         Returns a list of all back leg marker names from the spider shape definition.
         """
         return [marker_name for marker_name in self.marker_names if marker_name.endswith(("4", "5"))]
+    
+    def get_leg_marker_names(self, leg_number: int) -> list:
+        """
+        Returns a list of marker names for a specific leg.
+        
+        Parameters:
+        - leg_number (int): The leg number (1 to 8).
+        
+        Returns:
+        - list: Marker names for the specified leg.
+        """
+        if leg_number < 1 or leg_number > 8:
+            raise ValueError("Leg number must be between 1 and 8.")
+        return [f"{marker}{leg_number}" for marker in ["claw", "tibiametatarsus", "patella", "coxa"]]
