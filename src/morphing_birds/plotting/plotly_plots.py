@@ -3,14 +3,14 @@ import plotly.graph_objs as go
 
 from .plotly_helpers import calculate_axis_limits
 
-def plot_plotly(Hawk3D_instance, colour='lightblue', alpha=0.3, axisOn=True,
+def plot_plotly(animal3d_instance, colour='lightblue', alpha=0.3, axisOn=True,
                 horzDist=None, vertDist=None, bodypitch=None, bodyroll=None, bodyyaw=None):
     """
     Create a static 3D plot of a hawk using Plotly.
     
     Parameters:
     -----------
-    Hawk3D_instance : Animal3D
+    animal3d_instance : Animal3D
         Instance of the Animal3D class
     colour : str, optional
         Colour for the plot
@@ -26,12 +26,12 @@ def plot_plotly(Hawk3D_instance, colour='lightblue', alpha=0.3, axisOn=True,
         Body pitch transformation
     """
     # Store the current state
-    current_state = Hawk3D_instance.current_shape.copy()
-    current_scaling = Hawk3D_instance.fixed_marker_scaling.copy()
+    current_state = animal3d_instance.current_shape.copy()
+    current_scaling = animal3d_instance.fixed_marker_scaling.copy()
 
     # Apply transformations if provided
-    Hawk3D_instance.reset_transformation()
-    Hawk3D_instance.transform_keypoints(bodypitch=bodypitch,
+    animal3d_instance.reset_transformation()
+    animal3d_instance.transform_keypoints(bodypitch=bodypitch,
                                       horzDist=horzDist,
                                       vertDist=vertDist, 
                                       bodyyaw=bodyyaw,
@@ -39,8 +39,8 @@ def plot_plotly(Hawk3D_instance, colour='lightblue', alpha=0.3, axisOn=True,
 
     # Create plot
     fig = go.Figure()
-    fig = plot_sections_plotly(fig, Hawk3D_instance, colour, alpha)
-    fig = plot_keypoints_plotly(fig, Hawk3D_instance, colour, alpha)
+    fig = plot_sections_plotly(fig, animal3d_instance, colour, alpha)
+    fig = plot_keypoints_plotly(fig, animal3d_instance, colour, alpha)
 
     # Set axis visibility
     if not axisOn:
@@ -50,11 +50,11 @@ def plot_plotly(Hawk3D_instance, colour='lightblue', alpha=0.3, axisOn=True,
             zaxis=dict(visible=False)
         ))
     
-    fig = plot_settings_plotly(fig, Hawk3D_instance)
+    fig = plot_settings_plotly(fig, animal3d_instance)
 
     # Restore the original state
-    Hawk3D_instance.current_shape = current_state
-    Hawk3D_instance.set_fixed_marker_scaling(current_scaling)
+    animal3d_instance.current_shape = current_state
+    animal3d_instance.set_fixed_marker_scaling(current_scaling)
 
     return fig
 
@@ -141,34 +141,154 @@ def plot_compare_plotly(animal3d_instance,
     
     return fig
 
+def plot_partial_plotly(animal3d_instance, section_name=None, leg_number=None, colour='blue', alpha=1, 
+                        axisOn=True, horzDist=None, vertDist=None, bodypitch=None, bodyroll=None, bodyyaw=None):
+    """
+    Plots a specific section or leg of the animal using Plotly, with full transformation and plot settings capabilities.
+    
+    Parameters:
+    - fig : plotly.graph_objs.Figure
+        The Plotly figure to add the section plot to.
+    - animal3d_instance : Animal3D
+        Instance of the Animal3D class.
+    - section_name : str, optional
+        The name of the body section to plot. If None, plots the entire animal.
+    - leg_number : int, optional
+        The leg number (1 to 8) to plot for spiders. If None, plots the specified section or entire animal.
+    - colour : str, optional
+        Colour for the plot.
+    - alpha : float, optional
+        Transparency of the plot.
+    - axisOn : bool, optional
+        Whether to show axes.
+    - horzDist : float, optional
+        Horizontal distance transformation.
+    - vertDist : float, optional
+        Vertical distance transformation.
+    - bodypitch : float, optional
+        Body pitch transformation.
+    - bodyroll : float, optional
+        Body roll transformation.
+    - bodyyaw : float, optional
+        Body yaw transformation.
+    """
+    # Store the current state
+    current_state = animal3d_instance.current_shape.copy()
+    current_scaling = animal3d_instance.fixed_marker_scaling.copy()
+
+    # Apply transformations if provided
+    animal3d_instance.reset_transformation()
+    animal3d_instance.transform_keypoints(bodypitch=bodypitch,
+                                          horzDist=horzDist,
+                                          vertDist=vertDist, 
+                                          bodyyaw=bodyyaw,
+                                          bodyroll=bodyroll)
 
 
-def plot_keypoints_plotly(fig, Hawk3D_instance, colour='black', alpha=1):
+    # Create figure
+    fig = go.Figure()
+
+    # Plot the specified section or leg
+    if leg_number is not None and any("leg" in key for key in animal3d_instance.skeleton_definition.body_sections):
+        section_name = f"leg_{leg_number}"
+        leg_marker_names = animal3d_instance.skeleton_definition.get_leg_marker_names(leg_number)
+        leg_indices = animal3d_instance.skeleton_definition.get_marker_indices(leg_marker_names, animal3d_instance.csv_marker_names)
+        fig = plot_keypoints_plotly(fig, animal3d_instance, colour=colour, alpha=alpha, indices=leg_indices)
+        fig = plot_sections_plotly(fig, animal3d_instance, colour=colour, alpha=alpha, section_name=section_name)
+
+    elif section_name is not None:
+        fig = plot_sections_plotly(fig, animal3d_instance, colour=colour, alpha=alpha, section_name=section_name)
+    else:
+        fig = plot_sections_plotly(fig, animal3d_instance, colour=colour, alpha=alpha)
+
+    # Set axis visibility
+    if not axisOn:
+        fig.update_layout(scene=dict(
+            xaxis=dict(visible=False),
+            yaxis=dict(visible=False),
+            zaxis=dict(visible=False)
+        ))
+    
+    # Apply plot settings
+    fig = plot_settings_plotly(fig, animal3d_instance)
+
+    # Restore the original state
+    animal3d_instance.current_shape = current_state
+    animal3d_instance.set_fixed_marker_scaling(current_scaling)
+
+    return fig
+
+
+def plot_keypoints_plotly(fig, animal3d_instance, colour='black', alpha=1, indices=None):
+    """
+    Plots keypoints of the animal using Plotly.
+    
+    Parameters:
+    - fig : plotly.graph_objs.Figure
+        The Plotly figure to add the keypoints to.
+    - animal3d_instance : Animal3D
+        Instance of the Animal3D class.
+    - colour : str, optional
+        Colour for the keypoints.
+    - alpha : float, optional
+        Transparency of the keypoints.
+    - indices : list, optional
+        Specific indices of keypoints to plot. If None, plot all keypoints.
+    """
+    if indices is None:
+        indices = animal3d_instance.marker_index
+
     # Extract keypoint coordinates
-    coords = Hawk3D_instance.current_shape[:, Hawk3D_instance.marker_index, :][0]
+    coords = animal3d_instance.current_shape[:, indices, :][0]
 
     # Add keypoints scatter plot to the figure
     scatter = go.Scatter3d(
         x=coords[:, 0], y=coords[:, 1], z=coords[:, 2],
         mode='markers',
-        marker=dict(size=2.5, color=colour, opacity=1), 
+        marker=dict(size=2.5, color=colour, opacity=alpha), 
         hoverinfo='none'
     )
     fig.add_trace(scatter)
 
     return fig
 
-def plot_sections_plotly(fig, Hawk3D_instance, colour, alpha=1):
-    for section in Hawk3D_instance.skeleton_definition.body_sections.keys():
-        mesh, lines = get_polygon_plotly(Hawk3D_instance, section, colour, alpha)
+def plot_sections_plotly(fig, animal3d_instance, colour, alpha=1, section_name=None):
+    """
+    Plots sections of the animal using Plotly.
+    
+    Parameters:
+    - fig : plotly.graph_objs.Figure
+        The Plotly figure to add the sections to.
+    - animal3d_instance : Animal3D
+        Instance of the Animal3D class.
+    - colour : str
+        Colour for the plot.
+    - alpha : float, optional
+        Transparency of the plot.
+    - section_name : str, optional
+        The name of the body section to plot. If None, plot all sections.
+    """
+    if section_name is not None:
+        # Plot a specific body section
+        if section_name not in animal3d_instance.skeleton_definition.body_sections:
+            raise ValueError(f"Section name {section_name} not recognized.")
+        
+        mesh, lines = get_polygon_plotly(animal3d_instance, section_name, colour, alpha)
         if mesh is not None:
             fig.add_trace(mesh)
         fig.add_trace(lines)
+    else:
+        # Plot all sections
+        for section in animal3d_instance.skeleton_definition.body_sections.keys():
+            mesh, lines = get_polygon_plotly(animal3d_instance, section, colour, alpha)
+            if mesh is not None:
+                fig.add_trace(mesh)
+            fig.add_trace(lines)
 
     return fig
 
-def get_polygon_plotly(Hawk3D_instance, section_name, colour, alpha=1):
-    if section_name not in Hawk3D_instance.skeleton_definition.body_sections.keys():
+def get_polygon_plotly(animal3d_instance, section_name, colour, alpha=1):
+    if section_name not in animal3d_instance.skeleton_definition.body_sections.keys():
         raise ValueError(f"Section name {section_name} not recognised.")
 
     # You can modify these functions to customize colour and alpha
@@ -176,7 +296,7 @@ def get_polygon_plotly(Hawk3D_instance, section_name, colour, alpha=1):
     alpha = alpha_polygon_plotly(section_name, alpha)
 
     # Extract polygon coordinates
-    coords = Hawk3D_instance.get_polygon_coords(section_name)
+    coords = animal3d_instance.get_polygon_coords(section_name)
 
     # Construct a mesh plotly object
     if "leg" in section_name:

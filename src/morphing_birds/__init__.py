@@ -14,10 +14,13 @@ from .plotting import (
     interactive_plot, 
     plot_multiple, 
     plot_plotly,
+    plot_compare_plotly,
+    plot_partial_plotly,
     animate, 
     animate_compare, 
     animate_plotly, 
-    animate_plotly_compare, 
+    animate_plotly_compare,
+    animate_plotly_partial,
     save_plotly_animation,
     create_dash_app
 )
@@ -26,7 +29,8 @@ __all__ = ("__version__",
            "SkeletonDefinition", "Animal3D", 
            "Hawk3D", "HawkSkeletonDefinition", 
            "SpiderSkeletonDefinition", "Spider3D",
-           "plot", "interactive_plot", "plot_multiple", "plot_plotly",
-           "animate", "animate_compare", "create_dash_app", "animate_plotly",
-           "animate_plotly_compare", "save_plotly_animation")
+           "plot", "interactive_plot", "plot_multiple", "plot_plotly", "plot_partial_plotly",
+           "plot_compare_plotly", "animate", "animate_compare", "create_dash_app", 
+           "animate_plotly", "animate_plotly_compare", "save_plotly_animation",
+           "animate_plotly_partial")
 __version__ = "0.1.0"

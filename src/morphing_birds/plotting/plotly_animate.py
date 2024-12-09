@@ -263,6 +263,105 @@ def animate_plotly_compare(animal3d_instance,
 
     return initial_fig
 
+
+def animate_plotly_partial(animal3d_instance, keypoints_frames, section_name=None, leg_number=None, colour='blue', alpha=1, 
+                           horzDist_frames=None, vertDist_frames=None, bodypitch_frames=None, bodyyaw_frames=None, bodyroll_frames=None, 
+                           score_vals=None):
+    """
+    Animates a specific section or leg of the animal using Plotly, with full transformation and plot settings capabilities.
+    
+    Parameters:
+    - animal3d_instance : Animal3D
+        Instance of the Animal3D class.
+    - keypoints_frames : list
+        List of keypoint frames for animation.
+    - section_name : str, optional
+        The name of the body section to animate. If None, animates the entire animal.
+    - leg_number : int, optional
+        The leg number (1 to 8) to animate for animals with legs. If None, animates the specified section or entire animal.
+    - colour : str, optional
+        Colour for the animation.
+    - alpha : float, optional
+        Transparency of the animation.
+    - horzDist_frames : list, optional
+        List of horizontal distance transformations for each frame.
+    - vertDist_frames : list, optional
+        List of vertical distance transformations for each frame.
+    - bodypitch_frames : list, optional
+        List of body pitch transformations for each frame.
+    - bodyyaw_frames : list, optional
+        List of body yaw transformations for each frame.
+    - bodyroll_frames : list, optional
+        List of body roll transformations for each frame.
+    - score_vals : array-like, optional
+        Values to show in the slider.
+    """
+    frames = []
+
+    for frame_idx, keypoints in enumerate(keypoints_frames):
+        animal3d_instance.reset_transformation()
+        animal3d_instance.update_keypoints(keypoints)
+
+        # Apply transformations for the current frame
+        animal3d_instance.transform_keypoints(
+            bodypitch=bodypitch_frames[frame_idx] if bodypitch_frames else None,
+            horzDist=horzDist_frames[frame_idx] if horzDist_frames else None,
+            vertDist=vertDist_frames[frame_idx] if vertDist_frames else None,
+            bodyyaw=bodyyaw_frames[frame_idx] if bodyyaw_frames else None,
+            bodyroll=bodyroll_frames[frame_idx] if bodyroll_frames else None
+        )
+
+        fig = go.Figure()
+
+        # Check if the instance has sections containing "leg" and animate a specific leg if requested
+        if leg_number is not None and any("leg" in key for key in animal3d_instance.skeleton_definition.body_sections):
+            section_name = f"leg_{leg_number}"
+            leg_marker_names = animal3d_instance.skeleton_definition.get_leg_marker_names(leg_number)
+            leg_indices = animal3d_instance.skeleton_definition.get_marker_indices(leg_marker_names, animal3d_instance.csv_marker_names)
+            fig = plot_keypoints_plotly(fig, animal3d_instance, colour=colour, alpha=alpha, indices=leg_indices)
+            fig = plot_sections_plotly(fig, animal3d_instance, colour=colour, alpha=alpha, section_name=section_name)
+        elif section_name is not None:
+            fig = plot_sections_plotly(fig, animal3d_instance, colour=colour, alpha=alpha, section_name=section_name)
+        else:
+            fig = plot_sections_plotly(fig, animal3d_instance, colour=colour, alpha=alpha)
+
+        frames.append(go.Frame(data=fig.data, name=str(frame_idx)))
+
+    # Create the initial figure
+    initial_fig = go.Figure(data=frames[0].data)
+    initial_fig.frames = frames
+
+    # Apply plot settings
+    initial_fig = plot_settings_animateplotly(initial_fig, animal3d_instance)
+
+    # Set up slider values
+    num_frames = len(frames)
+    if score_vals is not None:
+        slider_vals = score_vals.round(2)
+    else:
+        slider_vals = range(num_frames)
+
+    # Add animation controls
+    initial_fig.update_layout(
+        updatemenus=[create_play_button()],
+        sliders=[create_slider(num_frames, slider_vals)],
+        width=800,
+        height=700,
+        margin=dict(l=50, r=50, t=100, b=100),
+        scene=dict(
+            domain=dict(x=[0, 1], y=[0.1, 1]),
+            aspectmode='cube',
+            camera=dict(
+                eye=dict(x=1.5, y=1.5, z=1.5),
+                up=dict(x=0, y=0, z=1)
+            ),
+        )
+    )
+
+    return initial_fig
+
+
+
 def save_plotly_animation(fig, filename, format='gif', fps=10, width=800, height=700):
     """
     Save a plotly animation as either GIF or HTML.
