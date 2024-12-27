@@ -36,7 +36,7 @@ class SkeletonDefinition:
         self.fixed_marker_names = fixed_marker_names
         self.body_sections = body_sections
 
-    def get_marker_indices(self, marker_subset: list, csv_marker_names: list) -> list:
+    def get_marker_indices(self, marker_subset: list, csv_marker_names: list = None) -> list:
         """
         Retrieves indices for a subset of markers based on csv_marker_names.
 
@@ -51,6 +51,11 @@ class SkeletonDefinition:
         - ValueError: If any marker in the subset is not found in csv_marker_names.
         """
         indices = []
+
+        if csv_marker_names is None:
+            csv_marker_names = self.marker_names
+
+        # Get the indices of the markers in the marker_subset
         for name in marker_subset:
             if name in csv_marker_names:
                 index = csv_marker_names.index(name)
@@ -100,3 +105,5 @@ class SkeletonDefinition:
         Returns a list of indices for all left-side markers.
         """
         return self.get_marker_indices(self.get_left_marker_names())
+    
+
