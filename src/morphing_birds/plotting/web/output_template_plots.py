@@ -18,47 +18,51 @@ SCRIPT_DIR = pathlib.Path(__file__).parent.absolute()
 
 hawk3d = Hawk3D(SCRIPT_DIR.parents[3] / "data/mean_hawk_shape.csv")
 
-
-def create_fake_pca_data(hawk3d, n_samples=20, n_components=12, n_markers=4, n_dims=3):
-    # Simulate the mean shape of the hawk (mu)
-    mu = hawk3d.left_markers.copy()
-
-    # Generate an orthogonal matrix for principal components
-    principal_components = ortho_group.rvs(dim=n_markers * n_dims)
-
-    # Simulate decreasing variances for principal components
-    explained_variance = np.linspace(2, 0.1, n_components)
-
-    # Adjust principal components by the square root of variances
-    principal_components = principal_components[:n_components] * np.sqrt(
-        explained_variance[:, np.newaxis]
-    )
-
-    # Simulate score frames with temporal dynamics
-    time = np.linspace(0, 4 * np.pi, n_samples)
-    score_frames = np.zeros((n_samples, n_components))
-
-    for i in range(n_components):
-        amplitude = np.exp(
-            -i / n_components
-        )  # Decreasing amplitude for higher components
-        frequency = i + 1
-        score_frames[:, i] = amplitude * np.sin(frequency * time)
-
-    # Reconstruct frames using the simulated principal components and scores
-    components_list = list(range(n_components))  # Use all components or a subset
-    selected_PCs = principal_components[components_list, :]
-    selected_scores = score_frames[:, components_list]
-
-    reconstruction = np.dot(selected_scores, selected_PCs)
-    reconstruction = reconstruction.reshape(-1, n_markers, n_dims)
-    reconstructed_frames = mu + reconstruction
-
-    return reconstructed_frames, principal_components, score_frames
+# read in principal components and scores
+principal_components = np.load(SCRIPT_DIR.parents[3] / "data/website_principal_components.npy")
+score_frames = np.load(SCRIPT_DIR.parents[3] / "data/website_score_10frames.npy")
 
 
-# Call the function to create fake PCA data
-reconstructed_frames, principal_components, score_frames = create_fake_pca_data(hawk3d)
+# def create_fake_pca_data(hawk3d, n_samples=20, n_components=12, n_markers=4, n_dims=3):
+#     # Simulate the mean shape of the hawk (mu)
+#     mu = hawk3d.left_markers.copy()
+
+#     # Generate an orthogonal matrix for principal components
+#     principal_components = ortho_group.rvs(dim=n_markers * n_dims)
+
+#     # Simulate decreasing variances for principal components
+#     explained_variance = np.linspace(2, 0.1, n_components)
+
+#     # Adjust principal components by the square root of variances
+#     principal_components = principal_components[:n_components] * np.sqrt(
+#         explained_variance[:, np.newaxis]
+#     )
+
+#     # Simulate score frames with temporal dynamics
+#     time = np.linspace(0, 4 * np.pi, n_samples)
+#     score_frames = np.zeros((n_samples, n_components))
+
+#     for i in range(n_components):
+#         amplitude = np.exp(
+#             -i / n_components
+#         )  # Decreasing amplitude for higher components
+#         frequency = i + 1
+#         score_frames[:, i] = amplitude * np.sin(frequency * time)
+
+#     # Reconstruct frames using the simulated principal components and scores
+#     components_list = list(range(n_components))  # Use all components or a subset
+#     selected_PCs = principal_components[components_list, :]
+#     selected_scores = score_frames[:, components_list]
+
+#     reconstruction = np.dot(selected_scores, selected_PCs)
+#     reconstruction = reconstruction.reshape(-1, n_markers, n_dims)
+#     reconstructed_frames = mu + reconstruction
+
+#     return reconstructed_frames, principal_components, score_frames
+
+
+# # Call the function to create fake PCA data
+# reconstructed_frames, principal_components, score_frames = create_fake_pca_data(hawk3d)
 
 
 def reconstruct_frames(
@@ -84,7 +88,7 @@ def reconstruct_frames(
 # Parameters
 alpha = 0.3
 colour = "lightblue"
-n_frames = 20
+n_frames = 10
 n_markers = 4  # Define the number of markers
 n_dims = 3  # Define the number of dimensions
 # Define the predefined combinations
@@ -109,7 +113,7 @@ def create_create_components_plot(
     predefined_combinations,
     principal_components,
     score_frames,
-    n_frames=20,
+    n_frames=10,
     alpha=0.3,
     colour="lightblue",
 ):
