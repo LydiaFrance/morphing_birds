@@ -4,7 +4,6 @@ import numpy as np
 import plotly.graph_objects as go
 from jinja2 import Template
 from plotly.subplots import make_subplots
-from scipy.stats import ortho_group
 
 from morphing_birds import (
     Hawk3D,
@@ -18,9 +17,12 @@ SCRIPT_DIR = pathlib.Path(__file__).parent.absolute()
 
 hawk3d = Hawk3D(SCRIPT_DIR.parents[3] / "data/mean_hawk_shape.csv")
 
-# read in principal components and scores
+# read in principal components, scores and mu
 principal_components = np.load(SCRIPT_DIR.parents[3] / "data/website_principal_components.npy")
 score_frames = np.load(SCRIPT_DIR.parents[3] / "data/website_score_10frames.npy")
+mu = np.load(SCRIPT_DIR.parents[3] / "data/website_mu.npy")
+# copy the score frames data into a matrix with 20 frames
+score_frames = np.tile(score_frames, (20, 1))
 
 
 # def create_fake_pca_data(hawk3d, n_samples=20, n_components=12, n_markers=4, n_dims=3):
@@ -88,7 +90,7 @@ def reconstruct_frames(
 # Parameters
 alpha = 0.3
 colour = "lightblue"
-n_frames = 10
+n_frames = 20
 n_markers = 4  # Define the number of markers
 n_dims = 3  # Define the number of dimensions
 # Define the predefined combinations
@@ -113,7 +115,7 @@ def create_create_components_plot(
     predefined_combinations,
     principal_components,
     score_frames,
-    n_frames=10,
+    n_frames=20,
     alpha=0.3,
     colour="lightblue",
 ):
@@ -148,12 +150,12 @@ def create_create_components_plot(
     )
 
     initial_combo_name = predefined_combinations[0]["label"]
-    for idx, combo in enumerate(predefined_combinations):
+    for combo in predefined_combinations:
         components_list = combo["components"]
         reconstructed_frames = reconstruct_frames(
             components_list,
             n_frames,
-            hawk3d.left_markers.copy(),
+            mu,
             principal_components,
             score_frames,
         )
@@ -173,6 +175,7 @@ def create_create_components_plot(
         frames = []
         for i in range(n_frames):
             hawk3d.reset_transformation()
+            hawk3d.restore_keypoints_to_average()
             hawk3d.update_keypoints(reconstructed_frames[i])
 
             # Create the main 3D plot data
@@ -183,7 +186,6 @@ def create_create_components_plot(
             scatter3d = plot_keypoints_plotly(scatter3d, hawk3d, colour=colour, alpha=1)
             scatter3d = plot_settings_animateplotly(scatter3d, hawk3d)
             scatter3d_traces = scatter3d.data
-            scatter3d_layout = scatter3d.layout
 
             # Create the line plot data
             line_plot = go.Scatter(
