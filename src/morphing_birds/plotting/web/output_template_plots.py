@@ -12,59 +12,50 @@ from morphing_birds import (
     plot_settings_animateplotly,
 )
 
-# get directory of file using pathlib
 SCRIPT_DIR = pathlib.Path(__file__).parent.absolute()
 
 hawk3d = Hawk3D(SCRIPT_DIR.parents[3] / "data/mean_hawk_shape.csv")
 
-# read in principal components, scores and mu
-principal_components = np.load(SCRIPT_DIR.parents[3] / "data/website_principal_components.npy")
+principal_components = np.load(
+    SCRIPT_DIR.parents[3] / "data/website_principal_components.npy"
+)
 score_frames = np.load(SCRIPT_DIR.parents[3] / "data/website_score_10frames.npy")
 mu = np.load(SCRIPT_DIR.parents[3] / "data/website_mu.npy")
 # copy the score frames data into a matrix with 20 frames
 score_frames = np.tile(score_frames, (20, 1))
-
-
-# def create_fake_pca_data(hawk3d, n_samples=20, n_components=12, n_markers=4, n_dims=3):
-#     # Simulate the mean shape of the hawk (mu)
-#     mu = hawk3d.left_markers.copy()
-
-#     # Generate an orthogonal matrix for principal components
-#     principal_components = ortho_group.rvs(dim=n_markers * n_dims)
-
-#     # Simulate decreasing variances for principal components
-#     explained_variance = np.linspace(2, 0.1, n_components)
-
-#     # Adjust principal components by the square root of variances
-#     principal_components = principal_components[:n_components] * np.sqrt(
-#         explained_variance[:, np.newaxis]
-#     )
-
-#     # Simulate score frames with temporal dynamics
-#     time = np.linspace(0, 4 * np.pi, n_samples)
-#     score_frames = np.zeros((n_samples, n_components))
-
-#     for i in range(n_components):
-#         amplitude = np.exp(
-#             -i / n_components
-#         )  # Decreasing amplitude for higher components
-#         frequency = i + 1
-#         score_frames[:, i] = amplitude * np.sin(frequency * time)
-
-#     # Reconstruct frames using the simulated principal components and scores
-#     components_list = list(range(n_components))  # Use all components or a subset
-#     selected_PCs = principal_components[components_list, :]
-#     selected_scores = score_frames[:, components_list]
-
-#     reconstruction = np.dot(selected_scores, selected_PCs)
-#     reconstruction = reconstruction.reshape(-1, n_markers, n_dims)
-#     reconstructed_frames = mu + reconstruction
-
-#     return reconstructed_frames, principal_components, score_frames
-
-
-# # Call the function to create fake PCA data
-# reconstructed_frames, principal_components, score_frames = create_fake_pca_data(hawk3d)
+alpha = 0.3
+colour_list = [
+    "#B5E675",
+    "#6ED8A9",
+    "#51B3D4",
+    "#4579AA",
+    "#F19EBA",
+    "#BC96C9",
+    "#917AC2",
+    "#BE607F",
+    "#624E8B",
+    "#888888",
+    "#888888",
+    "#888888",
+]
+n_frames = 20
+n_markers = 4  # Define the number of markers
+n_dims = 3  # Define the number of dimensions
+# Define the predefined combinations
+predefined_combinations = [
+    {"label": "PC 1", "components": [0]},
+    {"label": "PC 2", "components": [1]},
+    {"label": "PC 3", "components": [2]},
+    {"label": "PC 4", "components": [3]},
+    {"label": "PC 5", "components": [4]},
+    {"label": "PC 6", "components": [5]},
+    {"label": "PC 7", "components": [6]},
+    {"label": "PC 8", "components": [7]},
+    {"label": "PC 9", "components": [8]},
+    {"label": "PC 10", "components": [9]},
+    {"label": "PC 11", "components": [10]},
+    {"label": "PC 12", "components": [11]},
+]
 
 
 def reconstruct_frames(
@@ -86,38 +77,14 @@ def reconstruct_frames(
     return reconstructed
 
 
-# Create a plot that allows selecting principal components
-# Parameters
-alpha = 0.3
-colour = "lightblue"
-n_frames = 20
-n_markers = 4  # Define the number of markers
-n_dims = 3  # Define the number of dimensions
-# Define the predefined combinations
-predefined_combinations = [
-    {"label": "PC 1", "components": [0]},
-    {"label": "PC 2", "components": [1]},
-    {"label": "PC 3", "components": [2]},
-    {"label": "PC 4", "components": [3]},
-    {"label": "PC 5", "components": [4]},
-    {"label": "PC 6", "components": [5]},
-    {"label": "PC 7", "components": [6]},
-    {"label": "PC 8", "components": [7]},
-    {"label": "PC 9", "components": [8]},
-    {"label": "PC 10", "components": [9]},
-    {"label": "PC 11", "components": [10]},
-    {"label": "PC 12", "components": [11]},
-]
-
-
 def create_create_components_plot(
     hawk3d,
     predefined_combinations,
     principal_components,
     score_frames,
+    colour_list=colour_list,
     n_frames=20,
     alpha=0.3,
-    colour="lightblue",
 ):
     component_buttons = []
     play_pause_buttons = []
@@ -177,13 +144,16 @@ def create_create_components_plot(
             hawk3d.reset_transformation()
             hawk3d.restore_keypoints_to_average()
             hawk3d.update_keypoints(reconstructed_frames[i])
+            selected_colour = colour_list[components_list[0]]
 
             # Create the main 3D plot data
             scatter3d = go.Figure()
             scatter3d = plot_sections_plotly(
-                scatter3d, hawk3d, colour=colour, alpha=alpha
+                scatter3d, hawk3d, colour=selected_colour, alpha=alpha
             )
-            scatter3d = plot_keypoints_plotly(scatter3d, hawk3d, colour=colour, alpha=1)
+            scatter3d = plot_keypoints_plotly(
+                scatter3d, hawk3d, colour=selected_colour, alpha=1
+            )
             scatter3d = plot_settings_animateplotly(scatter3d, hawk3d)
             scatter3d_traces = scatter3d.data
 
@@ -195,7 +165,7 @@ def create_create_components_plot(
                 xaxis="x2",
                 yaxis="y2",
                 showlegend=False,
-                line={"color": "blue"},
+                line={"color": selected_colour},
             )
 
             # Add a marker to indicate the current frame
@@ -338,17 +308,22 @@ def create_create_components_plot(
     return fig
 
 
-# Call the function to create the animated figure
-components_plot = create_create_components_plot(
-    hawk3d, predefined_combinations, principal_components, score_frames
-)
+def main():
+    components_plot = create_create_components_plot(
+        hawk3d, predefined_combinations, principal_components, score_frames
+    )
+    plotly_jinja_data = {
+        "components_plot": components_plot.to_html(
+            full_html=False, include_plotlyjs=False
+        ),
+    }
+    # Save the figure as an HTML file
+    with (SCRIPT_DIR / "index.html").open("w", encoding="utf-8") as output_file, (
+        SCRIPT_DIR / "template.html"
+    ).open() as template_file:
+        j2_template = Template(template_file.read())
+        output_file.write(j2_template.render(plotly_jinja_data))
 
-plotly_jinja_data = {
-    "components_plot": components_plot.to_html(full_html=False, include_plotlyjs=False),
-}
-# Save the figure as an HTML file
-with (SCRIPT_DIR / "index.html").open("w", encoding="utf-8") as output_file, (
-    SCRIPT_DIR / "template.html"
-).open() as template_file:
-    j2_template = Template(template_file.read())
-    output_file.write(j2_template.render(plotly_jinja_data))
+
+if __name__ == "__main__":
+    main()
