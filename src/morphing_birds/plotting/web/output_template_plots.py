@@ -39,9 +39,8 @@ colour_list = [
     "#888888",
 ]
 n_frames = 20
-n_markers = 4  # Define the number of markers
-n_dims = 3  # Define the number of dimensions
-# Define the predefined combinations
+n_markers = 4
+n_dims = 3
 predefined_combinations = [
     {"label": "PC 1", "components": [0]},
     {"label": "PC 2", "components": [1]},
@@ -130,7 +129,7 @@ def create_create_components_plot(
         # Prepare data for the line plot (component value vs. time)
         component_scores = score_frames[
             :, components_list[0]
-        ]  # Assuming one component at a time
+        ]
 
         # Center the scores around zero
         component_scores_centered = component_scores - np.mean(component_scores)
@@ -198,13 +197,21 @@ def create_create_components_plot(
             )
 
             frame_data = [*list(scatter3d_traces), line_plot, current_frame_marker]
-            # Create the frame
             frame = go.Frame(
                 data=frame_data,
                 name=f"{combo['label']}_frame_{i}",
                 layout=frame_layout,
             )
             frames.append(frame)
+            # Ensure the frames also have the same axis ranges
+            for frame in frames:
+                frame.layout.update(
+                    scene={
+                        "xaxis": {"range": [-0.6, 0.6], "autorange": False},
+                        "yaxis": {"range": [-0.6, 0.6], "autorange": False},
+                        "zaxis": {"range": [-0.6, 0.6], "autorange": False},
+                    }
+                )
 
         all_frames.extend(frames)
 
