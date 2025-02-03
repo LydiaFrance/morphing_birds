@@ -76,26 +76,12 @@ def reconstruct_frames(
     return reconstructed
 
 
-def create_create_components_plot(
-    hawk3d,
-    predefined_combinations,
-    principal_components,
-    score_frames,
-    colour_list=colour_list,
-    n_frames=20,
-    alpha=0.3,
-):
-    component_buttons = []
-    play_pause_buttons = []
-    all_frames = []
-    # Initialize the figure with subplots
+def initialize_figure():
     fig = make_subplots(
         rows=1,
         cols=1,
         specs=[[{"type": "scene"}]],
     )
-
-    # Define the domains for the main plot and the inset plot
     fig.update_layout(
         scene={
             "domain": {"x": [0.1, 0.9], "y": [0.1, 0.8]},
@@ -114,8 +100,24 @@ def create_create_components_plot(
         },
         showlegend=False,
     )
+    return fig
 
+
+def generate_frames(
+    hawk3d,
+    predefined_combinations,
+    principal_components,
+    score_frames,
+    colour_list,
+    n_frames,
+    alpha,
+):
+    all_frames = []
     initial_combo_name = predefined_combinations[0]["label"]
+    initial_data = []
+    initial_y_min = None
+    initial_y_max = None
+
     for combo in predefined_combinations:
         components_list = combo["components"]
         reconstructed_frames = reconstruct_frames(
@@ -125,108 +127,130 @@ def create_create_components_plot(
             principal_components,
             score_frames,
         )
-
-        # Prepare data for the line plot (component value vs. time)
-        component_scores = score_frames[
-            :, components_list[0]
-        ]
-
-        # Center the scores around zero
-        component_scores_centered = component_scores - np.mean(component_scores)
-
-        # Calculate global min and max for y-axis of the line plot
-        y_min = component_scores_centered.min()
-        y_max = component_scores_centered.max()
-
-        frames = []
-        for i in range(n_frames):
-            hawk3d.reset_transformation()
-            hawk3d.restore_keypoints_to_average()
-            hawk3d.update_keypoints(reconstructed_frames[i])
-            selected_colour = colour_list[components_list[0]]
-
-            # Create the main 3D plot data
-            scatter3d = go.Figure()
-            scatter3d = plot_sections_plotly(
-                scatter3d, hawk3d, colour=selected_colour, alpha=alpha
-            )
-            scatter3d = plot_keypoints_plotly(
-                scatter3d, hawk3d, colour=selected_colour, alpha=1
-            )
-            scatter3d = plot_settings_animateplotly(scatter3d, hawk3d)
-            scatter3d_traces = scatter3d.data
-
-            # Create the line plot data
-            line_plot = go.Scatter(
-                x=np.arange(n_frames),
-                y=component_scores_centered,
-                mode="lines",
-                xaxis="x2",
-                yaxis="y2",
-                showlegend=False,
-                line={"color": selected_colour},
-            )
-
-            # Add a marker to indicate the current frame
-            current_frame_marker = go.Scatter(
-                x=[i],
-                y=[component_scores_centered[i]],
-                mode="markers",
-                xaxis="x2",
-                yaxis="y2",
-                marker={"color": "red", "size": 10},
-                showlegend=False,
-            )
-
-            # Set frame-specific layout updates including title and y-axis label
-            frame_layout = go.Layout(
-                title={
-                    "text": f"Selected Component - {combo['label']}",
-                    "xanchor": "center",
-                    "yanchor": "top",
-                    "x": 0.5,
-                    "y": 0.9,
-                },
-                xaxis2={"title": "Frame", "domain": [0.8, 0.95], "anchor": "y2"},
-                yaxis2={
-                    "title": f"{combo['label']} value",
-                    "domain": [0.8, 0.95],
-                    "anchor": "x2",
-                },
-                scene=scatter3d.layout.scene,
-            )
-
-            frame_data = [*list(scatter3d_traces), line_plot, current_frame_marker]
-            frame = go.Frame(
-                data=frame_data,
-                name=f"{combo['label']}_frame_{i}",
-                layout=frame_layout,
-            )
-            frames.append(frame)
-            # Ensure the frames also have the same axis ranges
-            for frame in frames:
-                frame.layout.update(
-                    scene={
-                        "xaxis": {"range": [-0.6, 0.6], "autorange": False},
-                        "yaxis": {"range": [-0.6, 0.6], "autorange": False},
-                        "zaxis": {"range": [-0.6, 0.6], "autorange": False},
-                    }
-                )
-
+        component_scores_centered = center_scores(score_frames[:, components_list[0]])
+        y_min, y_max = component_scores_centered.min(), component_scores_centered.max()
+        frames = create_frames_for_combo(
+            hawk3d,
+            combo,
+            reconstructed_frames,
+            component_scores_centered,
+            colour_list,
+            n_frames,
+            alpha,
+        )
         all_frames.extend(frames)
-
-        # Save initial data for the first frame
         if combo["label"] == initial_combo_name:
             initial_data = [*frames[0].data]
             initial_y_min = y_min
             initial_y_max = y_max
 
-    for i_data in initial_data:
-        fig.add_trace(i_data)
+    return all_frames, initial_data, initial_y_min, initial_y_max
 
-    fig.frames = all_frames
 
-    # Create buttons for component selection
+def center_scores(scores):
+    return scores - np.mean(scores)
+
+
+def create_frames_for_combo(
+    hawk3d,
+    combo,
+    reconstructed_frames,
+    component_scores_centered,
+    colour_list,
+    n_frames,
+    alpha,
+):
+    frames = []
+    for i in range(n_frames):
+        hawk3d.reset_transformation()
+        hawk3d.restore_keypoints_to_average()
+        hawk3d.update_keypoints(reconstructed_frames[i])
+        selected_colour = colour_list[combo["components"][0]]
+        scatter3d_traces = create_scatter3d_traces(hawk3d, selected_colour, alpha)
+        line_plot = create_line_plot(
+            component_scores_centered, selected_colour, n_frames
+        )
+        current_frame_marker = create_current_frame_marker(i, component_scores_centered)
+        frame_layout = create_frame_layout(combo, scatter3d_traces)
+        frame_data = [*list(scatter3d_traces), line_plot, current_frame_marker]
+        frame = go.Frame(
+            data=frame_data,
+            name=f"{combo['label']}_frame_{i}",
+            layout=frame_layout,
+        )
+        frames.append(frame)
+        update_frame_layout(frames)
+    return frames
+
+
+def create_scatter3d_traces(hawk3d, selected_colour, alpha):
+    scatter3d = go.Figure()
+    scatter3d = plot_sections_plotly(
+        scatter3d, hawk3d, colour=selected_colour, alpha=alpha
+    )
+    scatter3d = plot_keypoints_plotly(
+        scatter3d, hawk3d, colour=selected_colour, alpha=1
+    )
+    scatter3d = plot_settings_animateplotly(scatter3d, hawk3d)
+    return scatter3d.data
+
+
+def create_line_plot(component_scores_centered, selected_colour, n_frames):
+    return go.Scatter(
+        x=np.arange(n_frames),
+        y=component_scores_centered,
+        mode="lines",
+        xaxis="x2",
+        yaxis="y2",
+        showlegend=False,
+        line={"color": selected_colour},
+    )
+
+
+def create_current_frame_marker(i, component_scores_centered):
+    return go.Scatter(
+        x=[i],
+        y=[component_scores_centered[i]],
+        mode="markers",
+        xaxis="x2",
+        yaxis="y2",
+        marker={"color": "red", "size": 10},
+        showlegend=False,
+    )
+
+
+def create_frame_layout(combo, scatter3d_traces):
+    return go.Layout(
+        title={
+            "text": f"Selected Component - {combo['label']}",
+            "xanchor": "center",
+            "yanchor": "top",
+            "x": 0.5,
+            "y": 0.9,
+        },
+        xaxis2={"title": "Frame", "domain": [0.8, 0.95], "anchor": "y2"},
+        yaxis2={
+            "title": f"{combo['label']} value",
+            "domain": [0.8, 0.95],
+            "anchor": "x2",
+        },
+        scene=scatter3d_traces[0].scene,
+    )
+
+
+def update_frame_layout(frames):
+    for frame in frames:
+        frame.layout.update(
+            scene={
+                "xaxis": {"range": [-0.6, 0.6], "autorange": False},
+                "yaxis": {"range": [-0.6, 0.6], "autorange": False},
+                "zaxis": {"range": [-0.6, 0.6], "autorange": False},
+            }
+        )
+
+
+def create_component_buttons(predefined_combinations, n_frames):
+    component_buttons = []
     for combo in predefined_combinations:
         frame_names = [f"{combo['label']}_frame_{i}" for i in range(n_frames)]
         button = {
@@ -243,8 +267,11 @@ def create_create_components_plot(
             ],
         }
         component_buttons.append(button)
+    return component_buttons
 
-    play_pause_buttons = [
+
+def create_play_pause_buttons():
+    return [
         {
             "args": [
                 None,
@@ -263,7 +290,10 @@ def create_create_components_plot(
         },
     ]
 
-    # Update layout with buttons and sliders
+
+def update_layout(
+    fig, component_buttons, play_pause_buttons, initial_y_min, initial_y_max
+):
     fig.update_layout(
         updatemenus=[
             {
@@ -290,8 +320,6 @@ def create_create_components_plot(
         height=700,
         margin={"l": 50, "r": 100, "t": 100, "b": 50},
     )
-
-    # Adjust axes for the inset plot
     fig.update_layout(
         xaxis2={
             "domain": [0.8, 0.95],
@@ -312,12 +340,45 @@ def create_create_components_plot(
         },
     )
 
+
+def create_create_components_plot(
+    hawk3d,
+    predefined_combinations,
+    principal_components,
+    score_frames,
+    colour_list,
+    n_frames,
+    alpha=0.3,
+):
+    fig = initialize_figure()
+    all_frames, initial_data, initial_y_min, initial_y_max = generate_frames(
+        hawk3d,
+        predefined_combinations,
+        principal_components,
+        score_frames,
+        colour_list,
+        n_frames,
+        alpha,
+    )
+    fig.frames = all_frames
+    for i_data in initial_data:
+        fig.add_trace(i_data)
+    component_buttons = create_component_buttons(predefined_combinations, n_frames)
+    play_pause_buttons = create_play_pause_buttons()
+    update_layout(
+        fig, component_buttons, play_pause_buttons, initial_y_min, initial_y_max
+    )
     return fig
 
 
 def main():
     components_plot = create_create_components_plot(
-        hawk3d, predefined_combinations, principal_components, score_frames
+        hawk3d,
+        predefined_combinations,
+        principal_components,
+        score_frames,
+        colour_list,
+        n_frames,
     )
     plotly_jinja_data = {
         "components_plot": components_plot.to_html(
