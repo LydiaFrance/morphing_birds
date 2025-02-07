@@ -15,62 +15,53 @@ from morphing_birds import (
 
 # get directory of file using pathlib
 SCRIPT_DIR = pathlib.Path(__file__).parent.absolute()
-
-hawk3d = Hawk3D(SCRIPT_DIR.parents[3] / "data/mean_hawk_shape.csv")
-
-principal_components = np.load(
+HAWK3D = Hawk3D(SCRIPT_DIR.parents[3] / "data/mean_hawk_shape.csv")
+PRINCIPAL_COMPONENTS = np.load(
     SCRIPT_DIR.parents[3] / "data/website_principal_components.npy"
 )
-left_score_frames = np.load(SCRIPT_DIR.parents[3] / "data/Left_scores_RightTurn.npy")
-right_score_frames = np.load(SCRIPT_DIR.parents[3] / "data/Right_scores_RightTurn.npy")
-mu = np.load(SCRIPT_DIR.parents[3] / "data/website_mu.npy")
-
-alpha = 0.3
-
-n_frames = 149
-n_markers = 4
-n_dims = 3
-n_components = 12
-colour = "lightblue"
+LEFT_SCORE_FRAMES = np.load(SCRIPT_DIR.parents[3] / "data/Left_scores_RightTurn.npy")
+RIGHT_SCORE_FRAMES = np.load(SCRIPT_DIR.parents[3] / "data/Right_scores_RightTurn.npy")
+MU = np.load(SCRIPT_DIR.parents[3] / "data/website_mu.npy")
+ALPHA = 0.3
+N_FRAMES = 149
+N_MARKERS = 4
+N_DIMS = 3
+N_COMPONENTS = 12
+COLOUR = "lightblue"
 
 
-def reconstruct_frames(
-    selected_components,
-    score_frames
-):
+def reconstruct_frames(selected_components, score_frames):
     if not selected_components:
         # No components selected, return mean shape repeated
-        return np.repeat(mu, n_frames, axis=0), np.zeros(n_frames)
+        return np.repeat(MU, N_FRAMES, axis=0), np.zeros(N_FRAMES)
 
     # Extract the scores for selected PCs and sum them (or combine as needed)
     selected_scores = score_frames[:, selected_components]
     combined_scores = np.sum(selected_scores, axis=1)  # sum over selected PCs
 
     # Extract only the selected PCs from principal_components
-    selected_PCs = principal_components[selected_components, :]
+    selected_PCs = PRINCIPAL_COMPONENTS[selected_components, :]
 
     # Reconstruct from selected PCs
     reconstruction = np.dot(selected_scores, selected_PCs)
-    reconstruction = reconstruction.reshape(-1, n_markers, n_dims)
-    frames = mu + reconstruction
+    reconstruction = reconstruction.reshape(-1, N_MARKERS, N_DIMS)
+    frames = MU + reconstruction
     return frames, combined_scores
 
 
 def create_figure(selected_components):
     left_frames_data, left_combined_scores = reconstruct_frames(
-        selected_components,
-        left_score_frames
+        selected_components, LEFT_SCORE_FRAMES
     )
     left_frames_data[:, :, 0] *= -1
 
     right_frames_data, right_combined_scores = reconstruct_frames(
-        selected_components,
-        right_score_frames
+        selected_components, RIGHT_SCORE_FRAMES
     )
     full_frames_data = np.zeros((left_frames_data.shape[0], 8, 3))
     # Fill alternating indices
-    full_frames_data[:,::2,:] = left_frames_data.squeeze()
-    full_frames_data[:,1::2,:] = right_frames_data.squeeze()
+    full_frames_data[:, ::2, :] = left_frames_data.squeeze()
+    full_frames_data[:, 1::2, :] = right_frames_data.squeeze()
     # Center the combined scores for plotting
     combined_scores = np.mean([left_combined_scores, right_combined_scores], axis=0)
     combined_scores_centered = combined_scores - np.mean(combined_scores)
@@ -96,18 +87,18 @@ def create_figure(selected_components):
 
     # Create frames for animation
     frames_list = []
-    for i in range(n_frames):
-        hawk3d.reset_transformation()
-        hawk3d.update_keypoints(full_frames_data[i])
+    for i in range(N_FRAMES):
+        HAWK3D.reset_transformation()
+        HAWK3D.update_keypoints(full_frames_data[i])
 
         scatter3d = go.Figure()
-        scatter3d = plot_sections_plotly(scatter3d, hawk3d, colour=colour, alpha=alpha)
-        scatter3d = plot_keypoints_plotly(scatter3d, hawk3d, colour=colour, alpha=1)
-        scatter3d = plot_settings_animateplotly(scatter3d, hawk3d)
+        scatter3d = plot_sections_plotly(scatter3d, HAWK3D, colour=COLOUR, alpha=ALPHA)
+        scatter3d = plot_keypoints_plotly(scatter3d, HAWK3D, colour=COLOUR, alpha=1)
+        scatter3d = plot_settings_animateplotly(scatter3d, HAWK3D)
         scatter3d_traces = scatter3d.data
 
         line_plot = go.Scatter(
-            x=np.arange(n_frames),
+            x=np.arange(N_FRAMES),
             y=combined_scores_centered,
             mode="lines",
             xaxis="x2",
@@ -128,7 +119,7 @@ def create_figure(selected_components):
 
         frame_layout = go.Layout(
             title={
-                "text": f"Selected Components: {', '.join([str(s+1) for s in sorted(selected_components)]) if selected_components else 'None'}",
+                "text": f"Selected Components: {', '.join([str(s + 1) for s in sorted(selected_components)]) if selected_components else 'None'}",
                 "xanchor": "center",
                 "yanchor": "top",
                 "x": 0.5,
@@ -147,7 +138,6 @@ def create_figure(selected_components):
             layout=frame_layout,
         )
         frames_list.append(frame)
-        
 
     # Use the first frame as initial data
     initial_data = [*frames_list[0].data]
@@ -156,16 +146,15 @@ def create_figure(selected_components):
         fig.add_trace(i_data)
 
     for frame in frames_list:
-            frame.layout.update(
-                scene={
-                    "xaxis": {"range": [-0.6, 0.6], "autorange": False},
-                    "yaxis": {"range": [-0.6, 0.6], "autorange": False},
-                    "zaxis": {"range": [-0.6, 0.6], "autorange": False},
-                }
-            )
+        frame.layout.update(
+            scene={
+                "xaxis": {"range": [-0.6, 0.6], "autorange": False},
+                "yaxis": {"range": [-0.6, 0.6], "autorange": False},
+                "zaxis": {"range": [-0.6, 0.6], "autorange": False},
+            }
+        )
 
     fig.frames = frames_list
-    
 
     # Play/Pause buttons
     play_pause_buttons = [
@@ -208,7 +197,7 @@ def create_figure(selected_components):
             "steps": [],
         }
     ]
-    for i in range(n_frames):
+    for i in range(N_FRAMES):
         slider_step = {
             "label": str(i),
             "method": "animate",
@@ -273,7 +262,7 @@ app.layout = html.Div(
         ),
         dcc.Dropdown(
             id="pc-dropdown",
-            options=[{"label": f"PC {i+1}", "value": i} for i in range(n_components)],
+            options=[{"label": f"PC {i + 1}", "value": i} for i in range(N_COMPONENTS)],
             value=[],  # start with no PCs selected
             multi=True,
             style={"width": "75%", "font-family": "Arial", "margin": "auto"},
