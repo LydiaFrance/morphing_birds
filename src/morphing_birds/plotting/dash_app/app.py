@@ -30,7 +30,18 @@ N_COMPONENTS = 12
 COLOUR = "lightblue"
 
 
-def reconstruct_frames(selected_components, score_frames):
+def reconstruct_frames(
+    selected_components: list[int], score_frames: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
+    """Reconstruct frames from selected principal components.
+
+    Args:
+        selected_components (list[int]): list of selected principal components.
+        score_frames (np.ndarray): Score frames array.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]: Reconstructed frames and combined scores.
+    """
     if not selected_components:
         # No components selected, return mean shape repeated
         return np.repeat(MU, N_FRAMES, axis=0), np.zeros(N_FRAMES)
@@ -49,7 +60,15 @@ def reconstruct_frames(selected_components, score_frames):
     return frames, combined_scores
 
 
-def create_figure(selected_components):
+def create_figure(selected_components: list[int]) -> go.Figure:
+    """Create the figure for the animation.
+
+    Args:
+        selected_components (list[int]): list of selected principal components.
+
+    Returns:
+        go.Figure: Plotly figure object.
+    """
     left_frames_data, left_combined_scores = reconstruct_frames(
         selected_components, LEFT_SCORE_FRAMES
     )
@@ -75,19 +94,41 @@ def create_figure(selected_components):
     fig.frames = frames_list
 
     add_play_pause_buttons(fig)
-    add_sliders(fig, combined_scores_centered, y_min, y_max)
+    add_sliders(fig, y_min, y_max)
 
     return fig
 
 
-def combine_frames(left_frames_data, right_frames_data):
+def combine_frames(
+    left_frames_data: np.ndarray, right_frames_data: np.ndarray
+) -> np.ndarray:
+    """Combine left and right frames data.
+
+    Args:
+        left_frames_data (np.ndarray): Left frames data.
+        right_frames_data (np.ndarray): Right frames data.
+
+    Returns:
+        np.ndarray: Combined frames data.
+    """
     full_frames_data = np.zeros((left_frames_data.shape[0], 8, 3))
     full_frames_data[:, ::2, :] = left_frames_data.squeeze()
     full_frames_data[:, 1::2, :] = right_frames_data.squeeze()
     return full_frames_data
 
 
-def center_combined_scores(left_combined_scores, right_combined_scores):
+def center_combined_scores(
+    left_combined_scores: np.ndarray, right_combined_scores: np.ndarray
+) -> tuple[np.ndarray, float, float]:
+    """Center combined scores.
+
+    Args:
+        left_combined_scores (np.ndarray): Left combined scores.
+        right_combined_scores (np.ndarray): Right combined scores.
+
+    Returns:
+        tuple[np.ndarray, float, float]: Centered combined scores, minimum and maximum values.
+    """
     combined_scores = np.mean([left_combined_scores, right_combined_scores], axis=0)
     combined_scores_centered = combined_scores - np.mean(combined_scores)
     y_min = combined_scores_centered.min()
@@ -95,7 +136,12 @@ def center_combined_scores(left_combined_scores, right_combined_scores):
     return combined_scores_centered, y_min, y_max
 
 
-def initialize_figure():
+def initialize_figure() -> go.Figure:
+    """Initialize the figure layout.
+
+    Returns:
+        go.Figure: Plotly figure object.
+    """
     fig = make_subplots(
         rows=1,
         cols=1,
@@ -115,7 +161,21 @@ def initialize_figure():
     return fig
 
 
-def create_animation_frames(selected_components, full_frames_data, combined_scores_centered):
+def create_animation_frames(
+    selected_components: list[int],
+    full_frames_data: np.ndarray,
+    combined_scores_centered: np.ndarray,
+) -> list[go.Frame]:
+    """Create animation frames.
+
+    Args:
+        selected_components (list[int]): list of selected principal components.
+        full_frames_data (np.ndarray): Full frames data.
+        combined_scores_centered (np.ndarray): Centered combined scores.
+
+    Returns:
+        list[go.Frame]: list of Plotly frames.
+    """
     frames_list = []
     for i in range(N_FRAMES):
         HAWK3D.reset_transformation()
@@ -171,13 +231,24 @@ def create_animation_frames(selected_components, full_frames_data, combined_scor
     return frames_list
 
 
-def add_initial_data(fig, frames_list):
+def add_initial_data(fig: go.Figure, frames_list: list[go.Frame]) -> None:
+    """Add initial data to the figure.
+
+    Args:
+        fig (go.Figure): Plotly figure object.
+        frames_list (list[go.Frame]): list of Plotly frames.
+    """
     initial_data = [*frames_list[0].data]
     for i_data in initial_data:
         fig.add_trace(i_data)
 
 
-def update_frame_layouts(frames_list):
+def update_frame_layouts(frames_list: list[go.Frame]) -> None:
+    """Update frame layouts.
+
+    Args:
+        frames_list (list[go.Frame]): list of Plotly frames.
+    """
     for frame in frames_list:
         frame.layout.update(
             scene={
@@ -188,7 +259,12 @@ def update_frame_layouts(frames_list):
         )
 
 
-def add_play_pause_buttons(fig):
+def add_play_pause_buttons(fig: go.Figure) -> None:
+    """Add play and pause buttons to the figure.
+
+    Args:
+        fig (go.Figure): Plotly figure object.
+    """
     play_pause_buttons = [
         {
             "args": [
@@ -234,7 +310,16 @@ def add_play_pause_buttons(fig):
     )
 
 
-def add_sliders(fig, combined_scores_centered, y_min, y_max):
+def add_sliders(
+    fig: go.Figure, y_min: float, y_max: float
+) -> None:
+    """Add sliders to the figure.
+
+    Args:
+        fig (go.Figure): Plotly figure object.
+        y_min (float): Minimum value of the centered combined scores.
+        y_max (float): Maximum value of the centered combined scores.
+    """
     sliders = [
         {
             "active": 0,
@@ -308,7 +393,15 @@ app.layout = html.Div(
 
 
 @app.callback(Output("graph", "figure"), Input("pc-dropdown", "value"))
-def update_plot(selected_components):
+def update_plot(selected_components: list[int]) -> go.Figure:
+    """Update the plot based on selected principal components.
+
+    Args:
+        selected_components (list[int]): list of selected principal components.
+
+    Returns:
+        go.Figure: Updated Plotly figure object.
+    """
     fig = create_figure(selected_components)
     return fig
 
