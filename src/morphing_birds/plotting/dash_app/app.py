@@ -5,7 +5,6 @@ import plotly.graph_objects as go
 from dash import Dash, dcc, html
 from dash.dependencies import Input, Output
 from plotly.subplots import make_subplots
-from scipy.stats import ortho_group
 
 from morphing_birds import (
     Hawk3D,
@@ -19,56 +18,29 @@ SCRIPT_DIR = pathlib.Path(__file__).parent.absolute()
 
 hawk3d = Hawk3D(SCRIPT_DIR.parents[3] / "data/mean_hawk_shape.csv")
 
+principal_components = np.load(
+    SCRIPT_DIR.parents[3] / "data/website_principal_components.npy"
+)
+left_score_frames = np.load(SCRIPT_DIR.parents[3] / "data/Left_scores_RightTurn.npy")
+right_score_frames = np.load(SCRIPT_DIR.parents[3] / "data/Right_scores_RightTurn.npy")
+mu = np.load(SCRIPT_DIR.parents[3] / "data/website_mu.npy")
 
-def create_fake_pca_data(hawk3d, n_samples=20, n_components=12, n_markers=4, n_dims=3):
-    mu = hawk3d.left_markers.copy()
-    principal_components = ortho_group.rvs(dim=n_markers * n_dims)
-    explained_variance = np.linspace(2, 0.1, n_components)
-    principal_components = principal_components[:n_components] * np.sqrt(
-        explained_variance[:, np.newaxis]
-    )
+alpha = 0.3
 
-    time = np.linspace(0, 4 * np.pi, n_samples)
-    score_frames = np.zeros((n_samples, n_components))
-    for i in range(n_components):
-        amplitude = np.exp(-i / n_components)  # decreasing amplitude
-        frequency = i + 1
-        score_frames[:, i] = amplitude * np.sin(frequency * time)
-
-    reconstruction = np.dot(score_frames, principal_components)
-    reconstruction = reconstruction.reshape(-1, n_markers, n_dims)
-    reconstructed_frames = mu + reconstruction
-    return reconstructed_frames, principal_components, score_frames, mu
-
-
-n_frames = 20
-n_components = 12
+n_frames = 149
 n_markers = 4
 n_dims = 3
-alpha = 0.3
+n_components = 12
 colour = "lightblue"
-
-reconstructed_frames, principal_components, score_frames, mu = create_fake_pca_data(
-    hawk3d,
-    n_samples=n_frames,
-    n_components=n_components,
-    n_markers=n_markers,
-    n_dims=n_dims,
-)
 
 
 def reconstruct_frames(
     selected_components,
-    n_frames,
-    mu,
-    principal_components,
-    score_frames,
-    n_markers=4,
-    n_dims=3,
+    score_frames
 ):
     if not selected_components:
         # No components selected, return mean shape repeated
-        return np.repeat(mu[np.newaxis, :, :], n_frames, axis=0), np.zeros(n_frames)
+        return np.repeat(mu, n_frames, axis=0), np.zeros(n_frames)
 
     # Extract the scores for selected PCs and sum them (or combine as needed)
     selected_scores = score_frames[:, selected_components]
@@ -85,18 +57,22 @@ def reconstruct_frames(
 
 
 def create_figure(selected_components):
-    # Recompute reconstructed frames and line plot data
-    frames_data, combined_scores = reconstruct_frames(
+    left_frames_data, left_combined_scores = reconstruct_frames(
         selected_components,
-        n_frames,
-        mu,
-        principal_components,
-        score_frames,
-        n_markers,
-        n_dims,
+        left_score_frames
     )
+    left_frames_data[:, :, 0] *= -1
 
+    right_frames_data, right_combined_scores = reconstruct_frames(
+        selected_components,
+        right_score_frames
+    )
+    full_frames_data = np.zeros((left_frames_data.shape[0], 8, 3))
+    # Fill alternating indices
+    full_frames_data[:,::2,:] = left_frames_data.squeeze()
+    full_frames_data[:,1::2,:] = right_frames_data.squeeze()
     # Center the combined scores for plotting
+    combined_scores = np.mean([left_combined_scores, right_combined_scores], axis=0)
     combined_scores_centered = combined_scores - np.mean(combined_scores)
     y_min = combined_scores_centered.min()
     y_max = combined_scores_centered.max()
@@ -122,7 +98,7 @@ def create_figure(selected_components):
     frames_list = []
     for i in range(n_frames):
         hawk3d.reset_transformation()
-        hawk3d.update_keypoints(frames_data[i])
+        hawk3d.update_keypoints(full_frames_data[i])
 
         scatter3d = go.Figure()
         scatter3d = plot_sections_plotly(scatter3d, hawk3d, colour=colour, alpha=alpha)
@@ -171,6 +147,7 @@ def create_figure(selected_components):
             layout=frame_layout,
         )
         frames_list.append(frame)
+        
 
     # Use the first frame as initial data
     initial_data = [*frames_list[0].data]
@@ -178,7 +155,17 @@ def create_figure(selected_components):
     for i_data in initial_data:
         fig.add_trace(i_data)
 
+    for frame in frames_list:
+            frame.layout.update(
+                scene={
+                    "xaxis": {"range": [-0.6, 0.6], "autorange": False},
+                    "yaxis": {"range": [-0.6, 0.6], "autorange": False},
+                    "zaxis": {"range": [-0.6, 0.6], "autorange": False},
+                }
+            )
+
     fig.frames = frames_list
+    
 
     # Play/Pause buttons
     play_pause_buttons = [
@@ -210,8 +197,6 @@ def create_figure(selected_components):
         },
     ]
 
-    # -- Add slider --
-    # Create one slider with a step for each frame
     sliders = [
         {
             "active": 0,
