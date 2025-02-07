@@ -23,7 +23,6 @@ from .plotting import (
     animate_plotly, 
     animate_plotly_compare, 
     save_plotly_animation,
-    create_dash_app
 )
 
 __all__ = ("__version__", 

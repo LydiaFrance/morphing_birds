@@ -19,7 +19,6 @@ from .plotly_animate import (
     save_plotly_animation,
     plot_settings_animateplotly,
 )
-from .dash_app import create_dash_app
 
 __all__ = [
     "plot", 
@@ -35,5 +34,4 @@ __all__ = [
     "animate_plotly",
     "animate_plotly_compare",
     "save_plotly_animation",
-    "create_dash_app"
 ]

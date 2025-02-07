@@ -1,0 +1,7 @@
+dash
+plotly
+jinja2
+numpy
+scipy
+gunicorn
+-e .

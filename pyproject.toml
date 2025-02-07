@@ -35,6 +35,11 @@ dependencies = ["numpy",
                 "dash",
                 "plotly==5.24.1",
                 "imageio"
+                "plotly",
+                "imageio",
+                "gunicorn",
+                "jinja2",
+                "scipy",
                 ]
 
 [project.optional-dependencies]
@@ -86,7 +91,7 @@ port.exclude_lines = [
 
 
 [tool.ruff]
-select = [
+lint.select = [
   "E", "F", "W", # flake8
   "B",           # flake8-bugbear
   "I",           # isort
@@ -108,15 +113,15 @@ select = [
   "YTT",         # flake8-2020
   "EXE",         # flake8-executable
 ]
-extend-ignore = [
+lint.extend-ignore = [
   "PLR",    # Design related pylint codes
   "E501",   # Line too long
 ]
 
 src = ["src"]
-unfixable = [
+lint.unfixable = [
   "F841", # Would remove unused variables
 ]
 exclude = []
-flake8-unused-arguments.ignore-variadic-names = true
+lint.flake8-unused-arguments.ignore-variadic-names = true
 
