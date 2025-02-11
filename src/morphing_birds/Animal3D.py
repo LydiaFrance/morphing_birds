@@ -372,28 +372,78 @@ class Animal3D:
         min_coords = self.current_shape.min(axis=(0, 1))
         max_coords = self.current_shape.max(axis=(0, 1))
         return min_coords, max_coords
-
-    def set_fixed_marker_scaling(self, scaling_factors):
+    def validate_marker_positions(self):
         """
-        Sets the scaling factors for fixed markers.
-
-        Parameters:
-        - scaling_factors (numpy.ndarray): Array of scaling factors [x, y, z]
-            Must be a 3-element array corresponding to x, y, z dimensions.
-        """
-        if not isinstance(scaling_factors, np.ndarray) or scaling_factors.shape != (3,):
-            raise ValueError("scaling_factors must be a numpy array with shape (3,)")
+        Validates the anatomical relationships between markers.
         
-        self.fixed_marker_scaling = scaling_factors
+        Raises:
+        - ValueError: If marker positions violate anatomical constraints
+        """
+        # Get current positions using existing properties
+        moving_markers = self.markers[0]  # Shape: [n_markers, 3]
+        fixed_markers = self.fixed_markers[0]  # Shape: [n_fixed_markers, 3]
+        
+        # Get marker indices from skeleton definition
+        marker_dict = {name: idx for idx, name in enumerate(self.skeleton_definition.marker_names)}
+        fixed_dict = {name: idx for idx, name in enumerate(self.skeleton_definition.fixed_marker_names)}
+        
+        # Left/Right symmetry checks
+        if moving_markers[marker_dict["left_wingtip"]][0] >= moving_markers[marker_dict["right_wingtip"]][0]:
+            raise ValueError("Left wingtip must be to the left of right wingtip")
+        
+        if fixed_markers[fixed_dict["left_shoulder"]][0] >= fixed_markers[fixed_dict["right_shoulder"]][0]:
+            raise ValueError("Left shoulder must be to the left of right shoulder")
+        
+        if fixed_markers[fixed_dict["left_tailbase"]][0] >= fixed_markers[fixed_dict["right_tailbase"]][0]:
+            raise ValueError("Left tailbase must be to the left of right tailbase")
 
-      
-    def apply_fixed_marker_scaling(self):
-        """
-        Applies the current fixed marker scaling to the untransformed shape.
-        """
-        self.current_shape[:, self.fixed_marker_index, :] /= self.fixed_marker_scaling
-    
-    
+        # Wing structure checks
+        for side, indices in [("left", [marker_dict["left_wingtip"], marker_dict["left_primary"], marker_dict["left_secondary"]]),
+                            ("right", [marker_dict["right_wingtip"], marker_dict["right_primary"], marker_dict["right_secondary"]])]:
+            wingtip = moving_markers[indices[0]]
+            primary = moving_markers[indices[1]]
+            secondary = moving_markers[indices[2]]
+            shoulder = fixed_markers[fixed_dict["left_shoulder"] if side == "left" else fixed_dict["right_shoulder"]]
+            
+            if side == "left":
+                if not (wingtip[0] <= primary[0] <= secondary[0] <= shoulder[0]):
+                    raise ValueError(f"{side.capitalize()} wing markers must progress inward from wingtip to shoulder")
+            else:
+                if not (wingtip[0] >= primary[0] >= secondary[0] >= shoulder[0]):
+                    raise ValueError(f"{side.capitalize()} wing markers must progress inward from wingtip to shoulder")
+
+
+        # Tail position checks
+        hood = fixed_markers[fixed_dict["hood"]]
+        left_tailbase = fixed_markers[fixed_dict["left_tailbase"]]
+        right_tailbase = fixed_markers[fixed_dict["right_tailbase"]]
+        
+        if not (left_tailbase[1] < hood[1] and right_tailbase[1] < hood[1]):
+            raise ValueError("Tail base must be behind the hood")
+
+        # Check tail tips
+        left_tailtip = moving_markers[marker_dict["left_tailtip"]]
+        right_tailtip = moving_markers[marker_dict["right_tailtip"]]
+        
+        if not (left_tailtip[1] < left_tailbase[1] and right_tailtip[1] < right_tailbase[1]):
+            raise ValueError("Tail tips must be behind tail base")
+
+        # Body integrity checks
+        left_shoulder = fixed_markers[fixed_dict["left_shoulder"]]
+        right_shoulder = fixed_markers[fixed_dict["right_shoulder"]]
+        hood = fixed_markers[fixed_dict["hood"]]
+        
+        if not (left_shoulder[0] <= hood[0] <= right_shoulder[0]):
+            raise ValueError("Hood must be between left and right shoulders")
+
+        if not (left_shoulder[1] > left_tailbase[1] and right_shoulder[1] > right_tailbase[1]):
+            raise ValueError("Shoulders must be above tailbase")
+
+        # Verify tailpack position
+        tailpack = fixed_markers[fixed_dict["tailpack"]]
+        if not (left_tailbase[1] >= tailpack[1] and right_tailbase[1] >= tailpack[1]):
+            raise ValueError("Tailpack must be below tailbase markers")
+
     @property
     def markers(self):
         """
