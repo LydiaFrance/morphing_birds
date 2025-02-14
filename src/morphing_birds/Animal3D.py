@@ -61,15 +61,39 @@ class Animal3D:
         origin (numpy.ndarray): The origin point for transformations
         untransformed_shape (numpy.ndarray): A copy of the original keypoint positions
     """
-    def __init__(self, skeleton_definition):
-
+    def __init__(self, skeleton_definition, custom_marker_positions=None, custom_fixed_positions=None):
+        """
+        Initialise Animal3D with optional custom marker positions.
+        
+        Parameters:
+        - skeleton_definition: SkeletonDefinition instance
+        - custom_marker_positions: dict, optional
+            Maps marker names to [x,y,z] coordinates for moving markers
+            e.g., {"left_wingtip": [1.0, 2.0, 3.0], ...}
+        - custom_fixed_positions: dict, optional
+            Maps fixed marker names to [x,y,z] coordinates
+            e.g., {"left_shoulder": [1.0, 2.0, 3.0], ...}
+        """
         self.skeleton_definition = skeleton_definition
 
-        # Initialize marker indices
-        self.marker_index = []
-        self.fixed_marker_index = []
-        self.right_marker_index = []
-        self.left_marker_index = []
+        # Initialize marker indices first
+        self.marker_index = list(range(len(self.skeleton_definition.marker_names)))
+        self.fixed_marker_index = list(range(
+            len(self.skeleton_definition.marker_names),
+            len(self.skeleton_definition.marker_names) + len(self.skeleton_definition.fixed_marker_names)
+        ))
+        
+        # Initialize right/left marker indices
+        self.right_marker_index = [
+            i for i, name in enumerate(self.skeleton_definition.marker_names)
+            if "right" in name
+        ]
+        self.left_marker_index = [
+            i for i, name in enumerate(self.skeleton_definition.marker_names)
+            if "left" in name
+        ]
+        
+        # Initialize other attributes
         self.body_section_indices = {}
         self.polygons = {}
 
@@ -85,6 +109,50 @@ class Animal3D:
         # Add scaling factor attribute with default of no scaling
         self.fixed_marker_scaling = np.ones(3)
 
+        # If custom positions are provided, use them to initialize the shape
+        if custom_marker_positions is not None or custom_fixed_positions is not None:
+            self.init_from_custom_positions(custom_marker_positions, custom_fixed_positions)
+
+
+    
+    def init_from_custom_positions(self, custom_marker_positions=None, custom_fixed_positions=None):
+        """
+        Initialize the shape from custom marker positions.
+        """
+        # Create empty arrays for all markers
+        n_markers = len(self.skeleton_definition.marker_names)
+        n_fixed = len(self.skeleton_definition.fixed_marker_names)
+        total_markers = n_markers + n_fixed
+        
+        # Initialize shape array [1, total_markers, 3]
+        shape = np.zeros((1, total_markers, 3))
+        
+        # Fill in moving marker positions
+        if custom_marker_positions:
+            for name, pos in custom_marker_positions.items():
+                if name not in self.skeleton_definition.marker_names:
+                    raise ValueError(f"Unknown marker name: {name}")
+                idx = self.skeleton_definition.marker_names.index(name)
+                shape[0, idx] = np.array(pos)
+        
+        # Fill in fixed marker positions
+        if custom_fixed_positions:
+            for name, pos in custom_fixed_positions.items():
+                if name not in self.skeleton_definition.fixed_marker_names:
+                    raise ValueError(f"Unknown fixed marker name: {name}")
+                idx = n_markers + self.skeleton_definition.fixed_marker_names.index(name)
+                shape[0, idx] = np.array(pos)
+        
+        # Set the shapes before validation
+        self.default_shape = shape.copy()
+        self.current_shape = shape.copy()
+        self.untransformed_shape = shape.copy()
+        
+        # Initialize polygons
+        self.init_polygons(self.skeleton_definition.marker_names + self.skeleton_definition.fixed_marker_names)
+        
+        # Validate the positions
+        self.validate_marker_positions()
 
 
     def define_indices(self, csv_marker_names):
@@ -439,11 +507,7 @@ class Animal3D:
         if not (left_shoulder[1] > left_tailbase[1] and right_shoulder[1] > right_tailbase[1]):
             raise ValueError("Shoulders must be above tailbase")
 
-        # Verify tailpack position
-        tailpack = fixed_markers[fixed_dict["tailpack"]]
-        if not (left_tailbase[1] >= tailpack[1] and right_tailbase[1] >= tailpack[1]):
-            raise ValueError("Tailpack must be below tailbase markers")
-
+        
     @property
     def markers(self):
         """
