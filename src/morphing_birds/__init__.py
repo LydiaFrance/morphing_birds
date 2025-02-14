@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from .SkeletonDefinition import SkeletonDefinition
 from .Animal3D import Animal3D
+from .ArbitraryBird3D import ArbitraryBird3D
 from .hawk_skeleton_definition import HawkSkeletonDefinition
 from .spider_skeleton_definition import SpiderSkeletonDefinition
 from .Hawk3D import Hawk3D
@@ -26,7 +27,7 @@ from .plotting import (
 )
 
 __all__ = ("__version__", 
-           "SkeletonDefinition", "Animal3D", 
+           "SkeletonDefinition", "Animal3D", "ArbitraryBird3D",
            "Hawk3D", "HawkSkeletonDefinition", 
            "SpiderSkeletonDefinition", "Spider3D",
            "plot", "interactive_plot", "plot_multiple", "plot_plotly", "plot_partial_plotly",
