@@ -9,6 +9,7 @@ from .matplotlib_animate import (
 )
 from .plotly_plots import (
     plot_plotly, 
+    plot_plotly_compare,
     plot_compare_plotly, 
     plot_partial_plotly
 )
@@ -27,6 +28,7 @@ __all__ = [
     "animate", 
     "animate_compare",
     "plot_plotly",
+    "plot_plotly_compare",
     "plot_compare_plotly",
     "plot_partial_plotly",
     "animate_plotly",

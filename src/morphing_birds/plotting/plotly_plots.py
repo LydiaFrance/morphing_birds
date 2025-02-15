@@ -27,8 +27,7 @@ def plot_plotly(animal3d_instance, colour='lightblue', alpha=0.3, axisOn=True,
     """
     # Store the current state
     current_state = animal3d_instance.current_shape.copy()
-    current_scaling = animal3d_instance.fixed_marker_scaling.copy()
-
+    
     # Apply transformations if provided
     animal3d_instance.reset_transformation()
     animal3d_instance.transform_keypoints(bodypitch=bodypitch,
@@ -54,8 +53,52 @@ def plot_plotly(animal3d_instance, colour='lightblue', alpha=0.3, axisOn=True,
 
     # Restore the original state
     animal3d_instance.current_shape = current_state
-    animal3d_instance.set_fixed_marker_scaling(current_scaling)
+    
+    return fig
 
+def plot_plotly_compare(animal3d_instances,
+                        colours=None,
+                        alpha=0.3,
+                        axisOn=True,
+                        horzDist=None,
+                        vertDist=None,
+                        bodypitch=None,
+                        bodyroll=None,
+                        bodyyaw=None):
+    
+    # Create plot
+    fig = go.Figure()
+
+    if colours is None:
+        colours = ['red', None]  # First shape red, second shape default
+    
+    for animal3d_instance, colour in zip(animal3d_instances, colours):
+        # Store the current state
+        current_state = animal3d_instance.current_shape.copy()
+        
+        # Apply transformations if provided
+        animal3d_instance.reset_transformation()
+        animal3d_instance.transform_keypoints(bodypitch=bodypitch,
+                                        horzDist=horzDist,
+                                        vertDist=vertDist, 
+                                        bodyyaw=bodyyaw,
+                                        bodyroll=bodyroll)
+
+        fig = plot_sections_plotly(fig, animal3d_instance, colour, alpha)
+    
+        # Set axis visibility
+        if not axisOn:
+            fig.update_layout(scene=dict(
+                xaxis=dict(visible=False),
+                yaxis=dict(visible=False),
+                zaxis=dict(visible=False)
+            ))
+        
+        fig = plot_settings_plotly(fig, animal3d_instance)
+
+        # Restore the original state
+        animal3d_instance.current_shape = current_state
+    
     return fig
 
 
@@ -101,7 +144,6 @@ def plot_compare_plotly(animal3d_instance,
     
     # Store the current state
     current_state = animal3d_instance.current_shape.copy()
-    current_scaling = animal3d_instance.fixed_marker_scaling.copy()
     
     # Create figure
     fig = go.Figure()
@@ -137,7 +179,6 @@ def plot_compare_plotly(animal3d_instance,
     
     # Restore the original state
     animal3d_instance.current_shape = current_state
-    animal3d_instance.set_fixed_marker_scaling(current_scaling)
     
     return fig
 
@@ -174,8 +215,7 @@ def plot_partial_plotly(animal3d_instance, section_name=None, leg_number=None, c
     """
     # Store the current state
     current_state = animal3d_instance.current_shape.copy()
-    current_scaling = animal3d_instance.fixed_marker_scaling.copy()
-
+    
     # Apply transformations if provided
     animal3d_instance.reset_transformation()
     animal3d_instance.transform_keypoints(bodypitch=bodypitch,
@@ -214,7 +254,6 @@ def plot_partial_plotly(animal3d_instance, section_name=None, leg_number=None, c
 
     # Restore the original state
     animal3d_instance.current_shape = current_state
-    animal3d_instance.set_fixed_marker_scaling(current_scaling)
 
     return fig
 
