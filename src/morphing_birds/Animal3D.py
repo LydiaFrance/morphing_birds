@@ -242,6 +242,10 @@ class Animal3D:
         if len(keypoints.shape) == 2:
             keypoints = keypoints.reshape(1, -1, 3)
 
+        # If the left side is missing, provide the right side
+        if keypoints.shape[1] == len(self.skeleton_definition.get_right_marker_names()):
+            keypoints = self.mirror_keypoints(keypoints)
+
         return keypoints
 
     def mirror_keypoints(self, keypoints):
