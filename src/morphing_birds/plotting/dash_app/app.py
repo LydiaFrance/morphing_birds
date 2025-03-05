@@ -95,6 +95,7 @@ def create_figure(selected_components: list[int]) -> go.Figure:
 
     add_play_pause_buttons(fig)
     add_sliders(fig, y_min, y_max)
+    fig.update_layout(uirevision=True)
 
     return fig
 
@@ -182,6 +183,7 @@ def create_animation_frames(
         HAWK3D.update_keypoints(full_frames_data[i])
 
         scatter3d = go.Figure()
+        scatter3d.layout.uirevision = True
         scatter3d = plot_sections_plotly(scatter3d, HAWK3D, colour=COLOUR, alpha=ALPHA)
         scatter3d = plot_keypoints_plotly(scatter3d, HAWK3D, colour=COLOUR, alpha=1)
         scatter3d = plot_settings_animateplotly(scatter3d, HAWK3D)
@@ -255,7 +257,8 @@ def update_frame_layouts(frames_list: list[go.Frame]) -> None:
                 "xaxis": {"range": [-0.6, 0.6], "autorange": False},
                 "yaxis": {"range": [-0.6, 0.6], "autorange": False},
                 "zaxis": {"range": [-0.6, 0.6], "autorange": False},
-            }
+            },
+            uirevision=True,
         )
 
 
