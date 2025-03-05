@@ -153,9 +153,9 @@ def initialize_figure() -> go.Figure:
         scene={
             "domain": {"x": [0.1, 0.9], "y": [0.1, 0.8]},
             "aspectmode": "cube",
-            "xaxis": {"range": [-0.5, 0.5], "autorange": False},
-            "yaxis": {"range": [-0.5, 0.5], "autorange": False},
-            "zaxis": {"range": [-0.5, 0.5], "autorange": False},
+            "xaxis": {"range": [-0.6, 0.6], "autorange": False, "dtick": 0.25},
+            "yaxis": {"range": [-0.6, 0.6], "autorange": False, "dtick": 0.25},
+            "zaxis": {"range": [-0.6, 0.6], "autorange": False, "dtick": 0.25},
         },
         showlegend=False,
     )
@@ -254,9 +254,9 @@ def update_frame_layouts(frames_list: list[go.Frame]) -> None:
     for frame in frames_list:
         frame.layout.update(
             scene={
-                "xaxis": {"range": [-0.6, 0.6], "autorange": False},
-                "yaxis": {"range": [-0.6, 0.6], "autorange": False},
-                "zaxis": {"range": [-0.6, 0.6], "autorange": False},
+                "xaxis": {"range": [-0.6, 0.6], "autorange": False, "dtick": 0.25},
+                "yaxis": {"range": [-0.6, 0.6], "autorange": False, "dtick": 0.25},
+                "zaxis": {"range": [-0.6, 0.6], "autorange": False, "dtick": 0.25},
             },
             uirevision=True,
         )
