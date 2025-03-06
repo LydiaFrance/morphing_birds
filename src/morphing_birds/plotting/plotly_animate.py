@@ -306,7 +306,12 @@ def plot_settings_animateplotly(fig, animal3d_instance):
         current_camera = fig.layout.scene.camera
 
     # Calculate axis limits
-    fixed_range = calculate_axis_limits(animal3d_instance)
+    new_fixed_range = calculate_axis_limits(animal3d_instance)
+    # Assume fig._last_fixed_range is stored on the figure
+    if hasattr(fig, '_last_fixed_range') and fig._last_fixed_range == new_fixed_range:
+        # No need to update if limits haven't changed
+        return fig
+    fig._last_fixed_range = new_fixed_range
 
     # Update axes
     axes_config = dict(
@@ -315,14 +320,14 @@ def plot_settings_animateplotly(fig, animal3d_instance):
         showbackground=True,
         backgroundcolor="white",
         gridwidth=0.5,
-        dtick=fixed_range[0][1] / 2  # Set grid lines to be consistent with view scale
+        dtick=new_fixed_range[0][1] / 2  # Set grid lines to be consistent with view scale
     )
 
     # Prepare the scene dictionary
     scene_dict = dict(
-        xaxis=dict(range=fixed_range[0], **axes_config),
-        yaxis=dict(range=fixed_range[1], **axes_config),
-        zaxis=dict(range=fixed_range[2], **axes_config),
+        xaxis=dict(range=new_fixed_range[0], **axes_config),
+        yaxis=dict(range=new_fixed_range[1], **axes_config),
+        zaxis=dict(range=new_fixed_range[2], **axes_config),
         aspectmode='cube',
         aspectratio=dict(x=1, y=1, z=1)
     )

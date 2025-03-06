@@ -149,7 +149,8 @@ def plot_keypoints_plotly(fig, Hawk3D_instance, colour='black', alpha=1):
     return fig
 
 def plot_sections_plotly(fig, Hawk3D_instance, colour, alpha=1):
-    for section in Hawk3D_instance.skeleton_definition.body_sections.keys():
+    skeleton_keys = list(Hawk3D_instance.skeleton_definition.body_sections.keys())
+    for section in skeleton_keys:
         mesh, lines = get_polygon_plotly(Hawk3D_instance, section, colour, alpha)
         if mesh is not None:
             fig.add_trace(mesh)

@@ -10,7 +10,6 @@ from morphing_birds import (
     Hawk3D,
     plot_keypoints_plotly,
     plot_sections_plotly,
-    plot_settings_animateplotly,
 )
 
 # get directory of file using pathlib
@@ -89,14 +88,10 @@ def create_figure(selected_components: list[int]) -> go.Figure:
     )
 
     add_initial_data(fig, frames_list)
-    update_frame_layouts(frames_list)
 
     fig.frames = frames_list
 
-    add_play_pause_buttons(fig)
-    add_sliders(fig, y_min, y_max)
-    fig.update_layout(uirevision=True)
-
+    add_buttons_and_sliders(fig, y_min, y_max)
     return fig
 
 
@@ -178,18 +173,8 @@ def create_animation_frames(
         list[go.Frame]: list of Plotly frames.
     """
     frames_list = []
-    for i in range(N_FRAMES):
-        HAWK3D.reset_transformation()
-        HAWK3D.update_keypoints(full_frames_data[i])
 
-        scatter3d = go.Figure()
-        scatter3d.layout.uirevision = True
-        scatter3d = plot_sections_plotly(scatter3d, HAWK3D, colour=COLOUR, alpha=ALPHA)
-        scatter3d = plot_keypoints_plotly(scatter3d, HAWK3D, colour=COLOUR, alpha=1)
-        scatter3d = plot_settings_animateplotly(scatter3d, HAWK3D)
-        scatter3d_traces = scatter3d.data
-
-        line_plot = go.Scatter(
+    line_plot = go.Scatter(
             x=np.arange(N_FRAMES),
             y=combined_scores_centered,
             mode="lines",
@@ -198,6 +183,16 @@ def create_animation_frames(
             showlegend=False,
             line={"color": "blue"},
         )
+
+    for i in range(N_FRAMES):
+        HAWK3D.reset_transformation()
+        HAWK3D.update_keypoints(full_frames_data[i])
+
+        scatter3d = go.Figure()
+        scatter3d = plot_sections_plotly(scatter3d, HAWK3D, colour=COLOUR, alpha=ALPHA)
+        scatter3d = plot_keypoints_plotly(scatter3d, HAWK3D, colour=COLOUR, alpha=1)
+        scatter3d_traces = scatter3d.data
+
 
         current_frame_marker = go.Scatter(
             x=[i],
@@ -219,7 +214,11 @@ def create_animation_frames(
             },
             xaxis2={"domain": [0.8, 0.95]},
             yaxis2={"domain": [0.8, 0.95]},
-            scene=scatter3d.layout.scene,
+            scene={
+                "xaxis": {"range": [-0.6, 0.6], "autorange": False, "dtick": 0.25},
+                "yaxis": {"range": [-0.6, 0.6], "autorange": False, "dtick": 0.25},
+                "zaxis": {"range": [-0.6, 0.6], "autorange": False, "dtick": 0.25},
+            },
         )
 
         frame_data = [*list(scatter3d_traces), line_plot, current_frame_marker]
@@ -245,28 +244,15 @@ def add_initial_data(fig: go.Figure, frames_list: list[go.Frame]) -> None:
         fig.add_trace(i_data)
 
 
-def update_frame_layouts(frames_list: list[go.Frame]) -> None:
-    """Update frame layouts.
-
-    Args:
-        frames_list (list[go.Frame]): list of Plotly frames.
-    """
-    for frame in frames_list:
-        frame.layout.update(
-            scene={
-                "xaxis": {"range": [-0.6, 0.6], "autorange": False, "dtick": 0.25},
-                "yaxis": {"range": [-0.6, 0.6], "autorange": False, "dtick": 0.25},
-                "zaxis": {"range": [-0.6, 0.6], "autorange": False, "dtick": 0.25},
-            },
-            uirevision=True,
-        )
-
-
-def add_play_pause_buttons(fig: go.Figure) -> None:
-    """Add play and pause buttons to the figure.
+def add_buttons_and_sliders(
+    fig: go.Figure, y_min: float, y_max: float
+) -> None:
+    """Add buttons and sliders to the figure.
 
     Args:
         fig (go.Figure): Plotly figure object.
+        y_min (float): Minimum value of the centered combined scores.
+        y_max (float): Maximum value of the centered combined scores.
     """
     play_pause_buttons = [
         {
@@ -297,32 +283,6 @@ def add_play_pause_buttons(fig: go.Figure) -> None:
         },
     ]
 
-    fig.update_layout(
-        updatemenus=[
-            {
-                "type": "buttons",
-                "buttons": play_pause_buttons,
-                "x": 0,
-                "y": 0,
-                "xanchor": "left",
-                "direction": "left",
-                "yanchor": "bottom",
-                "showactive": True,
-            },
-        ]
-    )
-
-
-def add_sliders(
-    fig: go.Figure, y_min: float, y_max: float
-) -> None:
-    """Add sliders to the figure.
-
-    Args:
-        fig (go.Figure): Plotly figure object.
-        y_min (float): Minimum value of the centered combined scores.
-        y_max (float): Maximum value of the centered combined scores.
-    """
     sliders = [
         {
             "active": 0,
@@ -350,6 +310,18 @@ def add_sliders(
         sliders[0]["steps"].append(slider_step)
 
     fig.update_layout(
+        updatemenus=[
+            {
+                "type": "buttons",
+                "buttons": play_pause_buttons,
+                "x": 0,
+                "y": 0,
+                "xanchor": "left",
+                "direction": "left",
+                "yanchor": "bottom",
+                "showactive": True,
+            },
+        ],
         sliders=sliders,
         xaxis2={
             "domain": [0.8, 0.95],
@@ -365,6 +337,7 @@ def add_sliders(
         width=800,
         height=700,
         margin={"l": 50, "r": 100, "t": 125, "b": 25},
+        uirevision=True,
     )
 
 
