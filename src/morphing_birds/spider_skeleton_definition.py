@@ -89,3 +89,15 @@ class SpiderSkeletonDefinition(SkeletonDefinition):
         if leg_number < 1 or leg_number > 8:
             raise ValueError("Leg number must be between 1 and 8.")
         return [f"{marker}{leg_number}" for marker in ["claw", "tibiametatarsus", "patella", "coxa"]]
+    
+    def get_coxa_marker_names(self) -> list:
+        """
+        Returns a list of names for all coxa markers.
+        """
+        return [f"coxa{i}" for i in range(1, 9)]
+
+    def get_coxa_marker_indices(self) -> list:
+        """
+        Returns a list of indices for all coxa markers.
+        """
+        return self.get_marker_indices(self.get_coxa_marker_names())

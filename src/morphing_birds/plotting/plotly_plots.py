@@ -405,6 +405,8 @@ def plot_settings_plotly(fig, animal3d_instance):
     )
 
     fig.update_layout(
+        font=dict(
+           family="Andale Mono, Courier New, sans-serif"),  # Fallback to Arial or sans-serif
         scene=dict(
             xaxis=dict(range=fixed_range[0], **axes_config),
             yaxis=dict(range=fixed_range[1], **axes_config),
