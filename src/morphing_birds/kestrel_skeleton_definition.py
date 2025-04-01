@@ -43,13 +43,210 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
         visualisation and not included in analysis, e.g. shoulders, tailbase. 
         
         """
+        self.marker_name_change = {
+            # Head markers
+            "head": "Fun_h1", 
+            "head_mid": "Fun_he",
+            "left_head": "Fun_h2",
+            "right_head": "Fun_h3",
 
-        body_sections = {"left_handwing": [], 
-                         "right_handwing": [], 
-                         "left_armwing": [], 
-                         "right_armwing": [], 
-                         "body": [], 
-                         "head": [], 
-                         "tail": []}
+            # Body markers
+            "left_backpack": "Fun_b3",
+            "right_backpack": "Fun_b2",
+            "centre_backpack": "Fun_be",
+            "centre_back_backpack": "Fun_b1",
+
+            # Tail markers
+            "centre_tail_base": "Fun_t_c_1",
+            "centre_tail_mid": "Fun_t_c_2",
+            "centre_tail_tip": "Fun_t_c_3",
+            "left_tail_base": "Fun_t_l_1",
+            "left_tail_mid": "Fun_t_l_2",
+            "left_tail_tip": "Fun_t_l_3",
+            "right_tail_base": "Fun_t_r_1",
+            "right_tail_mid": "Fun_t_r_2",
+            "right_tail_tip": "Fun_t_r_3",
+            "left_tailpack": "Fun_tl",
+            "right_tailpack": "Fun_tr",
+            "centre_tailpack": "Fun_tc",
+            
+            # Right Arm Wing markers
+            "right_shoulder": "Fun_r_sh",
+            "right_wrist": "Fun_r_w",
+            "right_armwing_mid": "Fun_r_e",
+            "right_alula": "Fun_r_al_1",
+            "right_alula_lower": "Fun_r_al_3",
+            "right_secondary": "Fun_r_s1_1",
+            "right_lastsecondary_tip": "Fun_r_sb_1",
+
+            # Left Arm Wing markers
+            "left_shoulder": "Fun_l_sh",
+            "left_wrist": "Fun_l_w",
+            "left_armwing_mid": "Fun_l_e",
+            "left_alula": "Fun_l_al_1",
+            "left_alula_lower": "Fun_l_al_3",
+            "left_secondary_tip": "Fun_l_s1_1",
+            "left_lastsecondary_tip": "Fun_l_sb_1",
+
+            # Right Hand Wing markers
+            "right_firstprimary_tip": "Fun_r_p1_3",
+            "right_firstprimary_mid": "Fun_r_p1_2",
+            "right_firstprimary_base": "Fun_r_p1_1",
+            "right_secondprimary_tip": "Fun_r_p2_3",
+            "right_secondprimary_mid": "Fun_r_p2_2",
+            "right_secondprimary_base": "Fun_r_p2_1",
+            "right_fourthprimary_tip": "Fun_r_p4_1",
+            "right_lastprimary_tip": "Fun_r_p9_1",
+
+            # Left Hand Wing markers
+            "left_firstprimary_tip": "Fun_l_p1_3",
+            "left_firstprimary_mid": "Fun_l_p1_2",
+            "left_firstprimary_base": "Fun_l_p1_1",
+            "left_secondprimary_tip": "Fun_l_p2_3",
+            "left_secondprimary_mid": "Fun_l_p2_2",
+            "left_secondprimary_base": "Fun_l_p2_1",
+            "left_fourthprimary_tip": "Fun_l_p4_1",
+            "left_lastprimary_tip": "Fun_l_p9_1"
+            }
+        
+        # Create reverse mapping for lookup
+        self.marker_name_change_reverse = {v: k for k, v in self.marker_name_change.items()}
+
+        marker_names = list(self.marker_name_change.keys())
+
+        # fixed markers
+        # we will treat these as fixed markers as they are not useful for animation
+
+        fixed_marker_names = ["left_backpack", "right_backpack", 
+                              "centre_backpack", "centre_back_backpack", 
+                              "left_tailpack", "right_tailpack", "centre_tailpack" 
+                              ]
         
         
+        # Define the kestrel sections for animation
+        body_sections = {
+            "head": ["head", "left_head", "right_head"], 
+            "body": ["right_shoulder", "left_shoulder", "right_lastsecondary_tip", "left_lastsecondary_tip"], 
+            "tail": ["right_tail_base", "centre_tail_base", "left_tail_base", "left_tail_tip", "centre_tail_tip", "right_tail_tip"],
+            "right_armwing": ["right_shoulder", "right_wrist", "right_armwing_mid", "right_secondary_tip", "right_lastsecondary_tip"], 
+            "left_armwing": ["left_shoulder", "left_wrist", "left_armwing_mid", "left_secondary_tip", "left_lastsecondary_tip"], 
+            "left_handwing": ["left_wrist", "left_firstprimary_base", "left_firstprimary_mid", "left_firstprimary_tip", "left_secondprimary_tip", "left_secondprimary_mid", "left_secondprimary_base", "left_fourthprimary_tip", "left_lastprimary_tip"], 
+            "right_handwing": ["right_wrist", "right_firstprimary_base", "right_firstprimary_mid", "right_firstprimary_tip", "right_secondprimary_tip", "right_secondprimary_mid", "right_secondprimary_base", "right_fourthprimary_tip", "right_lastprimary_tip"], 
+            "left_alula": ["left_wrist", "left_alula", "left_alula_lower"],
+            "right_alula": ["right_wrist", "right_alula", "right_alula_lower"],
+            
+            # An alternative way to define the body sections
+            # This uses comparable markers to the hawks
+            "head_simple": ["right_shoulder", "head", "left_shoulder"],
+            "body_simple": ["right_shoulder", "left_shoulder", "right_tail_base", "left_tail_base"], 
+            "tail_simple": ["right_tail_base", "left_tail_base", "left_tail_tip", "right_tail_tip"],
+            "left_armwing_simple": ["left_firstprimary_base", "left_secondary_tip", "left_lastsecondary_tip", "left_shoulder"], 
+            "right_armwing_simple": ["right_firstprimary_base", "right_secondary_tip", "right_lastsecondary_tip", "right_shoulder"], 
+            "left_handwing_simple": ["left_firstprimary_base", "left_secondprimary_tip", "left_secondary_tip"], 
+            "right_handwing_simple": ["right_firstprimary_base", "right_secondprimary_tip", "right_secondary_tip"], 
+            
+        }
+        
+        # First, start with fixed markers as ignored
+        ignored_marker_names = fixed_marker_names.copy()
+
+        # Create a set of all markers used in any body section
+        used_in_body_sections = set()
+        for section_markers in body_sections.values():
+            used_in_body_sections.update(section_markers)
+
+        # Add any marker that isn't used in any body section to ignored_marker_names
+        for marker_name in marker_names:
+            if marker_name not in used_in_body_sections:
+                ignored_marker_names.append(marker_name)
+
+        self.ignored_marker_names = set(ignored_marker_names)
+
+        # Remove the ignored markers from the marker names
+        marker_names = [marker_name for marker_name in marker_names if marker_name not in ignored_marker_names]
+        marker_names = set(marker_names)
+
+        # We will also have an additional set of marker names that 
+        # are treated as fixed markers when we run the kestrel data like a hawk. 
+        self.fixed_marker_names_simple = ["left_shoulder", "right_shoulder", "left_tail_base", "right_tail_base", "head"]
+
+        # We also want to translate the kestrel marker names to the hawk marker names
+        self.marker_name_change_to_hawk = {
+            "left_secondary_tip" : "left_secondary",
+            "right_secondary_tip" : "right_secondary",
+            "left_tail_tip" : "left_tailtip",
+            "right_tail_tip" : "right_tailtip",
+            "right_firstprimary_base" : "right_primary",
+            "left_firstprimary_base" : "left_primary",
+            "right_secondprimary_tip" : "right_wingtip",
+            "left_secondprimary_tip" : "left_wingtip"
+        }
+
+        # super() is used to call the __init__ method of the 
+        # class SkeletonDefinition (the parent class). 
+        super().__init__(marker_names, fixed_marker_names, body_sections)
+
+    def get_original_marker_name(self, readable_marker_name: str) -> str:
+        """
+        Returns the original marker name for a given readable marker name.
+        """
+        return self.marker_name_change_reverse[readable_marker_name]
+    
+    def get_readable_marker_name(self, original_marker_name: str) -> str:
+        """
+        Returns the readable marker name for a given original marker name.
+        """
+        return self.marker_name_change[original_marker_name]
+    
+    def get_fixed_marker_names(self) -> list:
+        """
+        Returns the fixed marker names.
+        """
+        return self.fixed_marker_names
+    
+    def get_marker_names(self) -> list:
+        """
+        Returns a list of all marker names.
+        """
+        return self.marker_names
+
+    def get_right_marker_names(self) -> list:
+        """
+        Returns a list of all right side marker names.
+        """
+        return [name for name in self.marker_names if name.startswith("right_")]
+    
+    def get_left_marker_names(self) -> list:
+        """
+        Returns a list of all left side marker names.
+        """
+        return [name for name in self.marker_names if name.startswith("left_")]
+    
+    def get_ignored_marker_names(self) -> list:
+        """
+        Returns a list of all ignored marker names.
+        """
+        return self.ignored_marker_names
+
+
+    def get_marker_names_simple(self) -> list:
+        """
+        Returns a list of all marker names in the simple body sections.
+        """
+
+        # Get all the body sections that end in _simple
+        simple_sections = [section for section in self.body_sections if section.endswith("_simple")]
+        marker_names = set()
+        for section in simple_sections:
+            marker_names.update(self.body_sections[section])
+
+        # Remove the ignored markers from the marker names
+        marker_names = [marker_name for marker_name in marker_names if marker_name not in self.fixed_marker_names_simple]
+
+        return list(marker_names)
+    
+    def get_hawk_version_of_marker_name(self, marker_name: str) -> str:
+        """
+        Returns the hawk marker name for a given kestrel marker name.
+        """
+        return self.marker_name_change_to_hawk[marker_name]
