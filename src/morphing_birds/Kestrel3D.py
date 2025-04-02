@@ -30,6 +30,10 @@ class Kestrel3D(Animal3D):
         else:
             self.marker_names = self.skeleton_definition.marker_names
         
+        # Remove additional fixed markers from moving markers list
+        self.marker_names = [name for name in self.marker_names 
+                            if name not in self.skeleton_definition.additional_fixed_markers]
+        
         self.right_marker_names = [name for name in self.marker_names if name.startswith("right_")]
         self.left_marker_names = [name for name in self.marker_names if name.startswith("left_")]
         
@@ -281,3 +285,241 @@ class Kestrel3D(Animal3D):
         self.polygons = {}
         for section, indices in self.body_section_indices.items():
             self.polygons[section] = indices
+
+    def load_motion_data(self, csv_path: str, use_simple: bool = None) -> np.ndarray:
+        """
+        Loads motion data from a CSV file and returns it in the correct format for update_keypoints.
+        
+        Parameters:
+        - csv_path (str): Path to the CSV file containing motion data
+        - use_simple (bool, optional): Whether to use simple marker set. If None, uses the current setting.
+        
+        Returns:
+        - np.ndarray: Motion data in shape [nFrames, nMarkers, 3]
+        """
+        # Load the CSV data
+        data = self.load_csv_data(csv_path)
+        csv_headers = data[0]
+        csv_marker_names = self.get_csv_marker_names(csv_headers)
+        
+        # Determine which markers to include
+        use_simple_markers = self.use_simple if use_simple is None else use_simple
+        
+        # Get the appropriate marker list based on simple/detailed mode
+        if use_simple_markers:
+            motion_marker_names = self.skeleton_definition.get_marker_names_simple()
+        else:
+            motion_marker_names = self.skeleton_definition.marker_names
+            
+        # Remove fixed markers from motion markers
+        motion_marker_names = [name for name in motion_marker_names 
+                              if name not in self.skeleton_definition.additional_fixed_markers]
+        
+        # Build the CSV column indices for all the markers we need
+        marker_indices = []
+        not_found = []
+        
+        for name in motion_marker_names:
+            # Find the original name in the CSV
+            try:
+                original_name = self.skeleton_definition.marker_name_change[name]
+                if original_name in csv_marker_names:
+                    marker_indices.append(csv_marker_names.index(original_name))
+                else:
+                    not_found.append(f"{name} (original: {original_name})")
+            except KeyError:
+                not_found.append(name)
+        
+        if not_found:
+            print(f"Warning: Could not find {len(not_found)} markers in CSV: {', '.join(not_found)}")
+            
+        if not marker_indices:
+            raise ValueError("No valid markers found in CSV for selected marker set")
+        
+        # Convert data to float and reshape
+        motion_data = data[1:].astype(float)  # Skip header row
+        n_frames = motion_data.shape[0]
+        
+        # Reshape to [nFrames, nTotal, 3]
+        total_markers = len(csv_marker_names)
+        motion_data = motion_data.reshape(n_frames, total_markers, 3)
+        
+        # Extract only the columns we want
+        motion_data = motion_data[:, marker_indices, :]
+
+        return motion_data
+    
+    def remove_nan_frames(self, motion_data: np.ndarray):
+        """
+        Removes frames with NaN values from the motion data.
+        """
+        # Remove rows with NaN values
+        valid_frames = ~np.isnan(motion_data).any(axis=(1, 2))
+        if np.sum(~valid_frames) > 0:
+            print(f"Removed {np.sum(~valid_frames)} frames containing NaN values.")
+            motion_data = motion_data[valid_frames]
+        
+        return motion_data
+    
+    def update_keypoints_from_motion(self, motion_data: np.ndarray, frame_idx: int = 0):
+        """
+        Updates the keypoints using data from a specific frame of motion data.
+        
+        Parameters:
+        - motion_data (np.ndarray): Motion data in shape [nFrames, nMarkers, 3]
+        - frame_idx (int): Index of the frame to use (default: 0)
+        """
+        if frame_idx >= motion_data.shape[0]:
+            raise ValueError(f"Frame index {frame_idx} is out of range. Max frame is {motion_data.shape[0]-1}")
+        
+        # Get the marker names that should be updated
+        if self.use_simple:
+            motion_marker_names = self.skeleton_definition.get_marker_names_simple()
+        else:
+            motion_marker_names = self.skeleton_definition.marker_names
+            
+        # Remove fixed markers from motion markers
+        motion_marker_names = [name for name in motion_marker_names 
+                              if name not in self.skeleton_definition.additional_fixed_markers]
+        
+        # Build mapping from motion data indices to marker indices
+        marker_indices = []
+        motion_idx = 0
+        
+        for name in self.marker_names:
+            if name in motion_marker_names:
+                try:
+                    original_name = self.skeleton_definition.marker_name_change[name]
+                    if original_name in self.csv_marker_names:
+                        marker_idx = self.csv_marker_names.index(original_name)
+                        marker_indices.append(marker_idx)
+                        motion_idx += 1
+                except KeyError:
+                    pass
+        
+        # Verify shape compatibility
+        if motion_data.shape[1] != len(motion_marker_names):
+            print(f"WARNING: Motion data has {motion_data.shape[1]} markers but motion_marker_names has {len(motion_marker_names)}. This may cause issues.")
+        
+        # Get the frame data
+        frame_data = motion_data[frame_idx:frame_idx+1]  # Keep the frame dimension
+        
+        # Update keypoints only for non-fixed markers
+        moving_indices = [i for i, name in enumerate(self.marker_names) if name in motion_marker_names]
+        
+        # Create a new mapping from motion data indices to marker positions in self.current_shape
+        for i, motion_idx in enumerate(moving_indices):
+            marker_name = self.marker_names[motion_idx]
+            if i < frame_data.shape[1]:  # Ensure we don't go out of bounds
+                self.current_shape[0, self.marker_index[motion_idx], :] = frame_data[0, i, :]
+                
+        self.untransformed_shape = self.current_shape.copy()
+
+    def get_motion_data_marker_names(self, use_simple: bool = None) -> list:
+        """
+        Returns the list of marker names in the order they appear in motion data.
+        
+        Parameters:
+        - use_simple (bool, optional): Whether to use simple marker set. If None, uses the current setting.
+        
+        Returns:
+        - list: Marker names in the order they appear in motion data
+        """
+        # Determine which markers to include
+        use_simple_markers = self.use_simple if use_simple is None else use_simple
+        
+        # Get the appropriate marker list based on simple/detailed mode
+        if use_simple_markers:
+            motion_marker_names = self.skeleton_definition.get_marker_names_simple()
+        else:
+            motion_marker_names = self.skeleton_definition.marker_names
+            
+        # Remove fixed markers from motion markers
+        motion_marker_names = [name for name in motion_marker_names 
+                              if name not in self.skeleton_definition.additional_fixed_markers]
+        
+        return motion_marker_names
+
+    def print_motion_data_info(self, motion_data: np.ndarray, use_simple: bool = None):
+        """
+        Prints information about the motion data including marker names and shape.
+        
+        Parameters:
+        - motion_data (np.ndarray): The motion data array
+        - use_simple (bool, optional): Whether to use simple marker set. If None, uses the current setting.
+        """
+        marker_names = self.get_motion_data_marker_names(use_simple)
+        print(f"Motion data shape: {motion_data.shape}")
+        print("\nMarker names in order:")
+        for i, name in enumerate(marker_names):
+            print(f"{i}: {name}")
+            
+    def print_fixed_vs_moving_markers(self, use_simple: bool = None):
+        """
+        Prints information about which markers are fixed vs. moving.
+        
+        Parameters:
+        - use_simple (bool, optional): Whether to use simple marker set. If None, uses the current setting.
+        """
+        use_simple_markers = self.use_simple if use_simple is None else use_simple
+        
+        if use_simple_markers:
+            all_markers = self.skeleton_definition.get_marker_names_simple()
+            built_in_fixed = self.skeleton_definition.fixed_marker_names_simple
+            print("\nUsing SIMPLE marker set:")
+        else:
+            all_markers = self.skeleton_definition.marker_names
+            built_in_fixed = self.skeleton_definition.fixed_marker_names
+            print("\nUsing DETAILED marker set:")
+        
+        # Combine built-in fixed with additional fixed markers
+        all_fixed_markers = list(set(built_in_fixed + self.skeleton_definition.additional_fixed_markers))
+        
+        # Get moving markers (not fixed)
+        moving_markers = [name for name in all_markers if name not in all_fixed_markers]
+        
+        print(f"\nFixed markers ({len(all_fixed_markers)}):")
+        for i, name in enumerate(sorted(all_fixed_markers)):
+            source = " (additional)" if name in self.skeleton_definition.additional_fixed_markers else " (built-in)"
+            print(f"  {i}: {name}{source}")
+        
+        print(f"\nMoving markers ({len(moving_markers)}):")
+        for i, name in enumerate(sorted(moving_markers)):
+            print(f"  {i}: {name}")
+        
+        print(f"\nTotal markers: {len(all_markers)}")
+        print(f"  - Fixed: {len(all_fixed_markers)}")
+        print(f"  - Moving: {len(moving_markers)}")
+        
+        # Print which ones will actually be included in motion data
+        motion_marker_names = self.get_motion_data_marker_names(use_simple)
+        print(f"\nMarkers included in motion data: {len(motion_marker_names)}")
+
+    def print_debug_info(self):
+        """
+        Prints debugging information about the current state of the Kestrel3D object.
+        """
+        print(f"Number of marker names: {len(self.marker_names)}")
+        print(f"Number of marker indices: {len(self.marker_index)}")
+        
+        if len(self.marker_names) != len(self.marker_index):
+            print("WARNING: Mismatch between marker_names and marker_index lengths!")
+            
+        # Check for marker indices that might be out of bounds for current_shape
+        if hasattr(self, 'current_shape'):
+            total_markers = self.current_shape.shape[1]
+            out_of_bounds = [i for i in self.marker_index if i >= total_markers]
+            if out_of_bounds:
+                print(f"WARNING: The following marker indices are out of bounds: {out_of_bounds}")
+        
+        # Print the first few marker names and indices
+        print("\nFirst 10 marker names and indices:")
+        for i, name in enumerate(self.marker_names[:10]):
+            if i < len(self.marker_index):
+                print(f"{i}: {name} -> index {self.marker_index[i]}")
+            else:
+                print(f"{i}: {name} -> NO INDEX")
+        
+        print("\nPolygon definitions:")
+        for section, indices in self.polygons.items():
+            print(f"{section}: {len(indices)} points")

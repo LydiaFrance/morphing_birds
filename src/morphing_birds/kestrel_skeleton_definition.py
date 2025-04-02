@@ -139,8 +139,8 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
             # An alternative way to define the body sections
             # This uses comparable markers to the hawks
             "head_simple": ["right_shoulder", "head", "left_shoulder"],
-            "body_simple": ["right_shoulder", "left_shoulder", "left_tail_base", "right_tail_base"], 
-            "tail_simple": ["right_tail_base", "left_tail_base", "left_tail_tip", "right_tail_tip"],
+            "body_simple": ["right_shoulder", "left_shoulder", "left_lastsecondary_tip", "right_lastsecondary_tip"], 
+            "tail_simple": ["right_lastsecondary_tip", "left_lastsecondary_tip", "left_tail_tip", "right_tail_tip"],
             "left_armwing_simple": ["left_firstprimary_base", "left_secondary_tip", "left_lastsecondary_tip", "left_shoulder"], 
             "right_armwing_simple": ["right_firstprimary_base", "right_secondary_tip", "right_lastsecondary_tip", "right_shoulder"], 
             "left_handwing_simple": ["left_firstprimary_base", "left_secondprimary_tip", "left_secondary_tip"], 
@@ -166,7 +166,18 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
 
         # We will also have an additional set of marker names that 
         # are treated as fixed markers when we run the kestrel data like a hawk. 
-        self.fixed_marker_names_simple = ["left_shoulder", "right_shoulder", "left_tail_base", "right_tail_base", "head"]
+        self.fixed_marker_names_simple = ["left_shoulder", "right_shoulder", "right_lastsecondary_tip", "left_lastsecondary_tip", "head"]
+        
+        # Define additional fixed markers to be excluded from motion data
+        # This is separate from fixed_marker_names and fixed_marker_names_simple,
+        # which are used for defining the polygon structure
+        # self.additional_fixed_markers = []
+        
+        # Default setting: to fix shoulders only, uncomment the following line:
+        self.additional_fixed_markers = ["left_shoulder", "right_shoulder", "head"]
+
+        # To fix both shoulders and tail base, uncomment the following line:
+        # self.additional_fixed_markers = ["left_shoulder", "right_shoulder", "left_tail_base", "right_tail_base"]
 
         # We also want to translate the kestrel marker names to the hawk marker names
         self.marker_name_change_to_hawk = {

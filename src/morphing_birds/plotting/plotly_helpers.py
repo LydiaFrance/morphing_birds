@@ -31,16 +31,12 @@ def calculate_axis_limits(animal3d_instance):
     final_scale = reference_scale * (2 ** log2_scale)
     
     # Calculate view radius with some padding
-    view_radius = final_scale * 0.6  # This gives ~20% padding
+    view_radius = final_scale * 0.5 # This gives ~20% padding
     
     # Calculate current bounding box
     min_coords, max_coords = animal3d_instance.get_bounding_box()
-    current_ranges = max_coords - min_coords
     
-    # Calculate buffer for each axis, using the view radius as a minimum
-    buffers = np.maximum(current_ranges * 0.1, view_radius)
-    
-    # Get centers based on origin
+    # Calculate centers based on origin
     centers = (min_coords + max_coords) / 2
     origin = np.array(animal3d_instance.origin)
     
@@ -48,11 +44,15 @@ def calculate_axis_limits(animal3d_instance):
     centers[0] = 0 if origin[0] == 0 else centers[0]  # x-axis
     centers[2] = 0 if origin[2] == 0 else centers[2]  # z-axis
 
+    # ===== MODIFICATION FOR EQUAL AXES =====
+    # Use the same buffer size for all dimensions to ensure equal scaling
+    max_buffer = view_radius
+
     # Set ranges with consistent scale for all axes
     fixed_range = [
-        [centers[0] - buffers[0], centers[0] + buffers[0]],  # x-axis
-        [centers[1] - buffers[1], centers[1] + buffers[1]],  # y-axis
-        [centers[2] - buffers[2], centers[2] + buffers[2]]   # z-axis
+        [centers[0] - max_buffer, centers[0] + max_buffer],  # x-axis
+        [centers[1] - max_buffer, centers[1] + max_buffer],  # y-axis
+        [centers[2] - max_buffer, centers[2] + max_buffer]   # z-axis
     ]
 
     return fixed_range
