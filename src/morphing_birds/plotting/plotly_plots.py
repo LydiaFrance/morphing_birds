@@ -308,17 +308,15 @@ def plot_sections_plotly(fig, animal3d_instance, colour, alpha=1, section_name=N
         The name of the body section to plot. If None, plot all sections.
     """
     if section_name is not None:
-        # Plot a specific body section
-        if section_name not in animal3d_instance.skeleton_definition.body_sections:
-            raise ValueError(f"Section name {section_name} not recognized.")
-        
-        mesh, lines = get_polygon_plotly(animal3d_instance, section_name, colour, alpha)
-        if mesh is not None:
-            fig.add_trace(mesh)
-        fig.add_trace(lines)
+        # Skip if section doesn't exist in polygons
+        if section_name in animal3d_instance.polygons:
+            mesh, lines = get_polygon_plotly(animal3d_instance, section_name, colour, alpha)
+            if mesh is not None:
+                fig.add_trace(mesh)
+            fig.add_trace(lines)
     else:
-        # Plot all sections
-        for section in animal3d_instance.skeleton_definition.body_sections.keys():
+        # Plot all available sections (only those in polygons)
+        for section in animal3d_instance.polygons.keys():
             mesh, lines = get_polygon_plotly(animal3d_instance, section, colour, alpha)
             if mesh is not None:
                 fig.add_trace(mesh)
@@ -327,12 +325,12 @@ def plot_sections_plotly(fig, animal3d_instance, colour, alpha=1, section_name=N
     return fig
 
 def get_polygon_plotly(animal3d_instance, section_name, colour, alpha=1):
-    if section_name not in animal3d_instance.skeleton_definition.body_sections.keys():
-        raise ValueError(f"Section name {section_name} not recognised.")
+    if section_name not in animal3d_instance.polygons:
+        return None, None  # Return None for both mesh and lines if section doesn't exist
 
     # You can modify these functions to customize colour and alpha
-    colour = colour_polygon_plotly(section_name, colour)
-    alpha = alpha_polygon_plotly(section_name, alpha)
+    colour = colour_polygon_plotly(section_name, colour, animal3d_instance)
+    alpha = alpha_polygon_plotly(section_name, alpha, animal3d_instance)
 
     # Extract polygon coordinates
     coords = animal3d_instance.get_polygon_coords(section_name)
@@ -361,30 +359,42 @@ def get_polygon_plotly(animal3d_instance, section_name, colour, alpha=1):
 
     return mesh, lines
 
-def alpha_polygon_plotly(section_name, alpha):
+def alpha_polygon_plotly(section_name, alpha, animal3d_instance=None):
 
         # The alpha of the polygon is determined by whether the landmarks are
         # estimated or measured.
-        if "handwing" in section_name or "tail" in section_name:
-            alpha = 0.5
+        if animal3d_instance is None or not hasattr(animal3d_instance, 'colour_sections'):
+            if "handwing" in section_name or "tail" in section_name:
+                alpha = 0.5
+            else:
+                alpha = 0.3
         else:
-            alpha = 0.3
+            # Check if any of the colored sections are in the section name
+            for keyword in animal3d_instance.colour_sections:
+                if keyword in section_name:
+                    alpha = 0.5
+                else:
+                    alpha = 0.3
 
         return alpha
 
-def colour_polygon_plotly(section_name, colour):
+def colour_polygon_plotly(section_name, colour, animal3d_instance=None):
         
         if colour is None:
             colour = 'lightblue'
+
+        if animal3d_instance is None or not hasattr(animal3d_instance, 'colour_sections'):
+            if 'handwing' in section_name or 'tail' in section_name:
+                return colour
+            else:
+                return 'grey'
     
-        # The colour of the polygon is determined by whether the landmarks are
-        # estimated or measured.
-        if "handwing" in section_name or "tail" in section_name:
-            colour = colour
-        else:
-            colour = 'grey'
-    
-        return colour
+        # Check if any of the colored sections are in the section name
+        for keyword in animal3d_instance.colour_sections:
+            if keyword in section_name:  # This will match "wing" within "right_handwing", etc.
+                return colour
+        # If no coloured sections are found, return grey
+        return 'grey'
 
 def plot_settings_plotly(fig, animal3d_instance):
     """

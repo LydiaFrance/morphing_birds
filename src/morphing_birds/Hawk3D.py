@@ -24,6 +24,10 @@ class Hawk3D(Animal3D):
         self.load_csv(csv_path)
         self.init_polygons(self.csv_marker_names)
 
+        # Specify which sections should be colored (rest will be grey)
+        self.colour_sections = ["handwing", "tail"]  # Only handwing and tail gets the color
+        
+
     def load_csv(self, csv_path: str):
         """
         Loads CSV data specific to the hawk skeleton.

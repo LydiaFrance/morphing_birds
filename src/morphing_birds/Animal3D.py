@@ -460,13 +460,13 @@ class Animal3D:
         fixed_dict = {name: idx for idx, name in enumerate(self.skeleton_definition.fixed_marker_names)}
         
         # Left/Right symmetry checks
-        if moving_markers[marker_dict["left_wingtip"]][0] >= moving_markers[marker_dict["right_wingtip"]][0]:
+        if moving_markers[marker_dict["left_wingtip"]][0][0] >= moving_markers[marker_dict["right_wingtip"]][0][0]:
             raise ValueError("Left wingtip must be to the left of right wingtip")
         
-        if fixed_markers[fixed_dict["left_shoulder"]][0] >= fixed_markers[fixed_dict["right_shoulder"]][0]:
+        if fixed_markers[fixed_dict["left_shoulder"]][0][0] >= fixed_markers[fixed_dict["right_shoulder"]][0][0]:
             raise ValueError("Left shoulder must be to the left of right shoulder")
         
-        if fixed_markers[fixed_dict["left_tailbase"]][0] >= fixed_markers[fixed_dict["right_tailbase"]][0]:
+        if fixed_markers[fixed_dict["left_tailbase"]][0][0] >= fixed_markers[fixed_dict["right_tailbase"]][0][0]:
             raise ValueError("Left tailbase must be to the left of right tailbase")
 
         # Wing structure checks

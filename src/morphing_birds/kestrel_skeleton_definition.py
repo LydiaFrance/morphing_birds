@@ -45,69 +45,70 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
         """
         self.marker_name_change = {
             # Head markers
-            "head": "Fun_h1", 
-            "head_mid": "Fun_he",
-            "left_head": "Fun_h2",
-            "right_head": "Fun_h3",
+            "head": "h1", 
+            "head_mid": "he",
+            "left_head": "h2",
+            "right_head": "h3",
 
             # Body markers
-            "left_backpack": "Fun_b3",
-            "right_backpack": "Fun_b2",
-            "centre_backpack": "Fun_be",
-            "centre_back_backpack": "Fun_b1",
+            "left_backpack": "b3",
+            "right_backpack": "b2",
+            "centre_backpack": "be",
+            "centre_back_backpack": "b1",
 
             # Tail markers
-            "centre_tail_base": "Fun_t_c_1",
-            "centre_tail_mid": "Fun_t_c_2",
-            "centre_tail_tip": "Fun_t_c_3",
-            "left_tail_base": "Fun_t_l_1",
-            "left_tail_mid": "Fun_t_l_2",
-            "left_tail_tip": "Fun_t_l_3",
-            "right_tail_base": "Fun_t_r_1",
-            "right_tail_mid": "Fun_t_r_2",
-            "right_tail_tip": "Fun_t_r_3",
-            "left_tailpack": "Fun_tl",
-            "right_tailpack": "Fun_tr",
-            "centre_tailpack": "Fun_tc",
+            "centre_tail_base": "t_c_1",
+            "centre_tail_mid": "t_c_2",
+            "centre_tail_tip": "t_c_3",
+            "left_tail_base": "t_l_1",
+            "left_tail_mid": "t_l_2",
+            "left_tail_tip": "t_l_3",
+            "right_tail_base": "t_r_1",
+            "right_tail_mid": "t_r_2",
+            "right_tail_tip": "t_r_3",
+            "left_tailpack": "tl",
+            "right_tailpack": "tr",
+            "centre_tailpack": "tc",
             
             # Right Arm Wing markers
-            "right_shoulder": "Fun_r_sh",
-            "right_wrist": "Fun_r_w",
-            "right_armwing_mid": "Fun_r_e",
-            "right_alula": "Fun_r_al_1",
-            "right_alula_lower": "Fun_r_al_3",
-            "right_secondary": "Fun_r_s1_1",
-            "right_lastsecondary_tip": "Fun_r_sb_1",
+            "right_shoulder": "r_sh",
+            "right_wrist": "r_w",
+            "right_armwing_mid": "r_e",
+            "right_alula": "r_al_1",
+            "right_alula_lower": "r_al_3",
+            "right_secondary_tip": "r_s1_1",
+            "right_lastsecondary_tip": "r_sb_1",
 
             # Left Arm Wing markers
-            "left_shoulder": "Fun_l_sh",
-            "left_wrist": "Fun_l_w",
-            "left_armwing_mid": "Fun_l_e",
-            "left_alula": "Fun_l_al_1",
-            "left_alula_lower": "Fun_l_al_3",
-            "left_secondary_tip": "Fun_l_s1_1",
-            "left_lastsecondary_tip": "Fun_l_sb_1",
+            "left_shoulder": "l_sh",
+            "left_wrist": "l_w",
+            "left_armwing_mid": "l_e",
+            "left_alula": "l_al_1",
+            "left_alula_lower": "l_al_3",
+            "left_secondary_tip": "l_s1_1",
+            "left_lastsecondary_tip": "l_sb_1",
 
             # Right Hand Wing markers
-            "right_firstprimary_tip": "Fun_r_p1_3",
-            "right_firstprimary_mid": "Fun_r_p1_2",
-            "right_firstprimary_base": "Fun_r_p1_1",
-            "right_secondprimary_tip": "Fun_r_p2_3",
-            "right_secondprimary_mid": "Fun_r_p2_2",
-            "right_secondprimary_base": "Fun_r_p2_1",
-            "right_fourthprimary_tip": "Fun_r_p4_1",
-            "right_lastprimary_tip": "Fun_r_p9_1",
+            "right_firstprimary_tip": "r_p1_3",
+            "right_firstprimary_mid": "r_p1_2",
+            "right_firstprimary_base": "r_p1_1",
+            "right_secondprimary_tip": "r_p2_3",
+            "right_secondprimary_mid": "r_p2_2",
+            "right_secondprimary_base": "r_p2_1",
+            "right_fourthprimary_tip": "r_p4_1",
+            "right_lastprimary_tip": "r_p9_1",
 
             # Left Hand Wing markers
-            "left_firstprimary_tip": "Fun_l_p1_3",
-            "left_firstprimary_mid": "Fun_l_p1_2",
-            "left_firstprimary_base": "Fun_l_p1_1",
-            "left_secondprimary_tip": "Fun_l_p2_3",
-            "left_secondprimary_mid": "Fun_l_p2_2",
-            "left_secondprimary_base": "Fun_l_p2_1",
-            "left_fourthprimary_tip": "Fun_l_p4_1",
-            "left_lastprimary_tip": "Fun_l_p9_1"
+            "left_firstprimary_tip": "l_p1_3",
+            "left_firstprimary_mid": "l_p1_2",
+            "left_firstprimary_base": "l_p1_1",
+            "left_secondprimary_tip": "l_p2_3",
+            "left_secondprimary_mid": "l_p2_2",
+            "left_secondprimary_base": "l_p2_1",
+            "left_fourthprimary_tip": "l_p4_1",
+            "left_lastprimary_tip": "l_p9_1"
             }
+        
         
         # Create reverse mapping for lookup
         self.marker_name_change_reverse = {v: k for k, v in self.marker_name_change.items()}
@@ -125,11 +126,11 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
         
         # Define the kestrel sections for animation
         body_sections = {
-            "head": ["head", "left_head", "right_head"], 
-            "body": ["right_shoulder", "left_shoulder", "right_lastsecondary_tip", "left_lastsecondary_tip"], 
+            "head": ["right_shoulder", "head", "left_shoulder"], 
+            "body": ["right_shoulder", "left_shoulder", "left_tail_base","centre_tail_base", "right_tail_base"], 
             "tail": ["right_tail_base", "centre_tail_base", "left_tail_base", "left_tail_tip", "centre_tail_tip", "right_tail_tip"],
-            "right_armwing": ["right_shoulder", "right_wrist", "right_armwing_mid", "right_secondary_tip", "right_lastsecondary_tip"], 
-            "left_armwing": ["left_shoulder", "left_wrist", "left_armwing_mid", "left_secondary_tip", "left_lastsecondary_tip"], 
+            "right_armwing": ["right_shoulder", "right_wrist", "right_armwing_mid", "right_lastprimary_tip", "right_secondary_tip", "right_lastsecondary_tip"], 
+            "left_armwing": ["left_shoulder", "left_wrist", "left_armwing_mid", "left_lastprimary_tip", "left_secondary_tip", "left_lastsecondary_tip"], 
             "left_handwing": ["left_wrist", "left_firstprimary_base", "left_firstprimary_mid", "left_firstprimary_tip", "left_secondprimary_tip", "left_secondprimary_mid", "left_secondprimary_base", "left_fourthprimary_tip", "left_lastprimary_tip"], 
             "right_handwing": ["right_wrist", "right_firstprimary_base", "right_firstprimary_mid", "right_firstprimary_tip", "right_secondprimary_tip", "right_secondprimary_mid", "right_secondprimary_base", "right_fourthprimary_tip", "right_lastprimary_tip"], 
             "left_alula": ["left_wrist", "left_alula", "left_alula_lower"],
@@ -138,7 +139,7 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
             # An alternative way to define the body sections
             # This uses comparable markers to the hawks
             "head_simple": ["right_shoulder", "head", "left_shoulder"],
-            "body_simple": ["right_shoulder", "left_shoulder", "right_tail_base", "left_tail_base"], 
+            "body_simple": ["right_shoulder", "left_shoulder", "left_tail_base", "right_tail_base"], 
             "tail_simple": ["right_tail_base", "left_tail_base", "left_tail_tip", "right_tail_tip"],
             "left_armwing_simple": ["left_firstprimary_base", "left_secondary_tip", "left_lastsecondary_tip", "left_shoulder"], 
             "right_armwing_simple": ["right_firstprimary_base", "right_secondary_tip", "right_lastsecondary_tip", "right_shoulder"], 
@@ -160,11 +161,8 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
             if marker_name not in used_in_body_sections:
                 ignored_marker_names.append(marker_name)
 
-        self.ignored_marker_names = set(ignored_marker_names)
-
-        # Remove the ignored markers from the marker names
+        self.ignored_marker_names = ignored_marker_names
         marker_names = [marker_name for marker_name in marker_names if marker_name not in ignored_marker_names]
-        marker_names = set(marker_names)
 
         # We will also have an additional set of marker names that 
         # are treated as fixed markers when we run the kestrel data like a hawk. 
@@ -181,6 +179,7 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
             "right_secondprimary_tip" : "right_wingtip",
             "left_secondprimary_tip" : "left_wingtip"
         }
+        self.marker_name_change_to_kestrel = {v: k for k, v in self.marker_name_change_to_hawk.items()}
 
         # super() is used to call the __init__ method of the 
         # class SkeletonDefinition (the parent class). 

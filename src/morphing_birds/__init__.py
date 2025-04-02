@@ -8,8 +8,10 @@ from .Animal3D import Animal3D
 from .ArbitraryBird3D import ArbitraryBird3D
 from .hawk_skeleton_definition import HawkSkeletonDefinition
 from .spider_skeleton_definition import SpiderSkeletonDefinition
+from .kestrel_skeleton_definition import KestrelSkeletonDefinition
 from .Hawk3D import Hawk3D
 from .Spider3D import Spider3D
+from .Kestrel3D import Kestrel3D
 from .plotting import (
     plot, 
     interactive_plot, 
@@ -29,7 +31,7 @@ from .plotting import (
 
 __all__ = ("__version__", 
            "SkeletonDefinition", "Animal3D", "ArbitraryBird3D",
-           "Hawk3D", "HawkSkeletonDefinition", 
+           "Hawk3D", "HawkSkeletonDefinition", "Kestrel3D", "KestrelSkeletonDefinition",
            "SpiderSkeletonDefinition", "Spider3D",
            "plot", "interactive_plot", "plot_multiple", "plot_plotly", "plot_plotly_compare", "plot_partial_plotly",
            "plot_compare_plotly", "animate", "animate_compare", "create_dash_app", 
