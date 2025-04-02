@@ -363,7 +363,10 @@ app.layout = html.Div(
             multi=True,
             style={"width": "75%", "font-family": "Arial", "margin": "auto"},
         ),
-        dcc.Graph(id="graph", style={"width": "75%", "margin": "auto"}),
+        dcc.Loading(
+            dcc.Graph(id="graph", style={"width": "75%", "margin": "auto"}),
+        ),
+        
     ]
 )
 
