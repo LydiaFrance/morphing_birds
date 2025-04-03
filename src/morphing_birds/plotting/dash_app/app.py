@@ -203,7 +203,10 @@ def create_animation_frames(
             marker={"color": "red", "size": 10},
             showlegend=False,
         )
-
+        axis_dict = {"range": [-0.6, 0.6],
+                          "autorange": False,
+                          "dtick": 0.25,
+                    }
         frame_layout = go.Layout(
             title={
                 "text": f"Selected Components: {', '.join([str(s + 1) for s in sorted(selected_components)]) if selected_components else 'None'}",
@@ -215,9 +218,9 @@ def create_animation_frames(
             xaxis2={"domain": [0.8, 0.95]},
             yaxis2={"domain": [0.8, 0.95]},
             scene={
-                "xaxis": {"range": [-0.6, 0.6], "autorange": False, "dtick": 0.25},
-                "yaxis": {"range": [-0.6, 0.6], "autorange": False, "dtick": 0.25},
-                "zaxis": {"range": [-0.6, 0.6], "autorange": False, "dtick": 0.25},
+                "xaxis": axis_dict,
+                "yaxis": axis_dict,
+                "zaxis": axis_dict,
             },
         )
 
@@ -366,7 +369,6 @@ app.layout = html.Div(
         dcc.Loading(
             dcc.Graph(id="graph", style={"width": "75%", "margin": "auto"}),
         ),
-        
     ]
 )
 
