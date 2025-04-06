@@ -529,56 +529,49 @@ class Kestrel3D(Animal3D):
         for section, indices in self.polygons.items():
             print(f"{section}: {len(indices)} points")
 
-    def validate_left_right_positions(self, motion_data: np.ndarray, left_indices: list, right_indices: list) -> None:
+    def validate_left_right_positions(self, motion_data: np.ndarray, left_indices: list, right_indices: list) -> np.ndarray:
         """
         Validates that left markers are always to the left of their corresponding right markers.
+        Returns a boolean mask indicating which frames are valid.
         
         Parameters:
         - motion_data (np.ndarray): Motion data in shape [nFrames, nMarkers, 3]
         - left_indices (list): Indices of left markers
         - right_indices (list): Indices of right markers (in same order as left_indices)
         
-        Raises:
-        - ValueError: If any left marker is not to the left of its corresponding right marker
-        - ValueError: If the x-coordinates are too close to distinguish left from right
+        Returns:
+        - np.ndarray: Boolean mask of valid frames
         """
         # Get x-coordinates for all frames
         left_x = motion_data[:, left_indices, 0]  # [nFrames, nLeftMarkers]
         right_x = motion_data[:, right_indices, 0]  # [nFrames, nRightMarkers]
         
         # Check if any left marker is to the right of its corresponding right marker
-        violations = np.where(left_x >= right_x)
-        if len(violations[0]) > 0:
-            # Get the first violation for a helpful error message
-            frame_idx = violations[0][0]
-            marker_idx = violations[1][0]
-            left_marker = self.marker_names[left_indices[marker_idx]]
-            right_marker = self.marker_names[right_indices[marker_idx]]
-            left_pos = left_x[frame_idx, marker_idx]
-            right_pos = right_x[frame_idx, marker_idx]
-            raise ValueError(
-                f"Left marker {left_marker} (x={left_pos:.3f}) is not to the left of "
-                f"its corresponding right marker {right_marker} (x={right_pos:.3f}) "
-                f"in frame {frame_idx}"
-            )
-        
-        # Check if any pairs are too close to reliably distinguish
         x_differences = right_x - left_x
         min_difference = 0.001  # 1mm minimum difference
-        too_close = np.where(x_differences < min_difference)
-        if len(too_close[0]) > 0:
-            # Get the first case for a helpful error message
-            frame_idx = too_close[0][0]
-            marker_idx = too_close[1][0]
-            left_marker = self.marker_names[left_indices[marker_idx]]
-            right_marker = self.marker_names[right_indices[marker_idx]]
-            difference = x_differences[frame_idx, marker_idx]
-            raise ValueError(
-                f"Left-right marker pair {left_marker} - {right_marker} are too close "
-                f"(difference={difference:.3f}m < {min_difference}m minimum) in frame {frame_idx}"
-            )
+        
+        # Frame is valid if all marker pairs have sufficient separation
+        valid_frames = np.all(x_differences >= min_difference, axis=1)
+        
+        # Print information about invalid frames
+        n_invalid = np.sum(~valid_frames)
+        if n_invalid > 0:
+            print(f"\nFound {n_invalid} invalid frames where left-right markers are too close or incorrectly positioned:")
+            # Find the first few invalid frames and their issues
+            invalid_frame_indices = np.where(~valid_frames)[0]
+            for frame_idx in invalid_frame_indices[:5]:  # Show up to 5 examples
+                problems = np.where(x_differences[frame_idx] < min_difference)[0]
+                for marker_idx in problems:
+                    left_marker = self.marker_names[left_indices[marker_idx]]
+                    right_marker = self.marker_names[right_indices[marker_idx]]
+                    diff = x_differences[frame_idx, marker_idx]
+                    print(f"  Frame {frame_idx}: {left_marker} - {right_marker} separation = {diff:.3f}m")
+            if len(invalid_frame_indices) > 5:
+                print(f"  ... and {len(invalid_frame_indices) - 5} more invalid frames")
+        
+        return valid_frames
 
-    def make_unilateral(self, motion_data: np.ndarray) -> np.ndarray:
+    def make_unilateral(self, motion_data: np.ndarray) -> tuple:
         """
         Takes bilateral motion data and creates unilateral data by mirroring left markers
         to match right markers and stacking them. Handles both simple and full modes,
@@ -589,12 +582,8 @@ class Kestrel3D(Animal3D):
 
         Returns:
         - np.ndarray: Motion data with doubled frames and halved markers (plus centers)
-                     Shape will be [nFrames*2, nMarkers//2 + nCenters, 3]
+                     Shape will be [nValidFrames*2, nMarkers//2 + nCenters, 3]
         - np.ndarray: Boolean array indicating which frames were originally left
-        
-        Raises:
-        - ValueError: If left markers are not to the left of their corresponding right markers
-        - ValueError: If marker positions are invalid
         """
         # Make a hard copy of the motion data   
         motion_data_copy = np.copy(motion_data)
@@ -605,10 +594,16 @@ class Kestrel3D(Animal3D):
         # Get indices for each marker type
         left_indices = [self.marker_names.index(m) for m in left_markers]
         right_indices = [self.marker_names.index(m) for m in right_markers]
-        center_indices = [self.marker_names.index(m) for m in center_markers]
+        center_indices = [self.marker_names.index(m) for m in center_markers] if center_markers else []
         
-        # Validate left-right positions
-        self.validate_left_right_positions(motion_data_copy, left_indices, right_indices)
+        # Validate left-right positions and get valid frame mask
+        valid_frames = self.validate_left_right_positions(motion_data_copy, left_indices, right_indices)
+        
+        # Keep only valid frames
+        motion_data_copy = motion_data_copy[valid_frames]
+        
+        if len(motion_data_copy) == 0:
+            raise ValueError("No valid frames found after left-right position validation")
         
         # Extract data for each type
         left_data = motion_data_copy[:, left_indices, :]
@@ -631,8 +626,15 @@ class Kestrel3D(Animal3D):
             unilateral_data = paired_data
         
         # Create boolean array marking which frames were originally left
-        is_left = np.zeros(motion_data.shape[0] * 2, dtype=bool)
-        is_left[:motion_data.shape[0]] = True  # First half are from left
+        # Note: now only includes valid frames
+        n_valid_frames = len(motion_data_copy)
+        is_left = np.zeros(n_valid_frames * 2, dtype=bool)
+        is_left[:n_valid_frames] = True  # First half are from left
+        
+        print(f"\nCreated unilateral data:")
+        print(f"  Original frames: {len(motion_data)}")
+        print(f"  Valid frames: {n_valid_frames}")
+        print(f"  Final shape: {unilateral_data.shape}")
         
         return unilateral_data, is_left
 
@@ -775,3 +777,25 @@ class Kestrel3D(Animal3D):
         """Get the positions of left-side markers."""
         left_indices = [self.marker_names.index(name) for name in self.left_marker_names]
         return self.markers[:, left_indices, :]
+
+    def get_marker_index(self, marker_name: str) -> int:
+        """
+        Get the index of a marker in the current marker set.
+        
+        Parameters:
+        - marker_name (str): Name of the marker to find
+        
+        Returns:
+        - int: Index of the marker
+        
+        Raises:
+        - ValueError: If marker is not found in current marker set
+        """
+        try:
+            return self.marker_names.index(marker_name)
+        except ValueError:
+            # Check if it's a fixed marker
+            fixed_markers = self.skeleton_definition.fixed_marker_names_simple if self.use_simple else self.skeleton_definition.fixed_marker_names
+            if marker_name in fixed_markers:
+                return self.fixed_marker_index[fixed_markers.index(marker_name)]
+            raise ValueError(f"Marker '{marker_name}' not found in current marker set (using {'simple' if self.use_simple else 'full'} mode)")
