@@ -242,18 +242,36 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
     def get_marker_names_simple(self) -> list:
         """
         Returns a list of all marker names in the simple body sections.
+        The markers are returned in a specific order that must be maintained:
+        [left_secondprimary_tip, right_secondprimary_tip, 
+         left_firstprimary_base, right_firstprimary_base,
+         left_secondary_tip, right_secondary_tip,
+         left_tail_tip, right_tail_tip]
         """
-
-        # Get all the body sections that end in _simple
+        # Define the canonical order of markers
+        canonical_order = [
+            "left_secondprimary_tip", "right_secondprimary_tip",
+            "left_firstprimary_base", "right_firstprimary_base",
+            "left_secondary_tip", "right_secondary_tip",
+            "left_tail_tip", "right_tail_tip"
+        ]
+        
+        # Get all markers from simple sections
         simple_sections = [section for section in self.body_sections if section.endswith("_simple")]
-        marker_names = set()
+        available_markers = set()
         for section in simple_sections:
-            marker_names.update(self.body_sections[section])
-
-        # Remove the ignored markers from the marker names
-        marker_names = [marker_name for marker_name in marker_names if marker_name not in self.fixed_marker_names_simple]
-
-        return list(marker_names)
+            available_markers.update(self.body_sections[section])
+            
+        # Remove fixed markers
+        available_markers = available_markers - set(self.fixed_marker_names_simple)
+        
+        # Verify all canonical markers are available
+        missing_markers = set(canonical_order) - available_markers
+        if missing_markers:
+            raise ValueError(f"Missing expected markers in simple sections: {missing_markers}")
+        
+        # Return markers in canonical order
+        return canonical_order
     
     def get_hawk_version_of_marker_name(self, marker_name: str) -> str:
         """

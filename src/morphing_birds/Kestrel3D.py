@@ -23,6 +23,7 @@ class Kestrel3D(Animal3D):
         self.use_simple = use_simple
         
         # If using simple mode, get only the markers used in simple sections
+        # These will be in the canonical order: left1,right1,left2,right2,...
         if self.use_simple:
             self.marker_names = self.skeleton_definition.get_marker_names_simple()
             # Update fixed markers to use the simple version
@@ -34,6 +35,7 @@ class Kestrel3D(Animal3D):
         self.marker_names = [name for name in self.marker_names 
                             if name not in self.skeleton_definition.additional_fixed_markers]
         
+        # Get right and left marker names while preserving order
         self.right_marker_names = [name for name in self.marker_names if name.startswith("right_")]
         self.left_marker_names = [name for name in self.marker_names if name.startswith("left_")]
         
@@ -62,16 +64,16 @@ class Kestrel3D(Animal3D):
             csv_headers = data[0]
             self.csv_marker_names = self.get_csv_marker_names(csv_headers)
             
-            # Define marker indices based on CSV marker names
-            self.define_indices(self.csv_marker_names)
-            
-            # Load and validate keypoints
+            # Load and validate keypoints before defining indices
             keypoints = self.get_csv_keypoints(data)
             validated_keypoints = self.validate_keypoints(keypoints)
             
             self.default_shape = validated_keypoints
             self.current_shape = self.default_shape.copy()
             self.untransformed_shape = self.default_shape.copy()
+            
+            # Define marker indices after setting up the shapes
+            self.define_indices(self.csv_marker_names)
         
         except IOError as e:
             raise IOError(f"Error loading CSV file: {e}")
@@ -141,7 +143,7 @@ class Kestrel3D(Animal3D):
     def validate_keypoints(self, keypoints):
         """
         Validates the keypoints, ensuring they are three-dimensional, reshapes them if necessary,
-        and mirrors them if only one side is provided.
+        and mirrors them if only right-side markers are provided.
 
         Parameters:
         - keypoints (numpy.ndarray): The keypoints array to validate.
@@ -151,9 +153,46 @@ class Kestrel3D(Animal3D):
         """
         # First, perform basic validation from Animal3D
         keypoints = super().validate_keypoints(keypoints)
-        return keypoints
-    
 
+        # Check if only right-side markers are given and mirror if necessary
+        n_right_markers = len([name for name in self.marker_names if name.startswith('right_')])
+        if keypoints.shape[1] == n_right_markers:
+            keypoints = self.mirror_keypoints(keypoints)
+
+        return keypoints
+
+    def mirror_keypoints(self, keypoints: np.ndarray) -> np.ndarray:
+        """
+        Creates a full set of keypoints by mirroring to create left-side markers.
+        Used for visualization when only right-side markers are provided.
+        
+        Assumes markers are ordered left_1, right_1, left_2, right_2, etc.
+
+        Parameters:
+        - keypoints (np.ndarray): Array of shape [n_frames, n_unilateral_markers, 3] containing only right-side markers
+
+        Returns:
+        - np.ndarray: Array of shape [n_frames, n_bilateral_markers, 3] with newly created left-side markers
+        """
+        n_frames = keypoints.shape[0]
+        n_markers = keypoints.shape[1]
+
+        
+        # Create array for full set of markers
+        full_keypoints = np.zeros((n_frames, n_markers * 2, 3))
+        
+        # Place right markers in their correct positions (odd indices: 1,3,5,7)
+        full_keypoints[:, 1::2, :] = keypoints
+        
+        # Create left markers by mirroring right markers
+        left_markers = keypoints.copy()
+        left_markers[:,:, 0] *= -1  # Mirror x-coordinate
+        
+        # Place left markers in their correct positions (even indices: 0,2,4,6)
+        full_keypoints[:, 0::2, :] = left_markers
+        
+        return full_keypoints
+    
     def validate_polygon_shape(self):
         """
         Validates the shape of the polygons to ensure they are as expected.
@@ -175,14 +214,17 @@ class Kestrel3D(Animal3D):
         Defines marker indices for the kestrel skeleton.
         
         This method maps the readable marker names to the original CSV marker names
-        and finds their indices in the CSV data.
+        and finds their indices in the CSV data. It also ensures that left markers
+        have negative x-coordinates and right markers have positive x-coordinates.
         
         Parameters:
         - csv_marker_names (list): List of marker names from the CSV in order.
         """
         # Define marker indices only for markers we care about based on use_simple
         self.marker_index = []
-        for name in self.marker_names:  # Using filtered marker_names from __init__
+        
+        # Process markers in their canonical order (left1, right1, left2, right2, etc.)
+        for name in self.marker_names:
             try:
                 original_name = self.skeleton_definition.marker_name_change[name]
                 if original_name in csv_marker_names:
@@ -207,29 +249,21 @@ class Kestrel3D(Animal3D):
                     print(f"Original name '{original_name}' not found in CSV markers for fixed '{name}'")
             except KeyError:
                 print(f"Warning: Missing translation for fixed marker: {name}")
-                
-        # Define right and left marker indices only for markers we're using
-        self.right_marker_index = []
-        for name in self.right_marker_names:
-            try:
-                original_name = self.skeleton_definition.marker_name_change[name]
-                if original_name in csv_marker_names:
-                    self.right_marker_index.append(csv_marker_names.index(original_name))
-                else:
-                    print(f"Original name '{original_name}' not found in CSV markers for right '{name}'")
-            except KeyError:
-                print(f"Warning: Missing translation for right marker: {name}")
-                
-        self.left_marker_index = []
-        for name in self.left_marker_names:
-            try:
-                original_name = self.skeleton_definition.marker_name_change[name]
-                if original_name in csv_marker_names:
-                    self.left_marker_index.append(csv_marker_names.index(original_name))
-                else:
-                    print(f"Original name '{original_name}' not found in CSV markers for left '{name}'")
-            except KeyError:
-                print(f"Warning: Missing translation for left marker: {name}")
+        
+        # After loading the data, ensure left markers are negative in x
+        if hasattr(self, 'current_shape'):
+            # Get indices for left and right markers based on canonical order
+            left_indices = [i for i, name in enumerate(self.marker_names) if name.startswith('left_')]
+            
+            # Make left markers negative in x if they aren't already
+            for idx in left_indices:
+                marker_idx = self.marker_index[idx]
+                if self.current_shape[0, marker_idx, 0] > 0:
+                    self.current_shape[:, marker_idx, 0] *= -1
+                    if hasattr(self, 'default_shape'):
+                        self.default_shape[:, marker_idx, 0] *= -1
+                    if hasattr(self, 'untransformed_shape'):
+                        self.untransformed_shape[:, marker_idx, 0] *= -1
 
     def init_polygons(self, csv_marker_names):
         """
@@ -522,3 +556,77 @@ class Kestrel3D(Animal3D):
         print("\nPolygon definitions:")
         for section, indices in self.polygons.items():
             print(f"{section}: {len(indices)} points")
+
+    def make_unilateral(self, motion_data: np.ndarray) -> np.ndarray:
+        """
+        Takes bilateral motion data and creates unilateral data by mirroring left markers
+        to match right markers and stacking them.
+
+        Parameters:
+        - motion_data (np.ndarray): Motion data in shape [nFrames, nMarkers, 3]
+
+        Returns:
+        - np.ndarray: Motion data with doubled frames and halved markers
+                     Shape will be [nFrames*2, nMarkers//2, 3]
+        - np.ndarray: Boolean array indicating which frames were originally left
+        """
+        # Make a hard copy of the motion data   
+        motion_data_copy = np.copy(motion_data)
+        
+        # Split into left and right data using alternating indices
+        left_data = motion_data_copy[:, 0::2, :]  # Take even indices (0,2,4,...)
+        right_data = motion_data_copy[:, 1::2, :]  # Take odd indices (1,3,5,...)
+        
+        # Check the left markers are always left of the right markers
+        assert np.all(left_data[:,:, 0] < right_data[:,:, 0]), "All left markers must be left of right markers"
+
+        # Mirror the left side in x to match the right
+        left_mirrored = np.copy(left_data)
+        left_mirrored[..., 0] *= -1  # Mirror x-coordinate
+
+        
+        # Stack mirrored left data and right data
+        unilateral_data = np.concatenate((left_mirrored, right_data), axis=0)
+        
+        # Create boolean array marking which frames were originally left
+        is_left = np.zeros(motion_data.shape[0] * 2, dtype=bool)
+        is_left[:motion_data.shape[0]] = True  # First half are from left
+
+        print(f"unilateral data: {unilateral_data[0,:,0]}")
+        
+        return unilateral_data, is_left
+
+    def make_bilateral(self, unilateral_data: np.ndarray, is_left: np.ndarray) -> np.ndarray:
+        """
+        Takes unilateral motion data and reconstructs bilateral data by un-mirroring
+        the appropriate frames and interleaving left and right markers.
+
+        Parameters:
+        - unilateral_data (np.ndarray): Motion data in shape [nFrames*2, nMarkers//2, 3]
+        - is_left (np.ndarray): Boolean array indicating which frames were originally left
+
+        Returns:
+        - np.ndarray: Reconstructed bilateral motion data in shape [nFrames, nMarkers, 3]
+        """
+
+        # Make a hard copy of the unilateral data
+        unilateral_data_copy = np.copy(unilateral_data)
+
+        n_frames = len(is_left) // 2
+        n_markers_per_side = unilateral_data.shape[1]
+        
+        # Split the data back into left and right portions
+        left_data = unilateral_data_copy[:n_frames]
+        right_data = unilateral_data_copy[n_frames:]
+        
+        # Un-mirror the left data
+        left_data[:,:, 0] *= -1
+        
+        # Create output array
+        bilateral_data = np.zeros((n_frames, n_markers_per_side * 2, 3))
+        
+        # Interleave left and right data
+        bilateral_data[:, ::2,:] = left_data    # Even indices for left
+        bilateral_data[:, 1::2,:] = right_data  # Odd indices for right
+        
+        return bilateral_data
