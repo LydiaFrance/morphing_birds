@@ -480,8 +480,7 @@ class Kestrel3D(Animal3D):
         
         print(f"\nFixed markers ({len(all_fixed_markers)}):")
         for i, name in enumerate(sorted(all_fixed_markers)):
-            source = " (additional)" if name in self.skeleton_definition.additional_fixed_markers else " (built-in)"
-            print(f"  {i}: {name}{source}")
+            print(f"  {i}: {name}")
         
         print(f"\nMoving markers ({len(moving_markers)}):")
         for i, name in enumerate(sorted(moving_markers)):
