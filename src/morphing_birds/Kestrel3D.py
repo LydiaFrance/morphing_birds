@@ -229,25 +229,61 @@ class Kestrel3D(Animal3D):
         keypoints = keypoints.reshape(-1, 3)  # [n, 3]
         return keypoints
 
-    def validate_keypoints(self, keypoints):
+    def validate_keypoints(self, keypoints: np.ndarray) -> np.ndarray:
         """
-        Validates the keypoints, ensuring they are three-dimensional, reshapes them if necessary,
-        and mirrors them if only right-side markers are provided.
-
+        Validates and processes keypoints, including mirroring if only unilateral data is provided.
+        
         Parameters:
-        - keypoints (numpy.ndarray): The keypoints array to validate.
-
+        - keypoints (np.ndarray): Input keypoints of shape [n_frames, n_markers, 3]
+        
         Returns:
-        - numpy.ndarray: The validated, potentially reshaped, and mirrored keypoints.
+        - np.ndarray: Validated and potentially mirrored keypoints
         """
         # First, perform basic validation from Animal3D
         keypoints = super().validate_keypoints(keypoints)
-
-        # Check if only right-side markers are given and mirror if necessary
-        n_right_markers = len([name for name in self.marker_names if name.startswith('right_')])
-        if keypoints.shape[1] == n_right_markers:
-            keypoints = self.mirror_keypoints(keypoints)
-
+        
+        # Get marker organization
+        left_markers, right_markers, center_markers = self.skeleton_definition.get_marker_pairs_and_centers(self.use_simple)
+        n_pairs = len(left_markers)
+        n_centers = len(center_markers)
+        expected_bilateral = n_pairs * 2 + n_centers
+        
+        # If we have unilateral data (half the expected markers), mirror it
+        if keypoints.shape[1] == n_pairs + n_centers:
+            # Create array for full bilateral data
+            n_frames = keypoints.shape[0]
+            bilateral_data = np.zeros((n_frames, expected_bilateral, 3))
+            
+            # Get indices for each type
+            unilateral_indices = []  # Indices in the input data
+            left_indices = []        # Where to put left markers in output
+            right_indices = []       # Where to put right markers in output
+            
+            # Build indices for paired markers
+            for i, (left, right) in enumerate(zip(left_markers, right_markers)):
+                left_indices.append(self.marker_names.index(left))
+                right_indices.append(self.marker_names.index(right))
+                unilateral_indices.append(i)
+            
+            # Extract unilateral data (excluding centers)
+            unilateral = keypoints[:, unilateral_indices, :]
+            
+            # Place original data as right side
+            bilateral_data[:, right_indices, :] = unilateral
+            
+            # Mirror and place as left side
+            mirrored = unilateral.copy()
+            mirrored[..., 0] *= -1  # Mirror x-coordinate
+            bilateral_data[:, left_indices, :] = mirrored
+            
+            # Handle center markers if any
+            if n_centers > 0:
+                center_indices_in = range(n_pairs, n_pairs + n_centers)  # Indices in input
+                center_indices_out = [self.marker_names.index(m) for m in center_markers]  # Indices in output
+                bilateral_data[:, center_indices_out, :] = keypoints[:, center_indices_in, :]
+            
+            return bilateral_data
+            
         return keypoints
 
     def mirror_keypoints(self, keypoints: np.ndarray) -> np.ndarray:
