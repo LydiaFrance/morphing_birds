@@ -35,13 +35,11 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
     """
 
     def __init__(self):
-
         """
-        In this class, we define specific markers that correspond to 
-        key anatomical points on a kestrel, such as the wingtips and tail 
-        tips as measured with motion capture. Fixed markers are for 
-        visualisation and not included in analysis, e.g. shoulders, tailbase. 
-        
+        Initialize the KestrelSkeletonDefinition with three categories of markers:
+        1. Ignored Markers: Not used at all (not stored, not plotted)
+        2. Fixed Markers: Loaded from mean shape, used for plotting but not for analysis
+        3. Active Markers: Used for both plotting and analysis
         """
         self.marker_name_change = {
             # Head markers
@@ -109,25 +107,32 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
             "left_lastprimary_tip": "l_p9_1"
             }
         
-        
         # Create reverse mapping for lookup
         self.marker_name_change_reverse = {v: k for k, v in self.marker_name_change.items()}
-
-        marker_names = list(self.marker_name_change.keys())
-
-        # fixed markers
-        # we will treat these as fixed markers as they are not useful for animation
-
-        fixed_marker_names = ["left_backpack", "right_backpack", 
-                              "centre_backpack", "centre_back_backpack", 
-                              "left_tailpack", "right_tailpack", "centre_tailpack" 
-                              ]
         
+        # === Define markers that are completely ignored (not stored, not plotted) ===
+        self.ignored_marker_names = [
+            # Extra head markers
+            "head_mid", "left_head", "right_head",
+            # Pack markers
+            "left_backpack", "right_backpack", "centre_backpack", "centre_back_backpack",
+            "left_tailpack", "right_tailpack", "centre_tailpack"
+        ]
         
-        # Define the kestrel sections for animation
+        # === Define fixed markers (stored and plotted, but not used in analysis) ===
+        # These markers are loaded from mean shape and kept fixed
+        self.fixed_marker_names = ["head", "left_shoulder", "right_shoulder"]
+        
+        # For simple mode, we fix additional markers
+        self.fixed_marker_names_simple = self.fixed_marker_names + [
+            "left_lastsecondary_tip", "right_lastsecondary_tip"
+        ]
+        
+        # === Define body sections for visualization ===
         body_sections = {
+            # Full mode sections
             "head": ["right_shoulder", "head", "left_shoulder"], 
-            "body": ["right_shoulder", "left_shoulder", "left_tail_base","centre_tail_base", "right_tail_base"], 
+            "body": ["right_shoulder", "left_shoulder", "left_tail_base", "centre_tail_base", "right_tail_base"], 
             "tail": ["right_tail_base", "centre_tail_base", "left_tail_base", "left_tail_tip", "centre_tail_tip", "right_tail_tip"],
             "right_armwing": ["right_shoulder", "right_wrist", "right_armwing_mid", "right_lastprimary_tip", "right_secondary_tip", "right_lastsecondary_tip"], 
             "left_armwing": ["left_shoulder", "left_wrist", "left_armwing_mid", "left_lastprimary_tip", "left_secondary_tip", "left_lastsecondary_tip"], 
@@ -136,65 +141,23 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
             "left_alula": ["left_wrist", "left_alula", "left_alula_lower"],
             "right_alula": ["right_wrist", "right_alula", "right_alula_lower"],
             
-            # An alternative way to define the body sections
-            # This uses comparable markers to the hawks
+            # Simple mode sections (comparable to hawks)
             "head_simple": ["right_shoulder", "head", "left_shoulder"],
             "body_simple": ["right_shoulder", "left_shoulder", "left_lastsecondary_tip", "right_lastsecondary_tip"], 
             "tail_simple": ["right_lastsecondary_tip", "left_lastsecondary_tip", "left_tail_tip", "right_tail_tip"],
             "left_armwing_simple": ["left_firstprimary_base", "left_secondary_tip", "left_lastsecondary_tip", "left_shoulder"], 
             "right_armwing_simple": ["right_firstprimary_base", "right_secondary_tip", "right_lastsecondary_tip", "right_shoulder"], 
             "left_handwing_simple": ["left_firstprimary_base", "left_secondprimary_tip", "left_secondary_tip"], 
-            "right_handwing_simple": ["right_firstprimary_base", "right_secondprimary_tip", "right_secondary_tip"], 
-            
+            "right_handwing_simple": ["right_firstprimary_base", "right_secondprimary_tip", "right_secondary_tip"]
         }
+
+        # Initialize the parent class with only the active markers
+        all_marker_names = list(self.marker_name_change.keys())
+        active_markers = [name for name in all_marker_names 
+                        if name not in self.ignored_marker_names 
+                        and name not in self.fixed_marker_names]
         
-        # First, start with fixed markers as ignored
-        ignored_marker_names = fixed_marker_names.copy()
-
-        # Create a set of all markers used in any body section
-        used_in_body_sections = set()
-        for section_markers in body_sections.values():
-            used_in_body_sections.update(section_markers)
-
-        # Add any marker that isn't used in any body section to ignored_marker_names
-        for marker_name in marker_names:
-            if marker_name not in used_in_body_sections:
-                ignored_marker_names.append(marker_name)
-
-        self.ignored_marker_names = ignored_marker_names
-        marker_names = [marker_name for marker_name in marker_names if marker_name not in ignored_marker_names]
-
-        # We will also have an additional set of marker names that 
-        # are treated as fixed markers when we run the kestrel data like a hawk. 
-        self.fixed_marker_names_simple = ["left_shoulder", "right_shoulder", "right_lastsecondary_tip", "left_lastsecondary_tip", "head"]
-        
-        # Define additional fixed markers to be excluded from motion data
-        # This is separate from fixed_marker_names and fixed_marker_names_simple,
-        # which are used for defining the polygon structure
-        # self.additional_fixed_markers = []
-        
-        # Default setting: to fix shoulders only, uncomment the following line:
-        self.additional_fixed_markers = ["left_shoulder", "right_shoulder", "head"]
-
-        # To fix both shoulders and tail base, uncomment the following line:
-        # self.additional_fixed_markers = ["left_shoulder", "right_shoulder", "left_tail_base", "right_tail_base"]
-
-        # We also want to translate the kestrel marker names to the hawk marker names
-        self.marker_name_change_to_hawk = {
-            "left_secondary_tip" : "left_secondary",
-            "right_secondary_tip" : "right_secondary",
-            "left_tail_tip" : "left_tailtip",
-            "right_tail_tip" : "right_tailtip",
-            "right_firstprimary_base" : "right_primary",
-            "left_firstprimary_base" : "left_primary",
-            "right_secondprimary_tip" : "right_wingtip",
-            "left_secondprimary_tip" : "left_wingtip"
-        }
-        self.marker_name_change_to_kestrel = {v: k for k, v in self.marker_name_change_to_hawk.items()}
-
-        # super() is used to call the __init__ method of the 
-        # class SkeletonDefinition (the parent class). 
-        super().__init__(marker_names, fixed_marker_names, body_sections)
+        super().__init__(active_markers, self.fixed_marker_names, body_sections)
 
     def get_original_marker_name(self, readable_marker_name: str) -> str:
         """
@@ -273,8 +236,141 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
         # Return markers in canonical order
         return canonical_order
     
+    def get_marker_names_full(self) -> list:
+        """
+        Returns a list of all marker names in the full body sections.
+        The markers are returned in a specific order that must be maintained,
+        alternating between left and right sides where applicable.
+        
+        The order follows anatomical structure:
+        1. Hand wing (primaries) from outermost to innermost
+        2. Alula
+        3. Mid-wing and wrist
+        4. Secondaries
+        5. Tail feathers (base to tip, including center)
+        
+        Only active markers (not fixed or ignored) that are used in body sections are included.
+        """
+        # Define the desired canonical order
+        desired_order = [
+            # Hand wing (Primaries), outermost to innermost
+            "left_firstprimary_tip", "right_firstprimary_tip",
+            "left_firstprimary_mid", "right_firstprimary_mid",
+            "left_firstprimary_base", "right_firstprimary_base",
+            
+            "left_secondprimary_tip", "right_secondprimary_tip",
+            "left_secondprimary_mid", "right_secondprimary_mid",
+            "left_secondprimary_base", "right_secondprimary_base",
+            
+            "left_fourthprimary_tip", "right_fourthprimary_tip",
+            "left_lastprimary_tip", "right_lastprimary_tip",
+            
+            # Alula
+            "left_alula", "right_alula",
+            "left_alula_lower", "right_alula_lower",
+            
+            # Mid-wing + wrist
+            "left_armwing_mid", "right_armwing_mid",
+            "left_wrist", "right_wrist",
+            
+            # Secondaries
+            "left_secondary_tip", "right_secondary_tip",
+            "left_lastsecondary_tip", "right_lastsecondary_tip",
+            
+            # Tail feathers: base → tip
+            "left_tail_base", "right_tail_base",
+            "centre_tail_base",
+            "left_tail_tip", "right_tail_tip",
+            "centre_tail_tip"
+        ]
+        
+        # Get all markers from non-simple sections
+        non_simple_sections = [section for section in self.body_sections if not section.endswith("_simple")]
+        available_markers = set()
+        for section in non_simple_sections:
+            available_markers.update(self.body_sections[section])
+            
+        # Remove fixed and ignored markers
+        available_markers = available_markers - set(self.fixed_marker_names) - set(self.ignored_marker_names)
+        
+        # Add debugging information
+        print("\nIn get_marker_names_full:")
+        print(f"Desired order length: {len(desired_order)}")
+        print(f"Available markers before filtering: {len(available_markers)}")
+        print(f"Fixed markers being removed: {self.fixed_marker_names}")
+        
+        # Filter the canonical order to only include available active markers
+        canonical_order = [marker for marker in desired_order if marker in available_markers]
+        
+        print(f"Final canonical order length: {len(canonical_order)}")
+        print(f"Markers in canonical order but not available: {[m for m in desired_order if m not in available_markers]}")
+        print(f"Markers available but not in canonical order: {[m for m in available_markers if m not in desired_order]}")
+        
+        return canonical_order
+    
     def get_hawk_version_of_marker_name(self, marker_name: str) -> str:
         """
         Returns the hawk marker name for a given kestrel marker name.
         """
         return self.marker_name_change_to_hawk[marker_name]
+
+    def get_marker_pairs_and_centers(self, use_simple: bool = None) -> tuple:
+        """
+        Returns lists of marker pairs and center markers based on the mode.
+        
+        Parameters:
+        - use_simple (bool, optional): Whether to use simple mode. If None, uses current setting.
+        
+        Returns:
+        - tuple: (left_markers, right_markers, center_markers)
+            - left_markers: List of left-side marker names in order
+            - right_markers: List of right-side marker names in order (matching left_markers)
+            - center_markers: List of center marker names
+            
+        Raises:
+        - ValueError: If a left marker doesn't have a matching right marker
+        - ValueError: If marker names don't follow the expected pattern (left_*, right_*, centre_*)
+        """
+        # Get the appropriate marker list
+        if use_simple:
+            marker_names = self.get_marker_names_simple()
+            # Simple mode has no center markers, just left-right pairs
+            left_markers = marker_names[::2]  # Even indices
+            right_markers = marker_names[1::2]  # Odd indices
+            center_markers = []
+        else:
+            marker_names = self.get_marker_names_full()
+            # In full mode, we need to identify center markers
+            left_markers = []
+            right_markers = []
+            center_markers = []
+            
+            # First pass: categorize markers
+            for marker in marker_names:
+                if not (marker.startswith('left_') or marker.startswith('right_') or marker.startswith('centre_')):
+                    raise ValueError(f"Invalid marker name pattern: {marker}. Must start with 'left_', 'right_', or 'centre_'")
+                
+                if marker.startswith('left_'):
+                    # For each left marker, find its right pair
+                    right_marker = 'right_' + marker[5:]
+                    if right_marker in marker_names:
+                        left_markers.append(marker)
+                        right_markers.append(right_marker)
+                    else:
+                        raise ValueError(f"Left marker {marker} has no matching right marker {right_marker}")
+                elif marker.startswith('centre_'):
+                    center_markers.append(marker)
+                # Skip right_ markers as they're handled with left_ markers
+        
+        # Validate that we have matching numbers of left and right markers
+        if len(left_markers) != len(right_markers):
+            raise ValueError(f"Mismatch in number of left ({len(left_markers)}) and right ({len(right_markers)}) markers")
+        
+        # Validate that each left-right pair follows the same pattern
+        for left, right in zip(left_markers, right_markers):
+            if not (left.startswith('left_') and right.startswith('right_')):
+                raise ValueError(f"Invalid marker pair: {left} - {right}")
+            if left[5:] != right[6:]:
+                raise ValueError(f"Mismatched marker pair: {left} - {right}. Suffixes should be identical")
+        
+        return left_markers, right_markers, center_markers

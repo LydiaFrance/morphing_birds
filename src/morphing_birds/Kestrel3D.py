@@ -1,5 +1,6 @@
 import numpy as np
 from morphing_birds import Animal3D, KestrelSkeletonDefinition
+import pandas as pd
 
 class Kestrel3D(Animal3D):
     """
@@ -10,42 +11,130 @@ class Kestrel3D(Animal3D):
     """
     def __init__(self, csv_path: str, use_simple: bool = False):
         """
-        Initializes the Kestrel3D class with the given CSV file path.
-
-        Parameters:
-        - csv_path (str): Path to the CSV file containing the kestrel's keypoints.
-        - use_simple (bool): If True, uses simplified body sections for polygons.
-                           If False, uses detailed body sections. Default is False.
+        Initialize the Kestrel3D class.
+        
+        Args:
+            csv_path (str): Path to the CSV file containing marker data
+            use_simple (bool): If True, uses simplified body sections for polygons.
+                             If False, uses detailed body sections. Default is False.
         """
         skeleton_definition = KestrelSkeletonDefinition()
         super().__init__(skeleton_definition)
-
+        
         self.use_simple = use_simple
         
-        # If using simple mode, get only the markers used in simple sections
-        # These will be in the canonical order: left1,right1,left2,right2,...
+        # Load the CSV data
+        self.data = pd.read_csv(csv_path)
+        
+        # Get marker names in canonical order
         if self.use_simple:
             self.marker_names = self.skeleton_definition.get_marker_names_simple()
-            # Update fixed markers to use the simple version
-            self.skeleton_definition.fixed_marker_names = self.skeleton_definition.fixed_marker_names_simple
+            fixed_markers = self.skeleton_definition.fixed_marker_names_simple
         else:
-            self.marker_names = self.skeleton_definition.marker_names
+            self.marker_names = self.skeleton_definition.get_marker_names_full()
+            fixed_markers = self.skeleton_definition.fixed_marker_names
         
-        # Remove additional fixed markers from moving markers list
-        self.marker_names = [name for name in self.marker_names 
-                            if name not in self.skeleton_definition.additional_fixed_markers]
+        # First, create a mapping of all available markers in the CSV
+        marker_data = {}  # Store marker data temporarily
+        for marker_name in self.skeleton_definition.marker_name_change.keys():
+            if marker_name in self.skeleton_definition.ignored_marker_names:
+                continue
+                
+            csv_name = self.skeleton_definition.marker_name_change[marker_name]
+            # Try both underscore and no underscore versions
+            x_col = f"{csv_name}_x" if f"{csv_name}_x" in self.data.columns else f"{csv_name}x"
+            y_col = f"{csv_name}_y" if f"{csv_name}_y" in self.data.columns else f"{csv_name}y"
+            z_col = f"{csv_name}_z" if f"{csv_name}_z" in self.data.columns else f"{csv_name}z"
+            
+            if x_col in self.data.columns:
+                x = self.data[x_col].values
+                y = self.data[y_col].values
+                z = self.data[z_col].values
+                marker_data[marker_name] = np.stack([x, y, z], axis=1)
+                # print(f"Loaded marker {marker_name} from CSV columns: {x_col}, {y_col}, {z_col}")
         
-        # Get right and left marker names while preserving order
-        self.right_marker_names = [name for name in self.marker_names if name.startswith("right_")]
-        self.left_marker_names = [name for name in self.marker_names if name.startswith("left_")]
+        if not marker_data:
+            raise ValueError("No markers were found in the CSV file. Check the column names.")
+            
+        # Now create all_markers array in the correct order
+        all_markers = []
+        marker_to_idx = {}  # Map marker names to their position in all_markers
+        idx = 0
         
-        self.load_csv(csv_path)
-        self.init_polygons(self.csv_marker_names)
-
+        # First add active markers in canonical order
+        for marker_name in self.marker_names:
+            if marker_name in marker_data:
+                all_markers.append(marker_data[marker_name])
+                marker_to_idx[marker_name] = idx
+                idx += 1
+            else:
+                raise ValueError(f"Required marker {marker_name} not found in CSV data")
+                
+        # Then add fixed markers
+        fixed_marker_indices = []  # Keep track of fixed marker indices
+        for marker_name in fixed_markers:
+            if marker_name in marker_data:
+                all_markers.append(marker_data[marker_name])
+                marker_to_idx[marker_name] = idx
+                fixed_marker_indices.append(idx)
+                idx += 1
+                
+        # Stack all markers into a single array (n_frames, n_markers, 3)
+        all_markers = np.stack(all_markers, axis=1)
+        
+        # Set up the shapes required by Animal3D
+        self.default_shape = all_markers.copy()
+        self.current_shape = all_markers.copy()
+        self.untransformed_shape = all_markers.copy()
+        
+        # Store the fixed marker indices
+        self.fixed_marker_index = fixed_marker_indices
+        
+        # Extract active markers (they're already in the right order at the start of all_markers)
+        self._markers = all_markers[:, :len(self.marker_names)]
+        
+        # Initialize polygons after markers are set up
+        self.init_polygons()
+        
+        # Define indices for active markers
+        self.define_indices()
+        
         # Specify which sections should be colored (rest will be grey)
         self.colour_sections = ["wing", "tail", "alula"]  # Only wing, tail and alula gets the color
         
-        
+        print(f"Input keypoints shape: {self._markers.shape}")
+        print(f"Number of markers in self.marker_names: {len(self.marker_names)}")
+        print(f"Number of markers in self.marker_index: {len(self.marker_index)}")
+        print(f"Marker names: {self.marker_names}")
+        print(f"Marker indices: {self.marker_index}")
+        print(f"Fixed marker indices: {self.fixed_marker_index}")
+
+    @property
+    def markers(self):
+        """Get the marker positions."""
+        return self._markers
+
+    @markers.setter
+    def markers(self, value):
+        """Set the marker positions."""
+        self._markers = value
+
+    def init_polygons(self):
+        """Initialize the polygons for visualization."""
+        # Get the appropriate sections based on mode
+        if self.use_simple:
+            sections = [s for s in self.skeleton_definition.body_sections if s.endswith("_simple")]
+            # Remove '_simple' suffix for the polygon dictionary
+            self.polygons = {s.replace('_simple', ''): self.skeleton_definition.body_sections[s] 
+                           for s in sections}
+        else:
+            sections = [s for s in self.skeleton_definition.body_sections if not s.endswith("_simple")]
+            self.polygons = {s: self.skeleton_definition.body_sections[s] for s in sections}
+
+    def define_indices(self):
+        """Define indices for active markers in canonical order."""
+        self.marker_index = list(range(len(self.marker_names)))
+
     def load_csv(self, csv_path: str):
         """
         Loads CSV data specific to the kestrel skeleton.
@@ -209,117 +298,6 @@ class Kestrel3D(Animal3D):
         # Tell the user that the polygon shape is valid
         print("Polygon shape is valid")
         
-    def define_indices(self, csv_marker_names):
-        """
-        Defines marker indices for the kestrel skeleton.
-        
-        This method maps the readable marker names to the original CSV marker names
-        and finds their indices in the CSV data. It also ensures that left markers
-        have negative x-coordinates and right markers have positive x-coordinates.
-        
-        Parameters:
-        - csv_marker_names (list): List of marker names from the CSV in order.
-        """
-        # Define marker indices only for markers we care about based on use_simple
-        self.marker_index = []
-        
-        # Process markers in their canonical order (left1, right1, left2, right2, etc.)
-        for name in self.marker_names:
-            try:
-                original_name = self.skeleton_definition.marker_name_change[name]
-                if original_name in csv_marker_names:
-                    self.marker_index.append(csv_marker_names.index(original_name))
-                else:
-                    print(f"Original name '{original_name}' not found in CSV markers for '{name}'")
-            except KeyError:
-                print(f"Warning: Missing translation for marker: {name}")
-        
-        # Define fixed marker indices
-        self.fixed_marker_index = []
-        fixed_markers = (self.skeleton_definition.fixed_marker_names_simple 
-                        if self.use_simple 
-                        else self.skeleton_definition.fixed_marker_names)
-        
-        for name in fixed_markers:
-            try:
-                original_name = self.skeleton_definition.marker_name_change[name]
-                if original_name in csv_marker_names:
-                    self.fixed_marker_index.append(csv_marker_names.index(original_name))
-                else:
-                    print(f"Original name '{original_name}' not found in CSV markers for fixed '{name}'")
-            except KeyError:
-                print(f"Warning: Missing translation for fixed marker: {name}")
-        
-        # After loading the data, ensure left markers are negative in x
-        if hasattr(self, 'current_shape'):
-            # Get indices for left and right markers based on canonical order
-            left_indices = [i for i, name in enumerate(self.marker_names) if name.startswith('left_')]
-            
-            # Make left markers negative in x if they aren't already
-            for idx in left_indices:
-                marker_idx = self.marker_index[idx]
-                if self.current_shape[0, marker_idx, 0] > 0:
-                    self.current_shape[:, marker_idx, 0] *= -1
-                    if hasattr(self, 'default_shape'):
-                        self.default_shape[:, marker_idx, 0] *= -1
-                    if hasattr(self, 'untransformed_shape'):
-                        self.untransformed_shape[:, marker_idx, 0] *= -1
-
-    def init_polygons(self, csv_marker_names):
-        """
-        Initializes polygon definitions for kestrels, handling the translation between
-        readable marker names and original CSV marker names.
-        """
-        # Create a list of marker names that the Animal3D class can use
-        # This maps the readable names in body_sections to their original CSV names
-        translated_csv_marker_names = []
-        
-        # Create a translation dictionary from original to readable
-        original_to_readable = {}
-        for readable, original in self.skeleton_definition.marker_name_change.items():
-            original_to_readable[original] = readable
-        
-        # For each CSV marker name, find its readable equivalent if it exists
-        for csv_name in csv_marker_names:
-            if csv_name in original_to_readable:
-                translated_csv_marker_names.append(original_to_readable[csv_name])
-            else:
-                # Keep the original name if no translation exists
-                translated_csv_marker_names.append(csv_name)
-        
-        # Now use the translated marker names to initialize polygons
-        self.body_section_indices = {}
-        
-        # Filter body sections based on use_simple parameter
-        for section, markers in self.skeleton_definition.body_sections.items():
-            # Skip sections that don't match our simple/detailed preference
-            if self.use_simple:
-                if not section.endswith('_simple'):
-                    continue
-            else:
-                if section.endswith('_simple'):
-                    continue
-                    
-            indices = []
-            for marker in markers:
-                # Find the index of this marker in the translated names
-                if marker in translated_csv_marker_names:
-                    idx = translated_csv_marker_names.index(marker)
-                    indices.append(idx)
-                else:
-                    print(f"Warning: Marker '{marker}' from section '{section}' not found in translated CSV marker names")
-            
-            # Only add the section if we found at least one marker
-            if indices:
-                # Remove '_simple' suffix from section name if using simple mode
-                section_name = section.replace('_simple', '') if self.use_simple else section
-                self.body_section_indices[section_name] = indices
-        
-        # Set up polygons dictionary
-        self.polygons = {}
-        for section, indices in self.body_section_indices.items():
-            self.polygons[section] = indices
-
     def load_motion_data(self, csv_path: str, use_simple: bool = None) -> np.ndarray:
         """
         Loads motion data from a CSV file and returns it in the correct format for update_keypoints.
@@ -336,19 +314,15 @@ class Kestrel3D(Animal3D):
         csv_headers = data[0]
         csv_marker_names = self.get_csv_marker_names(csv_headers)
         
-        # Determine which markers to include
+        # Determine which markers to include based on mode
         use_simple_markers = self.use_simple if use_simple is None else use_simple
         
         # Get the appropriate marker list based on simple/detailed mode
         if use_simple_markers:
             motion_marker_names = self.skeleton_definition.get_marker_names_simple()
         else:
-            motion_marker_names = self.skeleton_definition.marker_names
+            motion_marker_names = self.skeleton_definition.get_marker_names_full()
             
-        # Remove fixed markers from motion markers
-        motion_marker_names = [name for name in motion_marker_names 
-                              if name not in self.skeleton_definition.additional_fixed_markers]
-        
         # Build the CSV column indices for all the markers we need
         marker_indices = []
         not_found = []
@@ -378,7 +352,7 @@ class Kestrel3D(Animal3D):
         total_markers = len(csv_marker_names)
         motion_data = motion_data.reshape(n_frames, total_markers, 3)
         
-        # Extract only the columns we want
+        # Extract only the columns we want in the correct order
         motion_data = motion_data[:, marker_indices, :]
 
         return motion_data
@@ -413,8 +387,8 @@ class Kestrel3D(Animal3D):
             motion_marker_names = self.skeleton_definition.marker_names
             
         # Remove fixed markers from motion markers
-        motion_marker_names = [name for name in motion_marker_names 
-                              if name not in self.skeleton_definition.additional_fixed_markers]
+        fixed_markers = self.skeleton_definition.fixed_marker_names_simple if self.use_simple else self.skeleton_definition.fixed_marker_names
+        motion_marker_names = [name for name in motion_marker_names if name not in fixed_markers]
         
         # Build mapping from motion data indices to marker indices
         marker_indices = []
@@ -469,8 +443,8 @@ class Kestrel3D(Animal3D):
             motion_marker_names = self.skeleton_definition.marker_names
             
         # Remove fixed markers from motion markers
-        motion_marker_names = [name for name in motion_marker_names 
-                              if name not in self.skeleton_definition.additional_fixed_markers]
+        fixed_markers = self.skeleton_definition.fixed_marker_names_simple if self.use_simple else self.skeleton_definition.fixed_marker_names
+        motion_marker_names = [name for name in motion_marker_names if name not in fixed_markers]
         
         return motion_marker_names
 
@@ -498,35 +472,33 @@ class Kestrel3D(Animal3D):
         use_simple_markers = self.use_simple if use_simple is None else use_simple
         
         if use_simple_markers:
-            all_markers = self.skeleton_definition.get_marker_names_simple()
-            built_in_fixed = self.skeleton_definition.fixed_marker_names_simple
+            # In simple mode: 8 active markers + fixed markers
+            active_markers = self.skeleton_definition.get_marker_names_simple()
+            fixed_markers = self.skeleton_definition.fixed_marker_names_simple
             print("\nUsing SIMPLE marker set:")
         else:
-            all_markers = self.skeleton_definition.marker_names
-            built_in_fixed = self.skeleton_definition.fixed_marker_names
+            # In full mode: 34 active markers + fixed markers
+            active_markers = self.skeleton_definition.get_marker_names_full()
+            fixed_markers = self.skeleton_definition.fixed_marker_names
             print("\nUsing DETAILED marker set:")
         
-        # Combine built-in fixed with additional fixed markers
-        all_fixed_markers = list(set(built_in_fixed + self.skeleton_definition.additional_fixed_markers))
-        
-        # Get moving markers (not fixed)
-        moving_markers = [name for name in all_markers if name not in all_fixed_markers]
-        
-        print(f"\nFixed markers ({len(all_fixed_markers)}):")
-        for i, name in enumerate(sorted(all_fixed_markers)):
+        print(f"\nFixed markers ({len(fixed_markers)}):")
+        for i, name in enumerate(sorted(fixed_markers)):
             print(f"  {i}: {name}")
         
-        print(f"\nMoving markers ({len(moving_markers)}):")
-        for i, name in enumerate(sorted(moving_markers)):
+        print(f"\nMoving markers ({len(active_markers)}):")
+        for i, name in enumerate(sorted(active_markers)):
             print(f"  {i}: {name}")
         
-        print(f"\nTotal markers: {len(all_markers)}")
-        print(f"  - Fixed: {len(all_fixed_markers)}")
-        print(f"  - Moving: {len(moving_markers)}")
+        print(f"\nTotal markers: {len(active_markers) + len(fixed_markers)}")
+        print(f"  - Fixed: {len(fixed_markers)}")
+        print(f"  - Moving: {len(active_markers)}")
         
-        # Print which ones will actually be included in motion data
-        motion_marker_names = self.get_motion_data_marker_names(use_simple)
-        print(f"\nMarkers included in motion data: {len(motion_marker_names)}")
+        # Print which ones will be included in motion data
+        print(f"\nMarkers included in motion data: {len(active_markers)}")
+        print("Motion data marker order:")
+        for i, name in enumerate(active_markers):  # Using original order, not sorted
+            print(f"  {i}: {name}")
 
     def print_debug_info(self):
         """
@@ -557,76 +529,249 @@ class Kestrel3D(Animal3D):
         for section, indices in self.polygons.items():
             print(f"{section}: {len(indices)} points")
 
+    def validate_left_right_positions(self, motion_data: np.ndarray, left_indices: list, right_indices: list) -> None:
+        """
+        Validates that left markers are always to the left of their corresponding right markers.
+        
+        Parameters:
+        - motion_data (np.ndarray): Motion data in shape [nFrames, nMarkers, 3]
+        - left_indices (list): Indices of left markers
+        - right_indices (list): Indices of right markers (in same order as left_indices)
+        
+        Raises:
+        - ValueError: If any left marker is not to the left of its corresponding right marker
+        - ValueError: If the x-coordinates are too close to distinguish left from right
+        """
+        # Get x-coordinates for all frames
+        left_x = motion_data[:, left_indices, 0]  # [nFrames, nLeftMarkers]
+        right_x = motion_data[:, right_indices, 0]  # [nFrames, nRightMarkers]
+        
+        # Check if any left marker is to the right of its corresponding right marker
+        violations = np.where(left_x >= right_x)
+        if len(violations[0]) > 0:
+            # Get the first violation for a helpful error message
+            frame_idx = violations[0][0]
+            marker_idx = violations[1][0]
+            left_marker = self.marker_names[left_indices[marker_idx]]
+            right_marker = self.marker_names[right_indices[marker_idx]]
+            left_pos = left_x[frame_idx, marker_idx]
+            right_pos = right_x[frame_idx, marker_idx]
+            raise ValueError(
+                f"Left marker {left_marker} (x={left_pos:.3f}) is not to the left of "
+                f"its corresponding right marker {right_marker} (x={right_pos:.3f}) "
+                f"in frame {frame_idx}"
+            )
+        
+        # Check if any pairs are too close to reliably distinguish
+        x_differences = right_x - left_x
+        min_difference = 0.001  # 1mm minimum difference
+        too_close = np.where(x_differences < min_difference)
+        if len(too_close[0]) > 0:
+            # Get the first case for a helpful error message
+            frame_idx = too_close[0][0]
+            marker_idx = too_close[1][0]
+            left_marker = self.marker_names[left_indices[marker_idx]]
+            right_marker = self.marker_names[right_indices[marker_idx]]
+            difference = x_differences[frame_idx, marker_idx]
+            raise ValueError(
+                f"Left-right marker pair {left_marker} - {right_marker} are too close "
+                f"(difference={difference:.3f}m < {min_difference}m minimum) in frame {frame_idx}"
+            )
+
     def make_unilateral(self, motion_data: np.ndarray) -> np.ndarray:
         """
         Takes bilateral motion data and creates unilateral data by mirroring left markers
-        to match right markers and stacking them.
+        to match right markers and stacking them. Handles both simple and full modes,
+        including center markers in full mode.
 
         Parameters:
         - motion_data (np.ndarray): Motion data in shape [nFrames, nMarkers, 3]
 
         Returns:
-        - np.ndarray: Motion data with doubled frames and halved markers
-                     Shape will be [nFrames*2, nMarkers//2, 3]
+        - np.ndarray: Motion data with doubled frames and halved markers (plus centers)
+                     Shape will be [nFrames*2, nMarkers//2 + nCenters, 3]
         - np.ndarray: Boolean array indicating which frames were originally left
+        
+        Raises:
+        - ValueError: If left markers are not to the left of their corresponding right markers
+        - ValueError: If marker positions are invalid
         """
         # Make a hard copy of the motion data   
         motion_data_copy = np.copy(motion_data)
         
-        # Split into left and right data using alternating indices
-        left_data = motion_data_copy[:, 0::2, :]  # Take even indices (0,2,4,...)
-        right_data = motion_data_copy[:, 1::2, :]  # Take odd indices (1,3,5,...)
+        # Get marker organization
+        left_markers, right_markers, center_markers = self.skeleton_definition.get_marker_pairs_and_centers(self.use_simple)
         
-        # Check the left markers are always left of the right markers
-        assert np.all(left_data[:,:, 0] < right_data[:,:, 0]), "All left markers must be left of right markers"
-
+        # Get indices for each marker type
+        left_indices = [self.marker_names.index(m) for m in left_markers]
+        right_indices = [self.marker_names.index(m) for m in right_markers]
+        center_indices = [self.marker_names.index(m) for m in center_markers]
+        
+        # Validate left-right positions
+        self.validate_left_right_positions(motion_data_copy, left_indices, right_indices)
+        
+        # Extract data for each type
+        left_data = motion_data_copy[:, left_indices, :]
+        right_data = motion_data_copy[:, right_indices, :]
+        center_data = motion_data_copy[:, center_indices, :] if center_indices else None
+        
         # Mirror the left side in x to match the right
         left_mirrored = np.copy(left_data)
         left_mirrored[..., 0] *= -1  # Mirror x-coordinate
-
         
         # Stack mirrored left data and right data
-        unilateral_data = np.concatenate((left_mirrored, right_data), axis=0)
+        paired_data = np.concatenate((left_mirrored, right_data), axis=0)
+        
+        if center_data is not None:
+            # Duplicate center data for both halves
+            center_data_doubled = np.concatenate((center_data, center_data), axis=0)
+            # Combine paired and center data
+            unilateral_data = np.concatenate((paired_data, center_data_doubled), axis=1)
+        else:
+            unilateral_data = paired_data
         
         # Create boolean array marking which frames were originally left
         is_left = np.zeros(motion_data.shape[0] * 2, dtype=bool)
         is_left[:motion_data.shape[0]] = True  # First half are from left
-
-        print(f"unilateral data: {unilateral_data[0,:,0]}")
         
         return unilateral_data, is_left
 
     def make_bilateral(self, unilateral_data: np.ndarray, is_left: np.ndarray) -> np.ndarray:
         """
         Takes unilateral motion data and reconstructs bilateral data by un-mirroring
-        the appropriate frames and interleaving left and right markers.
+        the appropriate frames and interleaving left and right markers. Handles both
+        simple and full modes, including center markers in full mode.
 
         Parameters:
-        - unilateral_data (np.ndarray): Motion data in shape [nFrames*2, nMarkers//2, 3]
+        - unilateral_data (np.ndarray): Motion data in shape [nFrames*2, nMarkers//2 + nCenters, 3]
         - is_left (np.ndarray): Boolean array indicating which frames were originally left
 
         Returns:
         - np.ndarray: Reconstructed bilateral motion data in shape [nFrames, nMarkers, 3]
         """
-
+        # Get marker organization
+        left_markers, right_markers, center_markers = self.skeleton_definition.get_marker_pairs_and_centers(self.use_simple)
+        n_pairs = len(left_markers)
+        n_centers = len(center_markers)
+        
         # Make a hard copy of the unilateral data
         unilateral_data_copy = np.copy(unilateral_data)
-
         n_frames = len(is_left) // 2
-        n_markers_per_side = unilateral_data.shape[1]
         
-        # Split the data back into left and right portions
-        left_data = unilateral_data_copy[:n_frames]
-        right_data = unilateral_data_copy[n_frames:]
+        if n_centers > 0:
+            # Split into paired and center data
+            paired_data = unilateral_data_copy[:, :n_pairs, :]
+            center_data = unilateral_data_copy[:, n_pairs:, :]
+            
+            # Split paired data into left and right portions
+            left_data = paired_data[:n_frames]
+            right_data = paired_data[n_frames:]
+            
+            # Take only first half of center data (they're duplicated)
+            center_data = center_data[:n_frames]
+        else:
+            # All data is paired
+            left_data = unilateral_data_copy[:n_frames]
+            right_data = unilateral_data_copy[n_frames:]
+            center_data = None
         
         # Un-mirror the left data
         left_data[:,:, 0] *= -1
         
         # Create output array
-        bilateral_data = np.zeros((n_frames, n_markers_per_side * 2, 3))
+        total_markers = n_pairs * 2 + n_centers
+        bilateral_data = np.zeros((n_frames, total_markers, 3))
         
-        # Interleave left and right data
-        bilateral_data[:, ::2,:] = left_data    # Even indices for left
-        bilateral_data[:, 1::2,:] = right_data  # Odd indices for right
+        # Get indices for each marker type in the final array
+        left_indices = [self.marker_names.index(m) for m in left_markers]
+        right_indices = [self.marker_names.index(m) for m in right_markers]
+        center_indices = [self.marker_names.index(m) for m in center_markers] if center_markers else []
+        
+        # Place data in correct positions
+        bilateral_data[:, left_indices, :] = left_data
+        bilateral_data[:, right_indices, :] = right_data
+        if center_data is not None:
+            bilateral_data[:, center_indices, :] = center_data
         
         return bilateral_data
+
+    def get_polygon_coords(self, section_name):
+        """
+        Get the coordinates for a specific polygon section, including fixed markers.
+        
+        Args:
+            section_name (str): Name of the section to get coordinates for
+            
+        Returns:
+            numpy.ndarray: Array of coordinates for the polygon vertices
+        """
+        # In simple mode, we need to check both with and without '_simple' suffix
+        if self.use_simple:
+            section_with_suffix = section_name + '_simple'
+            section_key = section_with_suffix if section_with_suffix in self.skeleton_definition.body_sections else section_name
+        else:
+            section_key = section_name
+            
+        if section_key not in self.skeleton_definition.body_sections:
+            raise ValueError(f"Section {section_name} not found in body sections")
+            
+        # Get the markers for this section
+        section_markers = self.skeleton_definition.body_sections[section_key]
+        
+        # Get coordinates for each marker
+        coords = []
+        fixed_markers = self.skeleton_definition.fixed_marker_names_simple if self.use_simple else self.skeleton_definition.fixed_marker_names
+        
+        for marker in section_markers:
+            if marker in self.marker_names:
+                # Active marker - get from current shape using marker index
+                idx = self.marker_names.index(marker)
+                coord = self.current_shape[0, idx]
+            elif marker in fixed_markers:
+                # Fixed marker - get from current shape using fixed marker index
+                idx = self.fixed_marker_index[fixed_markers.index(marker)]
+                coord = self.current_shape[0, idx]
+            else:
+                continue
+                
+            coords.append(coord)
+            
+        if not coords:
+            print(f"Warning: No valid markers found for section {section_name}")
+            return np.array([])
+            
+        return np.array(coords)
+
+    @property
+    def right_marker_names(self):
+        """Get the names of right-side markers."""
+        if self.use_simple:
+            # In simple mode, right markers are at odd indices (1,3,5,7)
+            return self.marker_names[1::2]
+        else:
+            # In full mode, get right markers from skeleton definition
+            left_markers, right_markers, _ = self.skeleton_definition.get_marker_pairs_and_centers(self.use_simple)
+            return right_markers
+
+    @property
+    def left_marker_names(self):
+        """Get the names of left-side markers."""
+        if self.use_simple:
+            # In simple mode, left markers are at even indices (0,2,4,6)
+            return self.marker_names[0::2]
+        else:
+            # In full mode, get left markers from skeleton definition
+            left_markers, right_markers, _ = self.skeleton_definition.get_marker_pairs_and_centers(self.use_simple)
+            return left_markers
+
+    @property
+    def right_markers(self):
+        """Get the positions of right-side markers."""
+        right_indices = [self.marker_names.index(name) for name in self.right_marker_names]
+        return self.markers[:, right_indices, :]
+
+    @property
+    def left_markers(self):
+        """Get the positions of left-side markers."""
+        left_indices = [self.marker_names.index(name) for name in self.left_marker_names]
+        return self.markers[:, left_indices, :]
