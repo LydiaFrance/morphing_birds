@@ -1,4 +1,3 @@
-
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
@@ -19,9 +18,45 @@ def animate(animal3d_instance,
                 colour=None, 
                 horzDist_frames=None, 
                 bodypitch_frames=None, 
-                vertDist_frames=None):
+                vertDist_frames=None,
+                bodyyaw_frames=None,
+                bodyroll_frames=None,
+                score_vals=None):
         """
         Create an animated 3D plot of a hawk video.
+        
+        Parameters:
+        -----------
+        animal3d_instance : Animal3D
+            Instance of the Animal3D class
+        keypoints_frames : array-like
+            Array of keypoint frames to animate
+        fig : matplotlib.figure.Figure, optional
+            Figure to plot on
+        ax : matplotlib.axes.Axes, optional
+            Axes to plot on
+        rotation_type : str, optional
+            Type of camera rotation ("static", "dynamic", or "slow")
+        el : float, optional
+            Elevation angle for camera
+        az : float, optional
+            Azimuth angle for camera
+        alpha : float, optional
+            Transparency of the plot
+        colour : str, optional
+            Color for the plot
+        horzDist_frames : array-like, optional
+            Horizontal distance transformation for each frame
+        bodypitch_frames : array-like, optional
+            Body pitch transformation for each frame
+        vertDist_frames : array-like, optional
+            Vertical distance transformation for each frame
+        bodyyaw_frames : array-like, optional
+            Body yaw transformation for each frame
+        bodyroll_frames : array-like, optional
+            Body roll transformation for each frame
+        score_vals : array-like, optional
+            Values to show in the slider
         """
         
         # Check dimensions and mirror the keypoints if only the right is given.
@@ -38,48 +73,44 @@ def animate(animal3d_instance,
             fig, ax = get_plot3d_view(fig)
         print("Figure and axes initialized.")
 
-
         # Prepare camera angles
         el_frames, az_frames = get_camera_angles(num_frames=num_frames, 
                                                       rotation_type=rotation_type, 
                                                       el=el, 
                                                       az=az)
         
-        # Check if the horzDist_frames is given, if so check it is the correct length
-        # If none given, return a zero array of the correct length.
-        horzDist_frames  = check_transformation_frames(num_frames, horzDist_frames)
-        vertDist_frames  = check_transformation_frames(num_frames, vertDist_frames)
+        # Check if the transformation frames are given, if so check they are the correct length
+        # If none given, return a zero array of the correct length
+        horzDist_frames = check_transformation_frames(num_frames, horzDist_frames)
+        vertDist_frames = check_transformation_frames(num_frames, vertDist_frames)
         bodypitch_frames = check_transformation_frames(num_frames, bodypitch_frames)
+        bodyyaw_frames = check_transformation_frames(num_frames, bodyyaw_frames)
+        bodyroll_frames = check_transformation_frames(num_frames, bodyroll_frames)
 
-        # # Plot settings
+        # Plot settings
         # Define the axis limits based on the keypoints scale 
-        lims = keypoints_frames.max() * 1.2
+        lims = keypoints_frames.max()*0.5
         lims = [-lims, lims]
         ax = plot_settings(ax, animal3d_instance.origin, lims)
-
-        
         
         def update_animated_plot(frame):
             """
             Function to update the animated plot.
             """
-            
             ax.clear()
-
-            # Update the keypoints for the current frame
 
             # Make sure the keypoints are restored to the default shape to remove any transformations
             animal3d_instance.reset_transformation()
 
             # Update the keypoints for the current frame
             animal3d_instance.update_keypoints(keypoints_frames[frame])
-
             
             # Transform the keypoints
-            # If none provided, uses 0 to transform the keypoints
-            animal3d_instance.transform_keypoints(bodypitch = bodypitch_frames[frame],
-                                                horzDist  = horzDist_frames[frame],
-                                                vertDist  = vertDist_frames[frame])
+            animal3d_instance.transform_keypoints(bodypitch=bodypitch_frames[frame],
+                                                horzDist=horzDist_frames[frame],
+                                                vertDist=vertDist_frames[frame],
+                                                bodyyaw=bodyyaw_frames[frame],
+                                                bodyroll=bodyroll_frames[frame])
             
             # Then plot the current frame
             plot(animal3d_instance, 
@@ -89,14 +120,12 @@ def animate(animal3d_instance,
                     alpha=alpha, 
                     colour=colour)
             
-            # ax.set_title(f"Frame {frame+1}/{num_frames}")
-            # ax.set_title(animal3d_instance.origin)
             plot_settings(ax, animal3d_instance.origin, lims)
 
             return fig, ax
+
         # Make sure the keypoints are restored to the default shape to remove any transformations
         animal3d_instance.restore_keypoints_to_average()
-
 
         # Creating the animation
         animation = FuncAnimation(fig, update_animated_plot, 

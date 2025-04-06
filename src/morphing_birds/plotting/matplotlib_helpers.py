@@ -7,142 +7,217 @@ import io
 
 # ....... Helper Plot Functions ........
 
-def plot_keypoints(ax, animal3d_instance, colour='k', alpha=1):
-    # Only plot the non-fixed markers. 
-    coords = animal3d_instance.current_shape[:,animal3d_instance.marker_index,:][0]
+def plot_keypoints(ax, animal3d_instance, colour='k', alpha=1, indices=None):
+    """
+    Plots keypoints of the animal using matplotlib.
+    
+    Parameters:
+    - ax : matplotlib.axes.Axes
+        The axes to plot on
+    - animal3d_instance : Animal3D
+        Instance of the Animal3D class
+    - colour : str, optional
+        Color for the keypoints
+    - alpha : float, optional
+        Transparency of the keypoints
+    - indices : list, optional
+        Specific indices of keypoints to plot. If None, plot all keypoints
+    """
+    # Use provided indices or default to marker_index
+    if indices is None:
+        indices = animal3d_instance.marker_index
 
-    # Plot the keypoints
+    # Extract keypoint coordinates
+    coords = animal3d_instance.current_shape[:, indices, :][0]
+
+    # Plot the keypoints with improved appearance
     ax.scatter(coords[:, 0], coords[:, 1], coords[:, 2],
-               s=5, color=colour, alpha=alpha)
+              s=30,  # Slightly larger markers
+              color=colour,
+              alpha=alpha,
+              edgecolor='none',  # Remove marker edges for cleaner look
+              antialiased=True)  # Enable antialiasing
 
     return ax
 
-def plot_sections(ax, animal3d_instance, colour, alpha=1):
-
-    # Plot each section
-    for section in animal3d_instance.skeleton_definition.body_sections.keys():
-        polygon = get_polygon(animal3d_instance, section, colour, alpha)
-        ax.add_collection3d(polygon)
+def plot_sections(ax, animal3d_instance, colour, alpha=1, section_name=None):
+    """
+    Plots sections of the animal using matplotlib.
+    
+    Parameters:
+    - ax : matplotlib.axes.Axes
+        The axes to plot on
+    - animal3d_instance : Animal3D
+        Instance of the Animal3D class
+    - colour : str
+        Color for the plot
+    - alpha : float, optional
+        Transparency of the plot
+    - section_name : str, optional
+        The name of the body section to plot. If None, plot all sections
+    """
+    if section_name is not None:
+        # Skip if section doesn't exist in polygons
+        if section_name in animal3d_instance.polygons:
+            polygon = get_polygon(animal3d_instance, section_name, colour, alpha)
+            ax.add_collection3d(polygon)
+    else:
+        # Plot all available sections
+        for section in animal3d_instance.polygons.keys():
+            polygon = get_polygon(animal3d_instance, section, colour, alpha)
+            ax.add_collection3d(polygon)
 
     return ax
 
 def get_polygon(animal3d_instance, section_name, colour, alpha=1):
     """
     Returns the coordinates of the polygon representing the given section.
+    
+    Parameters:
+    - animal3d_instance : Animal3D
+        Instance of the Animal3D class
+    - section_name : str
+        Name of the section to get polygon for
+    - colour : str
+        Color for the polygon
+    - alpha : float, optional
+        Transparency of the polygon
     """
-
-    if section_name not in animal3d_instance.skeleton_definition.body_sections.keys():
+    if section_name not in animal3d_instance.polygons:
         raise ValueError(f"Section name {section_name} not recognised.")
 
-    colour = colour_polygon(section_name, colour)
+    # Get color and alpha based on section type
+    colour = colour_polygon(section_name, colour, animal3d_instance)
+    alpha = alpha_polygon(section_name, alpha, animal3d_instance)
 
-    alpha = alpha_polygon(section_name, alpha)
-
+    # Get polygon coordinates
     coords = animal3d_instance.get_polygon_coords(section_name)
+    
+    # Add first point to end to close polygon
+    coords = np.vstack([coords, coords[0]])
 
+    # Create polygon collection with improved line rendering
     polygon = Poly3DCollection([coords],
-                               alpha=alpha,
-                               facecolor=colour,
-                               edgecolor='k',
-                               linewidths=0.5)
+                             alpha=alpha,
+                             facecolor=colour,
+                             edgecolor='black',  # Darker edge color for better contrast
+                             linewidth=1.0,  # Thinner lines for crispness
+                             antialiased=True,  # Enable antialiasing
+                             rasterized=False)  # Vector rendering for crisp lines
     return polygon
 
-def alpha_polygon(section_name, alpha):
-
-        # The alpha of the polygon is determined by whether the landmarks are
-        # estimated or measured.
+def alpha_polygon(section_name, alpha, animal3d_instance=None):
+    """
+    Determines the transparency of a polygon section.
+    """
+    if animal3d_instance is None or not hasattr(animal3d_instance, 'colour_sections'):
         if "handwing" in section_name or "tail" in section_name:
-            alpha = alpha
+            alpha = 0.5
         else:
             alpha = 0.3
+    else:
+        # Check if any of the colored sections are in the section name
+        for keyword in animal3d_instance.colour_sections:
+            if keyword in section_name:
+                alpha = 0.5
+            else:
+                alpha = 0.3
+    return alpha
 
-        return alpha
+def colour_polygon(section_name, colour, animal3d_instance=None):
+    """
+    Determines the color of a polygon section.
+    """
+    if colour is None:
+        colour = 'lightblue'
 
-def colour_polygon(section_name, colour):
+    if animal3d_instance is None or not hasattr(animal3d_instance, 'colour_sections'):
+        if 'handwing' in section_name or 'tail' in section_name:
+            return colour
+        else:
+            return 'grey'
     
-        # The colour of the polygon is determined by whether the landmarks are
-        # estimated or measured.
-        if "handwing" in section_name or "tail" in section_name:
-            colour = colour
-        else:
-            # colour = np.array((0.5, 0.5, 0.5, 0.5)) 
-            colour = colour
+    # Check if any of the colored sections are in the section name
+    for keyword in animal3d_instance.colour_sections:
+        if keyword in section_name:  # This will match "wing" within "right_handwing", etc.
+            return colour
+    # If no coloured sections are found, return grey
+    return 'grey'
+
+def plot_settings(ax, origin, lims=None):
+    """
+    Plot settings & set the azimuth and elev. for camera view of 3D axis.
     
-        return colour
+    Parameters:
+    - ax : matplotlib.axes.Axes
+        The axes to configure
+    - origin : array-like
+        Origin point for the plot
+    - lims : tuple, optional
+        Axis limits as (min, max). If None, uses default limits
+    """
+    # Panel Shading
+    ax.xaxis.pane.fill = False
+    ax.yaxis.pane.fill = False
+    ax.zaxis.pane.fill = True
+    ax.xaxis.pane.set_edgecolor('w')
+    ax.yaxis.pane.set_edgecolor('w')
+    ax.zaxis.pane.set_edgecolor('w')
 
-def plot_settings(ax,origin, lims=None):
-        """
-        Plot settings & set the azimuth and elev. for camera view of 3D axis.
-        """
+    # Grid color and style - make lines thinner and crisper
+    grid_props = {
+        'color': 'grey',
+        'linestyle': ':',
+        'linewidth': 0.3,  # Thinner grid lines
+        'alpha': 0.5  # Slightly transparent
+    }
+    ax.xaxis._axinfo['grid'].update(**grid_props)
+    ax.yaxis._axinfo['grid'].update(**grid_props)
+    ax.zaxis._axinfo['grid'].update(**grid_props)
 
-        # --- Panel Shading
-        ax.xaxis.pane.fill = False
-        ax.yaxis.pane.fill = False
-        ax.zaxis.pane.fill = True
-        ax.xaxis.pane.set_edgecolor('w')
-        ax.yaxis.pane.set_edgecolor('w')
-        ax.zaxis.pane.set_edgecolor('w')
+    # Set axis limits
+    if lims is not None:
+        ax.set_xlim(lims[0], lims[1])
+        ax.set_ylim(lims[0], lims[1])
+        ax.set_zlim(lims[0], lims[1])
+        increment = round(lims[1] - lims[0], 2)
+    else:
+        ax.set_xlim(-0.3, 0.3)
+        ax.set_ylim(-0.3, 0.3)
+        ax.set_zlim(-0.3, 0.3)
+        increment = 0.2
 
-        # Put a line in the back corner of the plot
-        corner = 0.32
-        # ax.plot([-corner,-corner], [-corner,-corner], [-corner,corner], color='grey', linestyle=':', linewidth=0.5, zorder = -10)
+    # Set axis scale
+    ax.auto_scale_xyz([origin[0]-increment, origin[0]+increment],
+                     [origin[1]-increment, origin[1]+increment],
+                     [origin[2]-increment, origin[2]+increment])
 
-        # Grid colour
-        ax.xaxis._axinfo['grid'].update(color = 'grey', linestyle = ':', linewidth = 0.5)
-        ax.yaxis._axinfo['grid'].update(color = 'grey', linestyle = ':',linewidth = 0.5)
-        ax.zaxis._axinfo['grid'].update(color = 'grey', linestyle = ':',linewidth = 0.5)
+    # Axis labels and ticks with improved font rendering
+    label_props = {'fontsize': 10, 'fontweight': 'normal', 'fontfamily': 'sans-serif'}
+    ax.set_xlabel('x (m)', **label_props)
+    ax.set_ylabel('y (m)', **label_props)
+    ax.set_zlabel('z (m)', **label_props)
+    
+    # Configure tick properties
+    ax.tick_params(axis='both', which='major', labelsize=8, width=0.5, length=3)
+    ax.tick_params(axis='both', which='minor', labelsize=8, width=0.5, length=2)
 
-        if lims is not None:
-            ax.set_xlim(lims[0], lims[1])
-            ax.set_ylim(lims[0], lims[1])
-            ax.set_zlim(lims[0], lims[1])
-        else:
-            ax.set_xlim(-0.3, 0.3)
-            ax.set_ylim(-0.3, 0.3)
-            ax.set_zlim(-0.3, 0.3)
+    # Set tick locations
+    n_ticks = 5  # Match plotly's default
+    ax.set_xticks(np.linspace(-increment, increment, n_ticks))
+    ax.set_yticks(np.linspace(-increment, increment, n_ticks))
+    ax.set_zticks(np.linspace(-increment, increment, n_ticks))
 
-        # ax.set_xlim(-0.04, 0.04)
-        # ax.set_ylim(-0.04, 0.04)
-        # ax.set_zlim(-0.04, 0.04)
+    # Set aspect ratio to be equal
+    ax.set_aspect('equal', 'box')
 
-        # --- Axis Limits
-        # increment = 0.28
-        # increment = 0.02
-
-        # Define the increment should be either 0.2 or 0.02 depending on the lims
-
-        if lims is not None:
-             increment = round(lims[1]*2, 2)
-        else:
-             increment = 0.2
-
-
-        ax.auto_scale_xyz(  [origin[0]-increment, origin[0]+increment], 
-                            [origin[1]-increment, origin[1]+increment],
-                            [origin[2]-increment, origin[2]+increment])
-
-        # --- Axis labels and Ticks
-        ax.set_xlabel('x (m)', fontsize=12)
-        ax.set_ylabel('y (m)', fontsize=12)
-        ax.set_zlabel('z (m)', fontsize=12)
-        ax.tick_params(axis='both', which='major', labelsize=10)
-        ax.tick_params(axis='both', which='minor', labelsize=10)
-
-        # ax.set_xticks(np.linspace(-0.2, 0.2, 3))
-        # ax.set_yticks(np.linspace(-0.2, 0.2, 3))
-        # ax.set_zticks(np.linspace(-0.2, 0.2, 3))
-
-        # ax.set_xticks(np.linspace(-0.02, 0.02, 3))
-        # ax.set_yticks(np.linspace(-0.02, 0.02, 3))
-        # ax.set_zticks(np.linspace(-0.02, 0.02, 3))
-
-        ax.set_xticks(np.linspace(-increment, increment, 3))
-        ax.set_yticks(np.linspace(-increment, increment, 3))
-        ax.set_zticks(np.linspace(-increment, increment, 3))
-
-        # --- Axis Equal
-        ax.set_aspect('equal', 'box')
-        return ax
+    # Set background color to match plotly
+    ax.set_facecolor('white')
+    
+    # Enable antialiasing for the entire axis
+    ax.figure.set_dpi(150)  # Higher DPI for sharper rendering
+    
+    return ax
 
     
 def get_plot3d_view(fig=None, rows=1, cols=1, index=1):
