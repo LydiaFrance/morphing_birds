@@ -71,7 +71,7 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
             # Right Arm Wing markers
             "right_shoulder": "r_sh",
             "right_wrist": "r_w",
-            "right_armwing_mid": "r_e",
+            "right_elbow": "r_e",
             "right_alula": "r_al_1",
             "right_alula_lower": "r_al_3",
             "right_secondary_tip": "r_s1_1",
@@ -80,7 +80,7 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
             # Left Arm Wing markers
             "left_shoulder": "l_sh",
             "left_wrist": "l_w",
-            "left_armwing_mid": "l_e",
+            "left_elbow": "l_e",
             "left_alula": "l_al_1",
             "left_alula_lower": "l_al_3",
             "left_secondary_tip": "l_s1_1",
@@ -134,8 +134,8 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
             "head": ["right_shoulder", "head", "left_shoulder"], 
             "body": ["right_shoulder", "left_shoulder", "left_tail_base","right_tail_base"], 
             "tail": ["right_tail_base", "left_tail_base", "left_tail_tip", "right_tail_tip"],
-            "right_armwing": ["right_shoulder", "right_wrist", "right_armwing_mid", "right_lastprimary_tip", "right_secondary_tip", "right_lastsecondary_tip"], 
-            "left_armwing": ["left_shoulder", "left_wrist", "left_armwing_mid", "left_lastprimary_tip", "left_secondary_tip", "left_lastsecondary_tip"], 
+            "right_armwing": ["right_shoulder", "right_elbow", "right_wrist", "right_lastprimary_tip", "right_secondary_tip", "right_lastsecondary_tip", "right_shoulder", "right_wrist"], 
+            "left_armwing": ["left_shoulder", "left_elbow", "left_wrist", "left_lastprimary_tip", "left_secondary_tip", "left_lastsecondary_tip", "left_shoulder", "left_wrist"], 
             "left_handwing": ["left_wrist", "left_firstprimary_base", "left_firstprimary_mid", "left_firstprimary_tip", "left_secondprimary_tip", "left_secondprimary_mid", "left_secondprimary_base", "left_fourthprimary_tip", "left_lastprimary_tip"], 
             "right_handwing": ["right_wrist", "right_firstprimary_base", "right_firstprimary_mid", "right_firstprimary_tip", "right_secondprimary_tip", "right_secondprimary_mid", "right_secondprimary_base", "right_fourthprimary_tip", "right_lastprimary_tip"], 
             "left_alula": ["left_wrist", "left_alula", "left_alula_lower"],
@@ -270,7 +270,7 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
             "left_alula_lower", "right_alula_lower",
             
             # Mid-wing + wrist
-            "left_armwing_mid", "right_armwing_mid",
+            "left_elbow", "right_elbow",
             "left_wrist", "right_wrist",
             
             # Secondaries
