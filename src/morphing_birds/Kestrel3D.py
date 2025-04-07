@@ -403,7 +403,7 @@ class Kestrel3D(Animal3D):
             print(f"Removed {np.sum(~valid_frames)} frames containing NaN values.")
             motion_data = motion_data[valid_frames]
         
-        return motion_data
+        return motion_data, valid_frames
     
     def update_keypoints_from_motion(self, motion_data: np.ndarray, frame_idx: int = 0):
         """
