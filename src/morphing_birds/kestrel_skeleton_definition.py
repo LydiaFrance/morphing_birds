@@ -145,10 +145,10 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
             "head_simple": ["right_shoulder", "head", "left_shoulder"],
             "body_simple": ["right_shoulder", "left_shoulder", "left_lastsecondary_tip", "right_lastsecondary_tip"], 
             "tail_simple": ["right_lastsecondary_tip", "left_lastsecondary_tip", "left_tail_tip", "right_tail_tip"],
-            "left_armwing_simple": ["left_firstprimary_base", "left_secondary_tip", "left_lastsecondary_tip", "left_shoulder"], 
-            "right_armwing_simple": ["right_firstprimary_base", "right_secondary_tip", "right_lastsecondary_tip", "right_shoulder"], 
-            "left_handwing_simple": ["left_firstprimary_base", "left_secondprimary_tip", "left_secondary_tip"], 
-            "right_handwing_simple": ["right_firstprimary_base", "right_secondprimary_tip", "right_secondary_tip"]
+            "left_armwing_simple": ["left_wrist", "left_secondary_tip", "left_lastsecondary_tip", "left_shoulder"], 
+            "right_armwing_simple": ["right_wrist", "right_secondary_tip", "right_lastsecondary_tip", "right_shoulder"], 
+            "left_handwing_simple": ["left_wrist", "left_secondprimary_tip", "left_secondary_tip"], 
+            "right_handwing_simple": ["right_wrist", "right_secondprimary_tip", "right_secondary_tip"]
         }
 
         # Initialize the parent class with only the active markers
