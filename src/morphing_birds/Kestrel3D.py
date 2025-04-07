@@ -607,7 +607,7 @@ class Kestrel3D(Animal3D):
         
         return valid_frames
 
-    def make_unilateral(self, motion_data: np.ndarray) -> tuple:
+    def make_unilateral(self, motion_data: np.ndarray, info_df: pd.DataFrame = None) -> tuple:
         """
         Takes bilateral motion data and creates unilateral data by mirroring left markers
         to match right markers and stacking them. Handles both simple and full modes,
@@ -615,11 +615,13 @@ class Kestrel3D(Animal3D):
 
         Parameters:
         - motion_data (np.ndarray): Motion data in shape [nFrames, nMarkers, 3]
+        - info_df (pd.DataFrame, optional): DataFrame with same number of rows as motion_data frames
 
         Returns:
         - np.ndarray: Motion data with doubled frames and halved markers (plus centers)
                      Shape will be [nValidFrames*2, nMarkers//2 + nCenters, 3]
         - np.ndarray: Boolean array indicating which frames were originally left
+        - pd.DataFrame: Optional unilateral info_df with doubled rows corresponding to motion data
         """
         # Make a hard copy of the motion data   
         motion_data_copy = np.copy(motion_data)
@@ -640,6 +642,12 @@ class Kestrel3D(Animal3D):
         
         if len(motion_data_copy) == 0:
             raise ValueError("No valid frames found after left-right position validation")
+            
+        # If info_df is provided, filter it to match valid frames
+        if info_df is not None:
+            if len(info_df) != len(motion_data):
+                raise ValueError("info_df must have same number of rows as motion_data frames")
+            info_df = info_df.iloc[valid_frames]
         
         # Extract data for each type
         left_data = motion_data_copy[:, left_indices, :]
@@ -660,6 +668,12 @@ class Kestrel3D(Animal3D):
             unilateral_data = np.concatenate((paired_data, center_data_doubled), axis=1)
         else:
             unilateral_data = paired_data
+            
+        # If info_df is provided, duplicate it to match the doubled frames
+        if info_df is not None:
+            unilateral_info_df = pd.concat([info_df, info_df], axis=0, ignore_index=True)
+        else:
+            unilateral_info_df = None
         
         # Create boolean array marking which frames were originally left
         # Note: now only includes valid frames
@@ -672,7 +686,7 @@ class Kestrel3D(Animal3D):
         print(f"  Valid frames: {n_valid_frames}")
         print(f"  Final shape: {unilateral_data.shape}")
         
-        return unilateral_data, is_left
+        return unilateral_data, is_left, unilateral_info_df
 
     def make_bilateral(self, unilateral_data: np.ndarray, is_left: np.ndarray) -> np.ndarray:
         """
