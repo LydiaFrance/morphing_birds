@@ -214,7 +214,7 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
         # Define the canonical order of markers
         canonical_order = [
             "left_secondprimary_tip", "right_secondprimary_tip",
-            "left_firstprimary_base", "right_firstprimary_base",
+            "left_wrist", "right_wrist",
             "left_secondary_tip", "right_secondary_tip",
             "left_tail_tip", "right_tail_tip"
         ]
@@ -279,9 +279,7 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
             
             # Tail feathers: base → tip
             "left_tail_base", "right_tail_base",
-            "centre_tail_base",
             "left_tail_tip", "right_tail_tip",
-            "centre_tail_tip"
         ]
         
         # Get all markers from non-simple sections
