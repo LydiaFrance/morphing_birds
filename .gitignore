@@ -1,5 +1,7 @@
 data/2024*
+data/2025*
 src/reference/
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

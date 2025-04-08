@@ -625,6 +625,7 @@ class Kestrel3D(Animal3D):
         """
         # Make a hard copy of the motion data   
         motion_data_copy = np.copy(motion_data)
+        info_df_copy = info_df.copy() if info_df is not None else None
         
         # Get marker organization
         left_markers, right_markers, center_markers = self.skeleton_definition.get_marker_pairs_and_centers(self.use_simple)
@@ -644,10 +645,10 @@ class Kestrel3D(Animal3D):
             raise ValueError("No valid frames found after left-right position validation")
             
         # If info_df is provided, filter it to match valid frames
-        if info_df is not None:
-            if len(info_df) != len(motion_data):
+        if info_df_copy is not None:
+            if len(info_df_copy) != len(motion_data):
                 raise ValueError("info_df must have same number of rows as motion_data frames")
-            info_df = info_df.iloc[valid_frames]
+            info_df_copy = info_df_copy.iloc[valid_frames]
         
         # Extract data for each type
         left_data = motion_data_copy[:, left_indices, :]
@@ -670,8 +671,8 @@ class Kestrel3D(Animal3D):
             unilateral_data = paired_data
             
         # If info_df is provided, duplicate it to match the doubled frames
-        if info_df is not None:
-            unilateral_info_df = pd.concat([info_df, info_df], axis=0, ignore_index=True)
+        if info_df_copy is not None:
+            unilateral_info_df = pd.concat([info_df_copy, info_df_copy], axis=0, ignore_index=True)
         else:
             unilateral_info_df = None
         

@@ -28,6 +28,7 @@ classifiers = [
 ]
 
 dependencies = ["numpy",
+                "pandas",
                 "matplotlib",
                 "ipywidgets", 
                 "ipynb", 
