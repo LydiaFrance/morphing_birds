@@ -132,8 +132,8 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
         body_sections = {
             # Full mode sections
             "head": ["right_shoulder", "head", "left_shoulder"], 
-            "body": ["right_shoulder", "left_shoulder", "left_tail_base","right_tail_base"], 
-            "tail": ["right_tail_base", "left_tail_base", "left_tail_tip", "right_tail_tip"],
+            "body": ["right_shoulder", "left_shoulder", "left_lastsecondary_tip","right_lastsecondary_tip"], 
+            "tail": ["right_lastsecondary_tip", "left_lastsecondary_tip", "left_tail_tip", "right_tail_tip"],
             "right_armwing": ["right_shoulder", "right_elbow", "right_wrist", "right_lastprimary_tip", "right_secondary_tip", "right_lastsecondary_tip", "right_shoulder", "right_wrist"], 
             "left_armwing": ["left_shoulder", "left_elbow", "left_wrist", "left_lastprimary_tip", "left_secondary_tip", "left_lastsecondary_tip", "left_shoulder", "left_wrist"], 
             "left_handwing": ["left_wrist", "left_firstprimary_base", "left_firstprimary_mid", "left_firstprimary_tip", "left_secondprimary_tip", "left_secondprimary_mid", "left_secondprimary_base", "left_fourthprimary_tip", "left_lastprimary_tip"], 
