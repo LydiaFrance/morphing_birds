@@ -1,6 +1,7 @@
 import numpy as np
 from morphing_birds import Animal3D, KestrelSkeletonDefinition
 import pandas as pd
+import copy
 
 class Kestrel3D(Animal3D):
     """
@@ -215,6 +216,45 @@ class Kestrel3D(Animal3D):
         """
         with open(csv_path, 'r') as file:
             return np.loadtxt(file, delimiter=',', skiprows=0, dtype='str')
+
+    def copy(self) -> 'Kestrel3D':
+        """
+        Create a deep copy of this Kestrel3D instance.
+        
+        Returns:
+            A new Kestrel3D instance that is a deep copy of this one
+        """
+        return copy.deepcopy(self)
+    
+
+    def overwrite_keypoints(self, keypoints: np.ndarray) -> None:
+        """
+        Set the given keypoints as the default, current, and untransformed shape.
+        This overwrites the existing shapes with the new keypoints.
+        
+        Args:
+            keypoints: Array of shape (1, n_markers, 3) containing the new keypoints
+        """
+        # Validate shape
+        if keypoints.shape[0] != 1:
+            raise ValueError("Keypoints must have shape (1, n_markers, 3)")
+        if keypoints.shape[2] != 3:
+            raise ValueError("Keypoints must be 3D coordinates")
+            
+        # Create new shape array that includes both moving and fixed markers
+        new_shape = np.zeros_like(self.default_shape)
+        
+        # Update the moving markers (non-fixed) with the new keypoints
+        new_shape[:, self.marker_index, :] = keypoints
+        
+        # Keep the fixed markers in their original positions
+        new_shape[:, self.fixed_marker_index, :] = self.default_shape[:, self.fixed_marker_index, :]
+        
+        # Set all shapes to the new combined shape
+        self.default_shape = new_shape.copy()
+        self.current_shape = new_shape.copy()
+        self.untransformed_shape = new_shape.copy()
+
 
     def get_csv_marker_names(self, header_row: list) -> list:
         """
@@ -731,11 +771,15 @@ class Kestrel3D(Animal3D):
 
         Parameters:
         - unilateral_data (np.ndarray): Motion data in shape [nFrames*2, nMarkers//2 + nCenters, 3]
-        - is_left (np.ndarray): Boolean array indicating which frames were originally left
+        - is_left (np.ndarray): Boolean or integer array (0/1) indicating which frames were originally left
 
         Returns:
         - np.ndarray: Reconstructed bilateral motion data in shape [nFrames, nMarkers, 3]
         """
+        # Convert is_left to boolean if it's integer
+        if is_left.dtype.kind in 'iu':  # integer type
+            is_left = is_left.astype(bool)
+            
         # Get marker organisation
         left_markers, right_markers, center_markers = self.skeleton_definition.get_marker_pairs_and_centers(self.use_simple)
         n_pairs = len(left_markers)
