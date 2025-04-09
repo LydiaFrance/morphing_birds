@@ -743,7 +743,7 @@ class Kestrel3D(Animal3D):
         
         # Make a hard copy of the unilateral data
         unilateral_data_copy = np.copy(unilateral_data)
-        n_frames = len(is_left)  # Number of original frames
+        n_frames = len(is_left) // 2  # Number of original frames (half of total frames)
         
         if n_centers > 0:
             # Split into paired and center data
@@ -765,7 +765,7 @@ class Kestrel3D(Animal3D):
         # Un-mirror the left data
         left_data[:,:, 0] *= -1
         
-        # Create output array
+        # Create output array with correct number of frames
         total_markers = n_pairs * 2 + n_centers
         bilateral_data = np.zeros((n_frames, total_markers, 3))
         
