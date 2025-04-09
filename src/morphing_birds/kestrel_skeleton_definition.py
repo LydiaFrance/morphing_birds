@@ -225,7 +225,8 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
         # Define the canonical order of markers
         canonical_order = [
             "left_secondprimary_tip", "right_secondprimary_tip",
-            "left_wrist", "right_wrist",
+            # "left_wrist", "right_wrist",
+            "left_firstprimary_base", "right_firstprimary_base",
             "left_secondary_tip", "right_secondary_tip",
             "left_tail_tip", "right_tail_tip"
         ]
