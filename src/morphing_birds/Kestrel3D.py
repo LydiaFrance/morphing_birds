@@ -702,30 +702,30 @@ class Kestrel3D(Animal3D):
         Returns:
         - np.ndarray: Reconstructed bilateral motion data in shape [nFrames, nMarkers, 3]
         """
-        # Get marker organization
+        # Get marker organisation
         left_markers, right_markers, center_markers = self.skeleton_definition.get_marker_pairs_and_centers(self.use_simple)
         n_pairs = len(left_markers)
         n_centers = len(center_markers)
         
         # Make a hard copy of the unilateral data
         unilateral_data_copy = np.copy(unilateral_data)
-        n_frames = len(is_left) // 2
+        n_frames = len(is_left)  # Number of original frames
         
         if n_centers > 0:
             # Split into paired and center data
             paired_data = unilateral_data_copy[:, :n_pairs, :]
             center_data = unilateral_data_copy[:, n_pairs:, :]
             
-            # Split paired data into left and right portions
-            left_data = paired_data[:n_frames]
-            right_data = paired_data[n_frames:]
+            # Split paired data into left and right portions based on is_left
+            left_data = paired_data[is_left]
+            right_data = paired_data[~is_left]
             
             # Take only first half of center data (they're duplicated)
             center_data = center_data[:n_frames]
         else:
             # All data is paired
-            left_data = unilateral_data_copy[:n_frames]
-            right_data = unilateral_data_copy[n_frames:]
+            left_data = unilateral_data_copy[is_left]
+            right_data = unilateral_data_copy[~is_left]
             center_data = None
         
         # Un-mirror the left data
@@ -747,106 +747,3 @@ class Kestrel3D(Animal3D):
             bilateral_data[:, center_indices, :] = center_data
         
         return bilateral_data
-
-    def get_polygon_coords(self, section_name):
-        """
-        Get the coordinates for a specific polygon section, including fixed markers.
-        
-        Args:
-            section_name (str): Name of the section to get coordinates for
-            
-        Returns:
-            numpy.ndarray: Array of coordinates for the polygon vertices
-        """
-        # In simple mode, we need to check both with and without '_simple' suffix
-        if self.use_simple:
-            section_with_suffix = section_name + '_simple'
-            section_key = section_with_suffix if section_with_suffix in self.skeleton_definition.body_sections else section_name
-        else:
-            section_key = section_name
-            
-        if section_key not in self.skeleton_definition.body_sections:
-            raise ValueError(f"Section {section_name} not found in body sections")
-            
-        # Get the markers for this section
-        section_markers = self.skeleton_definition.body_sections[section_key]
-        
-        # Get coordinates for each marker
-        coords = []
-        fixed_markers = self.skeleton_definition.fixed_marker_names_simple if self.use_simple else self.skeleton_definition.fixed_marker_names
-        
-        for marker in section_markers:
-            if marker in self.marker_names:
-                # Active marker - get from current shape using marker index
-                idx = self.marker_names.index(marker)
-                coord = self.current_shape[0, idx]
-            elif marker in fixed_markers:
-                # Fixed marker - get from current shape using fixed marker index
-                idx = self.fixed_marker_index[fixed_markers.index(marker)]
-                coord = self.current_shape[0, idx]
-            else:
-                continue
-                
-            coords.append(coord)
-            
-        if not coords:
-            print(f"Warning: No valid markers found for section {section_name}")
-            return np.array([])
-            
-        return np.array(coords)
-
-    @property
-    def right_marker_names(self):
-        """Get the names of right-side markers."""
-        if self.use_simple:
-            # In simple mode, right markers are at odd indices (1,3,5,7)
-            return self.marker_names[1::2]
-        else:
-            # In full mode, get right markers from skeleton definition
-            left_markers, right_markers, _ = self.skeleton_definition.get_marker_pairs_and_centers(self.use_simple)
-            return right_markers
-
-    @property
-    def left_marker_names(self):
-        """Get the names of left-side markers."""
-        if self.use_simple:
-            # In simple mode, left markers are at even indices (0,2,4,6)
-            return self.marker_names[0::2]
-        else:
-            # In full mode, get left markers from skeleton definition
-            left_markers, right_markers, _ = self.skeleton_definition.get_marker_pairs_and_centers(self.use_simple)
-            return left_markers
-
-    @property
-    def right_markers(self):
-        """Get the positions of right-side markers."""
-        right_indices = [self.marker_names.index(name) for name in self.right_marker_names]
-        return self.markers[:, right_indices, :]
-
-    @property
-    def left_markers(self):
-        """Get the positions of left-side markers."""
-        left_indices = [self.marker_names.index(name) for name in self.left_marker_names]
-        return self.markers[:, left_indices, :]
-
-    def get_marker_index(self, marker_name: str) -> int:
-        """
-        Get the index of a marker in the current marker set.
-        
-        Parameters:
-        - marker_name (str): Name of the marker to find
-        
-        Returns:
-        - int: Index of the marker
-        
-        Raises:
-        - ValueError: If marker is not found in current marker set
-        """
-        try:
-            return self.marker_names.index(marker_name)
-        except ValueError:
-            # Check if it's a fixed marker
-            fixed_markers = self.skeleton_definition.fixed_marker_names_simple if self.use_simple else self.skeleton_definition.fixed_marker_names
-            if marker_name in fixed_markers:
-                return self.fixed_marker_index[fixed_markers.index(marker_name)]
-            raise ValueError(f"Marker '{marker_name}' not found in current marker set (using {'simple' if self.use_simple else 'full'} mode)")
