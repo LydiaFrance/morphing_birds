@@ -125,11 +125,40 @@ class Kestrel3D(Animal3D):
         if self.use_simple:
             sections = [s for s in self.skeleton_definition.body_sections if s.endswith("_simple")]
             # Remove '_simple' suffix for the polygon dictionary
-            self.polygons = {s.replace('_simple', ''): self.skeleton_definition.body_sections[s] 
+            sections_dict = {s.replace('_simple', ''): self.skeleton_definition.body_sections[s] 
                            for s in sections}
+            fixed_markers = self.skeleton_definition.fixed_marker_names_simple
         else:
             sections = [s for s in self.skeleton_definition.body_sections if not s.endswith("_simple")]
-            self.polygons = {s: self.skeleton_definition.body_sections[s] for s in sections}
+            sections_dict = {s: self.skeleton_definition.body_sections[s] for s in sections}
+            fixed_markers = self.skeleton_definition.fixed_marker_names
+
+        # Convert marker names to indices
+        self.polygons = {}
+        for section, markers in sections_dict.items():
+            # Get indices for each marker in the section
+            try:
+                # First try to find the marker in marker_names (for active markers)
+                indices = []
+                for marker in markers:
+                    if marker in self.marker_names:
+                        idx = self.marker_names.index(marker)
+                        indices.append(self.marker_index[idx])
+                    elif marker in fixed_markers:
+                        # For fixed markers, find their position in the fixed marker list
+                        fixed_idx = fixed_markers.index(marker)
+                        indices.append(self.fixed_marker_index[fixed_idx])
+                    else:
+                        raise ValueError(f"Marker {marker} not found in either active or fixed markers")
+                self.polygons[section] = indices
+            except ValueError as e:
+                print(f"Warning: Could not initialize polygon for section {section}: {str(e)}")
+                continue
+
+        # Print debug info about polygons
+        print("\nInitialized polygons:")
+        for section, indices in self.polygons.items():
+            print(f"{section}: {indices}")
 
     def define_indices(self):
         """Define indices for active markers in canonical order."""

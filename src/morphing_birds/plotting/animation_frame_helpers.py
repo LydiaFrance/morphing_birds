@@ -15,7 +15,7 @@ def format_keypoint_frames(animal3d_instance, keypoints_frames):
             print("Warning: Only one frame given.")
 
     # Mirror the keypoints_frames if only the right is given. 
-        if keypoints_frames.shape[1] == len(animal3d_instance.right_marker_names):
+        if keypoints_frames.shape[1] == len(animal3d_instance.skeleton_definition.get_right_marker_names()):
             keypoints_frames = animal3d_instance.mirror_keypoints(keypoints_frames)
 
         return keypoints_frames
