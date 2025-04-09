@@ -120,11 +120,24 @@ class Kestrel3D(Animal3D):
         """Set the marker positions."""
         self._markers = value
 
+    
     @property
     def right_marker_names(self):
         """Get the list of right side marker names."""
         return [name for name in self.marker_names if name.startswith("right_")]
 
+    @property
+    def right_markers(self):
+        """
+        Returns the right side markers.
+        """
+        # Get indices of right markers
+        right_marker_names = self.right_marker_names
+        right_indices = [self.marker_names.index(name) for name in right_marker_names]
+        
+        # Return markers at those indices
+        return self.markers[:, right_indices, :]
+    
     def init_polygons(self):
         """Initialize the polygons for visualization."""
         # Get the appropriate sections based on mode
