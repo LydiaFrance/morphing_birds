@@ -146,7 +146,6 @@ def initialize_figure() -> go.Figure:
 
     fig.update_layout(
         scene={
-            "domain": {"x": [0.1, 0.9], "y": [0.1, 0.8]},
             "aspectmode": "cube",
             "xaxis": {"range": [-0.6, 0.6], "autorange": False, "dtick": 0.25},
             "yaxis": {"range": [-0.6, 0.6], "autorange": False, "dtick": 0.25},
@@ -174,16 +173,6 @@ def create_animation_frames(
     """
     frames_list = []
 
-    line_plot = go.Scatter(
-            x=np.arange(N_FRAMES),
-            y=combined_scores_centered,
-            mode="lines",
-            xaxis="x2",
-            yaxis="y2",
-            showlegend=False,
-            line={"color": "blue"},
-        )
-
     for i in range(N_FRAMES):
         HAWK3D.reset_transformation()
         HAWK3D.update_keypoints(full_frames_data[i])
@@ -194,15 +183,7 @@ def create_animation_frames(
         scatter3d_traces = scatter3d.data
 
 
-        current_frame_marker = go.Scatter(
-            x=[i],
-            y=[combined_scores_centered[i]],
-            mode="markers",
-            xaxis="x2",
-            yaxis="y2",
-            marker={"color": "red", "size": 10},
-            showlegend=False,
-        )
+
         axis_dict = {"range": [-0.6, 0.6],
                           "autorange": False,
                           "dtick": 0.25,
@@ -213,10 +194,8 @@ def create_animation_frames(
                 "xanchor": "center",
                 "yanchor": "top",
                 "x": 0.5,
-                "y": 0.92,
+                "y": 0.95,
             },
-            xaxis2={"domain": [0.8, 0.95]},
-            yaxis2={"domain": [0.8, 0.95]},
             scene={
                 "xaxis": axis_dict,
                 "yaxis": axis_dict,
@@ -224,7 +203,7 @@ def create_animation_frames(
             },
         )
 
-        frame_data = [*list(scatter3d_traces), line_plot, current_frame_marker]
+        frame_data = [*list(scatter3d_traces)]
 
         frame = go.Frame(
             data=frame_data,
@@ -290,7 +269,7 @@ def add_buttons_and_sliders(
         {
             "active": 0,
             "currentvalue": {"prefix": "Frame: "},
-            "pad": {"b": 10, "t": 50},
+            "pad": {"b": 50, "t": 50},
             "len": 0.9,
             "x": 0.1,
             "y": 0,
@@ -326,20 +305,6 @@ def add_buttons_and_sliders(
             },
         ],
         sliders=sliders,
-        xaxis2={
-            "domain": [0.8, 0.95],
-            "anchor": "y2",
-            "title": "Frame",
-        },
-        yaxis2={
-            "domain": [0.8, 0.95],
-            "anchor": "x2",
-            "title": "Combined PC Value",
-            "range": [y_min, y_max],
-        },
-        width=800,
-        height=700,
-        margin={"l": 50, "r": 100, "t": 125, "b": 25},
         uirevision=True,
     )
 
@@ -367,9 +332,11 @@ app.layout = html.Div(
             style={"width": "75%", "font-family": "Arial", "margin": "auto"},
         ),
         dcc.Loading(
-            dcc.Graph(id="graph", style={"width": "75%", "margin": "auto"}),
+            dcc.Graph(id="graph", style={"width": "90%", "height": "90vh", "margin": "auto"},
+                      responsive=True),
         ),
-    ]
+    ],
+    # style={"width": "90%", "height": "90%", "font-family": "Arial", "margin": "auto"},
 )
 
 
