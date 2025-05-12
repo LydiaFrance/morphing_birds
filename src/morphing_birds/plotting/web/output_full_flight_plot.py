@@ -19,7 +19,6 @@ hawk3d = Hawk3D(SCRIPT_DIR.parents[3] / "data/mean_hawk_shape.csv")
 principal_components = np.load(
     SCRIPT_DIR.parents[3] / "data/website_principal_components.npy"
 )
-print(f"principal_components.shape {principal_components.shape}")
 left_score_frames = np.load(SCRIPT_DIR.parents[3] / "data/Left_scores_RightTurn.npy")
 right_score_frames = np.load(SCRIPT_DIR.parents[3] / "data/Right_scores_RightTurn.npy")
 mu = np.load(SCRIPT_DIR.parents[3] / "data/website_mu.npy")
@@ -75,7 +74,6 @@ def reconstruct_frames(
         reconstruction = np.dot(selected_scores, selected_PCs)
         reconstruction = reconstruction.reshape(-1, n_markers, n_dims)
         reconstructed = mu + reconstruction
-        print(f"reconstructed.shape {reconstructed.shape}")
     return reconstructed
 
 
@@ -399,7 +397,7 @@ def main():
         ),
     }
     # Save the figure as an HTML file
-    with (SCRIPT_DIR / "straight.html").open("w", encoding="utf-8") as output_file, (
+    with (SCRIPT_DIR / "full_flight.html").open("w", encoding="utf-8") as output_file, (
         SCRIPT_DIR / "template.html"
     ).open() as template_file:
         j2_template = Template(template_file.read())
