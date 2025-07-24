@@ -20,6 +20,7 @@ from .plotting import (
     plot_plotly_compare,
     plot_compare_plotly,
     plot_partial_plotly,
+    plot_plotly_with_trace,
     animate, 
     animate_compare, 
     animate_plotly, 
@@ -34,7 +35,7 @@ __all__ = ("__version__",
            "Hawk3D", "HawkSkeletonDefinition", "Kestrel3D", "KestrelSkeletonDefinition",
            "SpiderSkeletonDefinition", "Spider3D",
            "plot", "interactive_plot", "plot_multiple", "plot_plotly", "plot_plotly_compare", "plot_partial_plotly",
-           "plot_compare_plotly", "animate", "animate_compare", "create_dash_app", 
+           "plot_compare_plotly", "animate", "animate_compare", "create_dash_app", "plot_plotly_with_trace",
            "animate_plotly", "animate_plotly_compare", "save_plotly_animation",
            "animate_plotly_partial")
 __version__ = "0.1.0"

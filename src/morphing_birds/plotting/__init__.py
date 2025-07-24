@@ -11,7 +11,8 @@ from .plotly_plots import (
     plot_plotly, 
     plot_plotly_compare,
     plot_compare_plotly, 
-    plot_partial_plotly
+    plot_partial_plotly, 
+    plot_plotly_with_trace
 )
 from .plotly_animate import (
     animate_plotly, 
@@ -31,6 +32,7 @@ __all__ = [
     "plot_plotly_compare",
     "plot_compare_plotly",
     "plot_partial_plotly",
+    "plot_plotly_with_trace",
     "animate_plotly",
     "animate_plotly_compare",
     "animate_plotly_partial",

@@ -257,7 +257,70 @@ def plot_partial_plotly(animal3d_instance, section_name=None, leg_number=None, c
 
     return fig
 
+def plot_plotly_with_trace(animal3d_instance, keypoints_frames, colour='lightblue', alpha=0.3, trace_colour='red', trace_marker_size=2, axisOn=True,
+                           horzDist=None, vertDist=None, bodypitch=None, bodyroll=None, bodyyaw=None):
+    """
+    Create a static 3D plot of an animal with a trace of keypoint frames using Plotly.
+    
+    Parameters:
+    -----------
+    animal3d_instance : Animal3D
+        Instance of the Animal3D class.
+    keypoints_frames : np.ndarray
+        A numpy array of shape (nFrames, nMarkers, 3) representing the trace of keypoints.
+    colour : str, optional
+        Colour for the animal plot.
+    alpha : float, optional
+        Transparency of the animal plot.
+    trace_colour : str, optional
+        Colour for the trace scatter plot.
+    trace_marker_size : int, optional
+        Marker size for the trace scatter plot.
+    axisOn : bool, optional
+        Whether to show axes.
+    horzDist : float, optional
+        Horizontal distance transformation.
+    vertDist : float, optional
+        Vertical distance transformation.
+    bodypitch : float, optional
+        Body pitch transformation.
+    bodyroll : float, optional
+        Body roll transformation.
+    bodyyaw : float, optional
+        Body yaw transformation.
+    """
+    # Get the base plot of the animal
+    fig = plot_plotly(animal3d_instance, colour=colour, alpha=alpha, axisOn=axisOn,
+                      horzDist=horzDist, vertDist=vertDist, bodypitch=bodypitch, bodyroll=bodyroll, bodyyaw=bodyyaw)
 
+    # Reshape for plotting
+    trace_coords = keypoints_frames.reshape(-1, 3)
+
+    # Add trace scatter plot to the figure
+        # Use a gradient to reflect progression over time
+    n_points = trace_coords.shape[0]
+    scatter_trace = go.Scatter3d(
+        x=trace_coords[:, 0],
+        y=trace_coords[:, 1],
+        z=trace_coords[:, 2],
+        mode='markers',
+        marker=dict(
+            size=trace_marker_size,
+            color=np.linspace(0, 1, n_points),  # progression from 0 to 1
+            colorscale='plasma_r',
+            showscale=False  # Set to True if you want to display the colourbar
+        ),
+        hoverinfo='none'
+    )
+    fig.add_trace(scatter_trace)
+    
+    return fig
+
+
+
+# ------------------------------------------------------------
+#       Helper functions
+# ------------------------------------------------------------
 def plot_keypoints_plotly(fig, animal3d_instance, colour='black', alpha=1, indices=None):
     """
     Plots keypoints of the animal using Plotly.
