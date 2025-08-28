@@ -310,9 +310,16 @@ class Animal3D:
 
     def transform_keypoints(self, bodypitch=0, horzDist=0, vertDist=0, bodyyaw=0, bodyroll=0):
         """
-        Transforms the keypoints by applying scaling to fixed markers,
-        rotating around the body pitch, and translating by the horizontal 
-        and vertical distances.
+        Transforms ONLY the fixed markers by applying scaling, rotation, and translation.
+        Moving markers remain unchanged as they are assumed to already contain 
+        the desired transformations from the keypoints data.
+        
+        Parameters:
+        - bodypitch: float, rotation around x-axis (degrees)
+        - horzDist: float, horizontal translation
+        - vertDist: float, vertical translation  
+        - bodyyaw: float, rotation around z-axis (degrees)
+        - bodyroll: float, rotation around y-axis (degrees)
         """
         # Reset the transformation matrix
         self.reset_transformation()
@@ -405,16 +412,25 @@ class Animal3D:
         
 
     def apply_transformation(self):
-
         """
-        Applies the current transformation matrix to the keypoints.
+        Applies the current transformation matrix only to the fixed markers.
+        Moving markers remain unchanged as they already contain the desired transformations.
         """
-        # Adding a homogeneous coordinate directly to the current_shape
-        homogeneous_keypoints = np.hstack((self.current_shape.reshape(-1, 3), np.ones((self.current_shape.shape[1], 1))))
+        if len(self.fixed_marker_index) == 0:
+            # No fixed markers to transform
+            return
+            
+        # Only transform the fixed markers
+        fixed_markers_coords = self.current_shape[0, self.fixed_marker_index, :]  # Shape: [n_fixed, 3]
         
-        transformed_keypoints = np.dot(homogeneous_keypoints, self.transformation_matrix.T)
+        # Add homogeneous coordinate
+        homogeneous_fixed = np.hstack((fixed_markers_coords, np.ones((len(self.fixed_marker_index), 1))))
         
-        self.current_shape = transformed_keypoints[:, :3].reshape(1, -1, 3)
+        # Apply transformation
+        transformed_fixed = np.dot(homogeneous_fixed, self.transformation_matrix.T)
+        
+        # Update only the fixed markers in current_shape
+        self.current_shape[0, self.fixed_marker_index, :] = transformed_fixed[:, :3]
 
     def reset_transformation(self):
         self.transformation_matrix = np.eye(4)

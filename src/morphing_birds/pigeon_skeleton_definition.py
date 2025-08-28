@@ -16,16 +16,16 @@ and maintainable codebase that can handle the complexities of animal shape defin
 """
 
 
-class KestrelSkeletonDefinition(SkeletonDefinition):
+class PigeonSkeletonDefinition(SkeletonDefinition):
     """
-    The `KestrelSkeletonDefinition` class is a specific implementation of the 
-    `SkeletonDefinition` class, tailored to represent the shape of the kestrel. 
+    The `PigeonSkeletonDefinition` class is a specific implementation of the 
+    `SkeletonDefinition` class, tailored to represent the shape of the pigeon. 
 
     This class extends the `SkeletonDefinition` class, adding specific marker 
-    names and body section definitions that are unique to kestrels. 
+    names and body section definitions that are unique to pigeons. 
 
     It also includes methods to retrieve marker names and indices for both 
-    left and right sides of the kestrel, ensuring a consistent interface for
+    left and right sides of the pigeon, ensuring a consistent interface for
     different animal types within the application.
 
     In summary, this class serves as a bridge between the general 
@@ -36,133 +36,98 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
 
     def __init__(self):
         """
-        Initialize the KestrelSkeletonDefinition with three categories of markers:
+        Initialise the PigeonSkeletonDefinition with three categories of markers:
         1. Ignored Markers: Not used at all (not stored, not plotted)
         2. Fixed Markers: Loaded from mean shape, used for plotting but not for analysis
         3. Active Markers: Used for both plotting and analysis
         """
         self.marker_name_change = {
             # Head markers
-            "head": "h1", 
-            "head_mid": "he",
-            "left_head": "h2",
-            "right_head": "h3",
+            "head": "Head",
 
             # Body markers
-            "left_backpack": "b3",
-            "right_backpack": "b2",
-            "centre_backpack": "be",
-            "centre_back_backpack": "b1",
+            "centre_backpack": "Body_Start",
+            "centre_body_base": "Body_End",
 
             # Tail markers
-            "centre_tail_base": "t_c_1",
-            "centre_tail_mid": "t_c_2",
-            "centre_tail_tip": "t_c_3",
-            "left_tail_base": "t_l_1",
-            "left_tail_mid": "t_l_2",
-            "left_tail_tip": "t_l_3",
-            "right_tail_base": "t_r_1",
-            "right_tail_mid": "t_r_2",
-            "right_tail_tip": "t_r_3",
-            "left_tailpack": "tl",
-            "right_tailpack": "tr",
-            "centre_tailpack": "tc",
+            "left_tailtip": "Left_Tail",
+            "right_tailtip": "Right_Tail",
+            "centre_tailtip": "Middle_Tail",
             
             # Right Arm Wing markers
-            "right_shoulder": "r_sh",
-            "right_wrist": "r_w",
-            "right_elbow": "r_e",
-            "right_alula": "r_al_1",
-            "right_alula_lower": "r_al_3",
-            "right_secondary_tip": "r_s1_1",
-            "right_lastsecondary_tip": "r_sb_1",
-
+            "right_lastsecondary_tip" : "Right_Shoulder_Trailing_Edge",
+            "right_elbow" : "Right_Shoulder_End",
+            "right_shoulder" : "Right_Shoulder_Start",
+            
             # Left Arm Wing markers
-            "left_shoulder": "l_sh",
-            "left_wrist": "l_w",
-            "left_elbow": "l_e",
-            "left_alula": "l_al_1",
-            "left_alula_lower": "l_al_3",
-            "left_secondary_tip": "l_s1_1",
-            "left_lastsecondary_tip": "l_sb_1",
+            "left_lastsecondary_tip" : "Left_Shoulder_Trailing_Edge",
+            "left_elbow" : "Left_Shoulder_End",
+            "left_shoulder" : "Left_Shoulder_Start",
+            
 
             # Right Hand Wing markers
-            "right_firstprimary_tip": "r_p1_3",
-            "right_firstprimary_mid": "r_p1_2",
-            "right_firstprimary_base": "r_p1_1",
-            "right_secondprimary_tip": "r_p2_3",
-            "right_secondprimary_mid": "r_p2_2",
-            "right_secondprimary_base": "r_p2_1",
-            "right_fourthprimary_tip": "r_p4_1",
-            "right_lastprimary_tip": "r_p9_1",
+            "right_wingtip": "Right_Tip",
+            "right_wrist": "Right_Wrist_Leading_Edge",
+            "right_secondary": "Right_Wrist_Trailing_Edge",
 
             # Left Hand Wing markers
-            "left_firstprimary_tip": "l_p1_3",
-            "left_firstprimary_mid": "l_p1_2",
-            "left_firstprimary_base": "l_p1_1",
-            "left_secondprimary_tip": "l_p2_3",
-            "left_secondprimary_mid": "l_p2_2",
-            "left_secondprimary_base": "l_p2_1",
-            "left_fourthprimary_tip": "l_p4_1",
-            "left_lastprimary_tip": "l_p9_1"
+            "left_wingtip": "Left_Tip",
+            "left_wrist": "Left_Wrist_Leading_Edge",
+            "left_secondary": "Left_Wrist_Trailing_Edge",
+
+            # Tailbase markers (calculated from shoulder positions)
+            "left_tailbase": "Left_Tailbase",
+            "right_tailbase": "Right_Tailbase",
+
             }
         
         # Create reverse mapping for lookup
         self.marker_name_change_reverse = {v: k for k, v in self.marker_name_change.items()}
         
         # === Define markers that are completely ignored (not stored, not plotted) ===
-        self.ignored_marker_names = [
-            # Extra head markers
-            "head_mid", "left_head", "right_head",
-            # Pack markers
-            "left_backpack", "right_backpack", "centre_backpack", "centre_back_backpack",
-            "left_tailpack", "right_tailpack", "centre_tailpack"
-        ]
+        self.ignored_marker_names = []
         
         # === Define fixed markers (stored and plotted, but not used in analysis) ===
         # These markers are loaded from mean shape and kept fixed
-        self.fixed_marker_names = ["head", "left_shoulder", "right_shoulder"]
+        self.fixed_marker_names = ["head", "centre_backpack", "centre_body_base", "left_tailbase", "right_tailbase"]
         
         # For simple mode, we fix additional markers
-        self.fixed_marker_names_simple = self.fixed_marker_names + [
-            "left_lastsecondary_tip", "right_lastsecondary_tip"
-        ]
+        # self.fixed_marker_names_simple = self.fixed_marker_names + [
+        # ]
         
         # === Define body sections for visualization ===
         body_sections = {
             # Full mode sections
             "head": ["right_shoulder", "head", "left_shoulder"], 
-            "body": ["right_shoulder", "left_shoulder", "left_lastsecondary_tip","right_lastsecondary_tip"], 
-            "tail": ["right_lastsecondary_tip", "left_lastsecondary_tip", "left_tail_tip", "right_tail_tip"],
-            "right_armwing": ["right_shoulder", "right_elbow", "right_wrist", "right_lastprimary_tip", "right_secondary_tip", "right_lastsecondary_tip", "right_shoulder", "right_wrist"], 
-            "left_armwing": ["left_shoulder", "left_elbow", "left_wrist", "left_lastprimary_tip", "left_secondary_tip", "left_lastsecondary_tip", "left_shoulder", "left_wrist"], 
-            "left_handwing": ["left_wrist", "left_firstprimary_base", "left_firstprimary_mid", "left_firstprimary_tip", "left_secondprimary_tip", "left_secondprimary_mid", "left_secondprimary_base", "left_fourthprimary_tip", "left_lastprimary_tip"], 
-            "right_handwing": ["right_wrist", "right_firstprimary_base", "right_firstprimary_mid", "right_firstprimary_tip", "right_secondprimary_tip", "right_secondprimary_mid", "right_secondprimary_base", "right_fourthprimary_tip", "right_lastprimary_tip"], 
-            "left_alula": ["left_wrist", "left_alula", "left_alula_lower"],
-            "right_alula": ["right_wrist", "right_alula", "right_alula_lower"],
+            "body": ["right_shoulder", "right_tailbase", "centre_body_base", "left_tailbase", "left_shoulder"], 
+            "tail": ["right_tailbase","centre_body_base","left_tailbase","left_tailtip",  "centre_tailtip", "right_tailtip"],
+            "right_armwing": ["right_shoulder", "right_elbow", "right_wrist", "right_secondary", "right_lastsecondary_tip", "right_tailbase"], 
+            "left_armwing": ["left_shoulder", "left_elbow", "left_wrist", "left_secondary", "left_lastsecondary_tip", "left_tailbase"], 
+            "left_handwing": ["left_wrist", "left_secondary", "left_wingtip"], 
+            "right_handwing": ["right_wrist", "right_secondary", "right_wingtip"], 
             
             # Simple mode sections WITH WRIST(comparable to hawks)
+            "head_simple": ["right_shoulder", "head", "left_shoulder"],
+            "body_simple": ["right_shoulder", "left_shoulder", "left_lastsecondary_tip", "right_lastsecondary_tip"], 
+            "tail_simple": ["centre_body_base","left_tailtip", "right_tailtip"],
+            "left_armwing_simple": ["left_wrist", "left_secondary", "left_lastsecondary_tip", "left_shoulder"], 
+            "right_armwing_simple": ["right_wrist", "right_secondary", "right_lastsecondary_tip", "right_shoulder"], 
+            "left_handwing_simple": ["left_wrist", "left_secondary", "left_wingtip"], 
+            "right_handwing_simple": ["right_wrist", "right_secondary", "right_wingtip"]
+
+            # Simple mode sections (comparable to hawks)
             # "head_simple": ["right_shoulder", "head", "left_shoulder"],
             # "body_simple": ["right_shoulder", "left_shoulder", "left_lastsecondary_tip", "right_lastsecondary_tip"], 
             # "tail_simple": ["right_lastsecondary_tip", "left_lastsecondary_tip", "left_tail_tip", "right_tail_tip"],
-            # "left_armwing_simple": ["left_wrist", "left_secondary_tip", "left_lastsecondary_tip", "left_shoulder"], 
-            # "right_armwing_simple": ["right_wrist", "right_secondary_tip", "right_lastsecondary_tip", "right_shoulder"], 
-            # "left_handwing_simple": ["left_wrist", "left_secondprimary_tip", "left_secondary_tip"], 
-            # "right_handwing_simple": ["right_wrist", "right_secondprimary_tip", "right_secondary_tip"]
-
-            # Simple mode sections (comparable to hawks)
-            "head_simple": ["right_shoulder", "head", "left_shoulder"],
-            "body_simple": ["right_shoulder", "left_shoulder", "left_lastsecondary_tip", "right_lastsecondary_tip"], 
-            "tail_simple": ["right_lastsecondary_tip", "left_lastsecondary_tip", "left_tail_tip", "right_tail_tip"],
-            "left_armwing_simple": ["left_firstprimary_base", "left_secondary_tip", "left_lastsecondary_tip", "left_shoulder"], 
-            "right_armwing_simple": ["right_firstprimary_base", "right_secondary_tip", "right_lastsecondary_tip", "right_shoulder"], 
-            "left_handwing_simple": ["left_firstprimary_base", "left_secondprimary_tip", "left_secondary_tip"], 
-            "right_handwing_simple": ["right_firstprimary_base", "right_secondprimary_tip", "right_secondary_tip"]
+            # "left_armwing_simple": ["left_firstprimary_base", "left_secondary_tip", "left_lastsecondary_tip", "left_shoulder"], 
+            # "right_armwing_simple": ["right_firstprimary_base", "right_secondary_tip", "right_lastsecondary_tip", "right_shoulder"], 
+            # "left_handwing_simple": ["left_firstprimary_base", "left_secondprimary_tip", "left_secondary_tip"], 
+            # "right_handwing_simple": ["right_firstprimary_base", "right_secondprimary_tip", "right_secondary_tip"]
         
         
         }
 
-        # Initialize the parent class with only the active markers
+        # Initialise the parent class with only the active markers
         all_marker_names = list(self.marker_name_change.keys())
         active_markers = [name for name in all_marker_names 
                         if name not in self.ignored_marker_names 
@@ -215,20 +180,25 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
 
     def get_marker_names_simple(self) -> list:
         """
-        Returns a list of all marker names in the simple body sections.
-        The markers are returned in a specific order that must be maintained:
-        [left_secondprimary_tip, right_secondprimary_tip, 
-         left_firstprimary_base, right_firstprimary_base,
-         left_secondary_tip, right_secondary_tip,
-         left_tail_tip, right_tail_tip]
+        Returns a compact, left/right-paired set of markers for simple mode.
+
+        Maintenance notes (reference only):
+        - Keep left/right pairs adjacent and in the same relative order for all pairs.
+        - Match hawk semantics for downstream algorithms; for pigeons, "primary" is
+          represented by the wrist landmark.
+        - Keep center-line markers out of simple mode.
+
+        Order (matching hawk semantics: primary=wrist):
+        [left_wingtip, right_wingtip,
+         left_wrist, right_wrist,
+         left_secondary, right_secondary,
+         left_tailtip, right_tailtip]
         """
-        # Define the canonical order of markers
-        canonical_order = [
-            "left_secondprimary_tip", "right_secondprimary_tip",
-            # "left_wrist", "right_wrist",
-            "left_firstprimary_base", "right_firstprimary_base",
-            "left_secondary_tip", "right_secondary_tip",
-            "left_tail_tip", "right_tail_tip"
+        desired_order = [
+            "left_wingtip", "right_wingtip",
+            "left_wrist", "right_wrist",
+            "left_secondary", "right_secondary",
+            "left_tailtip", "right_tailtip",
         ]
         
         # Get all markers from simple sections
@@ -237,61 +207,51 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
         for section in simple_sections:
             available_markers.update(self.body_sections[section])
             
-        # Remove fixed markers
-        available_markers = available_markers - set(self.fixed_marker_names_simple)
-        
-        # Verify all canonical markers are available
-        missing_markers = set(canonical_order) - available_markers
-        if missing_markers:
-            raise ValueError(f"Missing expected markers in simple sections: {missing_markers}")
-        
-        # Return markers in canonical order
-        return canonical_order
+        # Remove fixed markers (simple uses same fixed set unless overridden)
+        available_markers = available_markers - set(self.fixed_marker_names)
+
+        # Keep only desired items that are available
+        canonical = [m for m in desired_order if m in available_markers]
+
+        # Validate left/right pairing order
+        for i in range(0, len(canonical), 2):
+            left = canonical[i]
+            right = canonical[i + 1] if i + 1 < len(canonical) else None
+            if not (left.startswith("left_") and right and right == "right_" + left[5:]):
+                raise ValueError(f"Unpaired or misordered markers around {left} in simple list.")
+
+        return canonical
     
     def get_marker_names_full(self) -> list:
         """
-        Returns a list of all marker names in the full body sections.
-        The markers are returned in a specific order that must be maintained,
-        alternating between left and right sides where applicable.
-        
-        The order follows anatomical structure:
-        1. Hand wing (primaries) from outermost to innermost
-        2. Alula
-        3. Mid-wing and wrist
-        4. Secondaries
-        5. Tail feathers (base to tip, including center)
-        
-        Only active markers (not fixed or ignored) that are used in body sections are included.
+        Returns ordered active markers for full mode (no centre/fixed).
+        Includes shoulders/elbows/wrists/secondaries/lastsecondary tips/wingtips/tail tips.
+
+        Maintenance notes (reference only):
+        - Favor distal→proximal along the wing, and lateral→center→lateral across tail.
+        - Maintain left/right alternation for paired markers.
+        - Pigeons use wrist as the primary analogue to align with hawk pipelines.
+        - Center tail is included if available and not fixed.
+
+        Order (filtered to what exists in body sections, matching hawk semantics where primary=wrist):
+        [left_wingtip, right_wingtip,
+         left_wrist, right_wrist,
+         left_secondary, right_secondary,
+         left_lastsecondary_tip, right_lastsecondary_tip,
+         left_elbow, right_elbow,
+         left_shoulder, right_shoulder,
+         centre_body_base,
+         left_tailtip, centre_tailtip, right_tailtip]
         """
-        # Define the desired canonical order
         desired_order = [
-            # Hand wing (Primaries), outermost to innermost
-            "left_firstprimary_tip", "right_firstprimary_tip",
-            "left_firstprimary_mid", "right_firstprimary_mid",
-            "left_firstprimary_base", "right_firstprimary_base",
-            
-            "left_secondprimary_tip", "right_secondprimary_tip",
-            "left_secondprimary_mid", "right_secondprimary_mid",
-            "left_secondprimary_base", "right_secondprimary_base",
-            
-            "left_fourthprimary_tip", "right_fourthprimary_tip",
-            "left_lastprimary_tip", "right_lastprimary_tip",
-            
-            # Alula
-            "left_alula", "right_alula",
-            "left_alula_lower", "right_alula_lower",
-            
-            # Mid-wing + wrist
-            "left_elbow", "right_elbow",
+            "left_wingtip", "right_wingtip",
             "left_wrist", "right_wrist",
-            
-            # Secondaries
-            "left_secondary_tip", "right_secondary_tip",
+            "left_secondary", "right_secondary",
             "left_lastsecondary_tip", "right_lastsecondary_tip",
-            
-            # Tail feathers: base → tip
-            "left_tail_base", "right_tail_base",
-            "left_tail_tip", "right_tail_tip",
+            "left_elbow", "right_elbow",
+            "left_shoulder", "right_shoulder",
+            "centre_body_base",
+            "left_tailtip", "centre_tailtip", "right_tailtip",
         ]
         
         # Get all markers from non-simple sections

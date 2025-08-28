@@ -1,25 +1,25 @@
 import numpy as np
-from morphing_birds import Animal3D, KestrelSkeletonDefinition
+from morphing_birds import Animal3D, PigeonSkeletonDefinition
 import pandas as pd
 import copy
 
-class Kestrel3D(Animal3D):
+class Pigeon3D(Animal3D):
     """
-    A class representing a 3D model of a Kestrel.
+    A class representing a 3D model of a Pigeon.
 
     Inherits from Animal3D and provides specific functions for 
-    loading CSV data and validating polygon shapes of a kestrel. 
+    loading CSV data and validating polygon shapes of a pigeon. 
     """
     def __init__(self, csv_path: str, use_simple: bool = False):
         """
-        Initialize the Kestrel3D class.
+        Initialize the Pigeon3D class.
         
         Args:
             csv_path (str): Path to the CSV file containing marker data
             use_simple (bool): If True, uses simplified body sections for polygons.
                              If False, uses detailed body sections. Default is False.
         """
-        skeleton_definition = KestrelSkeletonDefinition()
+        skeleton_definition = PigeonSkeletonDefinition()
         super().__init__(skeleton_definition)
         
         self.use_simple = use_simple
@@ -30,7 +30,7 @@ class Kestrel3D(Animal3D):
         # Get marker names in canonical order
         if self.use_simple:
             self.marker_names = self.skeleton_definition.get_marker_names_simple()
-            fixed_markers = self.skeleton_definition.fixed_marker_names_simple
+            fixed_markers = self.skeleton_definition.fixed_marker_names
         else:
             self.marker_names = self.skeleton_definition.get_marker_names_full()
             fixed_markers = self.skeleton_definition.fixed_marker_names
@@ -101,7 +101,7 @@ class Kestrel3D(Animal3D):
         self.define_indices()
         
         # Specify which sections should be colored (rest will be grey)
-        self.colour_sections = ["wing", "tail", "alula"]  # Only wing, tail and alula gets the color
+        self.colour_sections = ["handwing", "tail"]  # Only handwing and tail gets the color
         
         print(f"Input keypoints shape: {self._markers.shape}")
         print(f"Number of markers in self.marker_names: {len(self.marker_names)}")
@@ -120,7 +120,6 @@ class Kestrel3D(Animal3D):
         """Set the marker positions."""
         self._markers = value
 
-    
     @property
     def right_marker_names(self):
         """Get the list of right side marker names."""
@@ -146,7 +145,7 @@ class Kestrel3D(Animal3D):
             # Remove '_simple' suffix for the polygon dictionary
             sections_dict = {s.replace('_simple', ''): self.skeleton_definition.body_sections[s] 
                            for s in sections}
-            fixed_markers = self.skeleton_definition.fixed_marker_names_simple
+            fixed_markers = self.skeleton_definition.fixed_marker_names
         else:
             sections = [s for s in self.skeleton_definition.body_sections if not s.endswith("_simple")]
             sections_dict = {s: self.skeleton_definition.body_sections[s] for s in sections}
@@ -156,28 +155,35 @@ class Kestrel3D(Animal3D):
         self.polygons = {}
         for section, markers in sections_dict.items():
             # Get indices for each marker in the section
-            try:
-                # First try to find the marker in marker_names (for active markers)
-                indices = []
-                for marker in markers:
-                    if marker in self.marker_names:
-                        idx = self.marker_names.index(marker)
-                        indices.append(self.marker_index[idx])
-                    elif marker in fixed_markers:
-                        # For fixed markers, find their position in the fixed marker list
-                        fixed_idx = fixed_markers.index(marker)
-                        indices.append(self.fixed_marker_index[fixed_idx])
-                    else:
-                        raise ValueError(f"Marker {marker} not found in either active or fixed markers")
+            indices = []
+            missing_markers = []
+            
+            for marker in markers:
+                if marker in self.marker_names:
+                    idx = self.marker_names.index(marker)
+                    indices.append(self.marker_index[idx])
+                elif marker in fixed_markers:
+                    # For fixed markers, find their position in the fixed marker list
+                    fixed_idx = fixed_markers.index(marker)
+                    indices.append(self.fixed_marker_index[fixed_idx])
+                else:
+                    missing_markers.append(marker)
+            
+            # Only add the polygon if we have at least 3 markers (minimum for a polygon)
+            if len(indices) >= 3:
                 self.polygons[section] = indices
-            except ValueError as e:
-                print(f"Warning: Could not initialize polygon for section {section}: {str(e)}")
-                continue
+            elif missing_markers:
+                # Silently skip sections with missing markers in simple mode
+                if not self.use_simple:  # Only warn in full mode
+                    print(f"Warning: Skipping polygon section '{section}' - missing markers: {missing_markers}")
 
-        # Print debug info about polygons
-        print("\nInitialized polygons:")
-        for section, indices in self.polygons.items():
-            print(f"{section}: {indices}")
+        # Print debug info about polygons (only if any were created)
+        if self.polygons:
+            print(f"\nInitialized {len(self.polygons)} polygon sections:")
+            for section, indices in self.polygons.items():
+                print(f"  {section}: {len(indices)} vertices")
+        else:
+            print("\nNo polygon sections initialized")
 
     def define_indices(self):
         """Define indices for active markers in canonical order."""
@@ -185,7 +191,7 @@ class Kestrel3D(Animal3D):
 
     def load_csv(self, csv_path: str):
         """
-        Loads CSV data specific to the kestrel skeleton.
+        Loads CSV data specific to the pigeon skeleton.
 
         Parameters:
         - csv_path (str): Path to the CSV file.
@@ -230,15 +236,14 @@ class Kestrel3D(Animal3D):
         with open(csv_path, 'r') as file:
             return np.loadtxt(file, delimiter=',', skiprows=0, dtype='str')
 
-    def copy(self) -> 'Kestrel3D':
+    def copy(self) -> 'Pigeon3D':
         """
-        Create a deep copy of this Kestrel3D instance.
+        Create a deep copy of this Pigeon3D instance.
         
         Returns:
-            A new Kestrel3D instance that is a deep copy of this one
+            A new Pigeon3D instance that is a deep copy of this one
         """
         return copy.deepcopy(self)
-    
 
     def overwrite_keypoints(self, keypoints: np.ndarray) -> None:
         """
@@ -267,7 +272,6 @@ class Kestrel3D(Animal3D):
         self.default_shape = new_shape.copy()
         self.current_shape = new_shape.copy()
         self.untransformed_shape = new_shape.copy()
-
 
     def get_csv_marker_names(self, header_row: list) -> list:
         """
@@ -299,7 +303,6 @@ class Kestrel3D(Animal3D):
                 unique_names.append(name)
                 seen.add(name)
         return unique_names
-    
 
     def get_csv_keypoints(self, data) -> np.ndarray:
         """
@@ -389,7 +392,6 @@ class Kestrel3D(Animal3D):
         n_frames = keypoints.shape[0]
         n_markers = keypoints.shape[1]
 
-        
         # Create array for full set of markers
         full_keypoints = np.zeros((n_frames, n_markers * 2, 3))
         
@@ -423,62 +425,180 @@ class Kestrel3D(Animal3D):
         
     def load_motion_data(self, csv_path: str, use_simple: bool = None) -> np.ndarray:
         """
-        Loads motion data from a CSV file and returns it in the correct format for update_keypoints.
+        Load motion data from CSV file.
+        Uses the same reliable approach as the Pigeon3D constructor.
         
         Parameters:
         - csv_path (str): Path to the CSV file containing motion data
-        - use_simple (bool, optional): Whether to use simple marker set. If None, uses the current setting.
+        - use_simple (bool, optional): Whether to use simple marker set. If None, uses current setting.
         
         Returns:
         - np.ndarray: Motion data in shape [nFrames, nMarkers, 3]
-        """
-        # Load the CSV data
-        data = self.load_csv_data(csv_path)
-        csv_headers = data[0]
-        csv_marker_names = self.get_csv_marker_names(csv_headers)
         
-        # Determine which markers to include based on mode
+        Example:
+            motion_data = pigeon.load_motion_data("data/2025-08-28-FullPigeons.csv")
+            clean_data, valid_frames = pigeon.remove_nan_frames(motion_data)
+        """
+        import pandas as pd
+        
+        # Determine which marker set to use
         use_simple_markers = self.use_simple if use_simple is None else use_simple
         
-        # Get the appropriate marker list based on simple/detailed mode
+        # Load the CSV data using pandas (more reliable than the original method)
+        data = pd.read_csv(csv_path)
+        
+        print(f"Loading motion data from: {csv_path}")
+        print(f"CSV shape: {data.shape}")
+        print(f"Using {'simple' if use_simple_markers else 'full'} marker set")
+        
+        # Get target marker names
         if use_simple_markers:
-            motion_marker_names = self.skeleton_definition.get_marker_names_simple()
+            target_markers = self.skeleton_definition.get_marker_names_simple()
         else:
-            motion_marker_names = self.skeleton_definition.get_marker_names_full()
+            target_markers = self.skeleton_definition.get_marker_names_full()
             
-        # Build the CSV column indices for all the markers we need
-        marker_indices = []
-        not_found = []
+        print(f"Target markers ({len(target_markers)}): {target_markers}")
         
-        for name in motion_marker_names:
-            # Find the original name in the CSV
-            try:
-                original_name = self.skeleton_definition.marker_name_change[name]
-                if original_name in csv_marker_names:
-                    marker_indices.append(csv_marker_names.index(original_name))
-                else:
-                    not_found.append(f"{name} (original: {original_name})")
-            except KeyError:
-                not_found.append(name)
+        # Load marker data using the reliable approach from constructor
+        marker_data = {}
+        loaded_count = 0
         
-        if not_found:
-            print(f"Warning: Could not find {len(not_found)} markers in CSV: {', '.join(not_found)}")
+        for marker_name in self.skeleton_definition.marker_name_change.keys():
+            if marker_name in self.skeleton_definition.ignored_marker_names:
+                continue
+                
+            csv_name = self.skeleton_definition.marker_name_change[marker_name]
             
-        if not marker_indices:
-            raise ValueError("No valid markers found in CSV for selected marker set")
+            # Try both underscore and no underscore versions
+            x_col = f"{csv_name}_x" if f"{csv_name}_x" in data.columns else f"{csv_name}x"
+            y_col = f"{csv_name}_y" if f"{csv_name}_y" in data.columns else f"{csv_name}y"
+            z_col = f"{csv_name}_z" if f"{csv_name}_z" in data.columns else f"{csv_name}z"
+            
+            if x_col in data.columns:
+                x = data[x_col].values
+                y = data[y_col].values
+                z = data[z_col].values
+                marker_data[marker_name] = np.stack([x, y, z], axis=1)
+                loaded_count += 1
+                
+        print(f"Successfully loaded {loaded_count} markers from CSV")
         
-        # Convert data to float and reshape
-        motion_data = data[1:].astype(float)  # Skip header row
-        n_frames = motion_data.shape[0]
+        # Extract motion data for target markers in correct order
+        motion_list = []
+        found_markers = []
+        missing_markers = []
         
-        # Reshape to [nFrames, nTotal, 3]
-        total_markers = len(csv_marker_names)
-        motion_data = motion_data.reshape(n_frames, total_markers, 3)
+        for marker_name in target_markers:
+            if marker_name in marker_data:
+                motion_list.append(marker_data[marker_name])
+                found_markers.append(marker_name)
+            else:
+                missing_markers.append(marker_name)
+                
+        if missing_markers:
+            print(f"Warning: Missing markers: {missing_markers}")
+            
+        if not motion_list:
+            raise ValueError("No target markers found in CSV data")
+            
+        # Stack into final motion data array
+        motion_data = np.stack(motion_list, axis=1)
         
-        # Extract only the columns we want in the correct order
-        motion_data = motion_data[:, marker_indices, :]
-
+        print(f"✓ Created motion data: {motion_data.shape}")
+        print(f"✓ Found markers ({len(found_markers)}): {found_markers}")
+        
         return motion_data
+    
+    def load_data_complete(self, csv_path: str, info_path: str = None, use_simple: bool = None) -> tuple:
+        """
+        Complete workflow to load motion data and info data, with NaN removal.
+        
+        Parameters:
+        - csv_path (str): Path to the CSV file containing motion data (e.g., "FullPigeons.csv")
+        - info_path (str, optional): Path to info CSV. If None, auto-generates from csv_path
+        - use_simple (bool, optional): Whether to use simple marker set. If None, uses current setting.
+        
+        Returns:
+        - tuple: (clean_motion_data, clean_info_df, valid_frames)
+            - clean_motion_data: np.ndarray of shape [nCleanFrames, nMarkers, 3]
+            - clean_info_df: pd.DataFrame with Frame, Time, GustPosition, FileName info
+            - valid_frames: np.ndarray boolean mask of valid frames
+            
+        Example:
+            motion_data, info_df, valid_frames = pigeon.load_data_complete(
+                "data/2025-08-28-FullPigeons.csv",
+                "data/2025-08-28-PigeonInfo.csv"
+            )
+        """
+        import pandas as pd
+        import os
+        
+        print("=== Complete Data Loading Workflow ===")
+        
+        # Load motion data
+        motion_data = self.load_motion_data(csv_path, use_simple)
+        
+        # Auto-generate info path if not provided
+        if info_path is None:
+            base_name = os.path.splitext(csv_path)[0]
+            if "Full" in base_name:
+                info_path = base_name.replace("Full", "") + "Info.csv"
+            else:
+                info_path = base_name + "Info.csv"
+        
+        # Load info data
+        if os.path.exists(info_path):
+            info_df = pd.read_csv(info_path)
+            print(f"✓ Loaded info data: {info_df.shape}")
+        else:
+            print(f"Warning: Info file not found at {info_path}")
+            # Create minimal info dataframe
+            n_frames = motion_data.shape[0]
+            info_df = pd.DataFrame({
+                'Frame': range(n_frames),
+                'Time': range(n_frames),  # Placeholder
+                'GustPosition': [0] * n_frames,  # Placeholder
+                'FileName': ['unknown'] * n_frames  # Placeholder
+            })
+            print(f"✓ Created placeholder info data: {info_df.shape}")
+        
+        # Remove NaN frames
+        print("\\nRemoving NaN frames...")
+        clean_motion_data, valid_frames = self.remove_nan_frames(motion_data)
+        
+        # Filter info data to match clean frames
+        clean_info_df = info_df.iloc[valid_frames].reset_index(drop=True)
+        
+        print(f"\\n=== Summary ===")
+        print(f"✓ Original frames: {motion_data.shape[0]}")
+        print(f"✓ Clean frames: {clean_motion_data.shape[0]}")
+        print(f"✓ Removed: {motion_data.shape[0] - clean_motion_data.shape[0]} frames")
+        print(f"✓ Markers: {clean_motion_data.shape[1]}")
+        print(f"✓ Info data: {clean_info_df.shape}")
+        
+        return clean_motion_data, clean_info_df, valid_frames
+    
+    def update_to_frame(self, motion_data: np.ndarray, frame_idx: int):
+        """
+        Convenience method to update pigeon shape to a specific frame from motion data.
+        
+        Parameters:
+        - motion_data (np.ndarray): Clean motion data from load_data_complete
+        - frame_idx (int): Frame index to update to
+        
+        Example:
+            motion_data, info_df, _ = pigeon.load_data_complete("data/FullPigeons.csv")
+            pigeon.update_to_frame(motion_data, 1000)  # Update to frame 1000
+        """
+        if frame_idx >= motion_data.shape[0]:
+            raise ValueError(f"Frame index {frame_idx} is out of range. Max frame is {motion_data.shape[0]-1}")
+        
+        # Update current shape with the specified frame
+        frame_data = motion_data[frame_idx:frame_idx+1]  # Keep frame dimension
+        self.current_shape[:, self.marker_index, :] = frame_data
+        self.untransformed_shape = self.current_shape.copy()
+        
+        print(f"✓ Updated pigeon shape to frame {frame_idx}")
     
     def remove_nan_frames(self, motion_data: np.ndarray):
         """
@@ -510,7 +630,7 @@ class Kestrel3D(Animal3D):
             motion_marker_names = self.skeleton_definition.marker_names
             
         # Remove fixed markers from motion markers
-        fixed_markers = self.skeleton_definition.fixed_marker_names_simple if self.use_simple else self.skeleton_definition.fixed_marker_names
+        fixed_markers = self.skeleton_definition.fixed_marker_names
         motion_marker_names = [name for name in motion_marker_names if name not in fixed_markers]
         
         # Build mapping from motion data indices to marker indices
@@ -566,7 +686,7 @@ class Kestrel3D(Animal3D):
             motion_marker_names = self.skeleton_definition.marker_names
             
         # Remove fixed markers from motion markers
-        fixed_markers = self.skeleton_definition.fixed_marker_names_simple if self.use_simple else self.skeleton_definition.fixed_marker_names
+        fixed_markers = self.skeleton_definition.fixed_marker_names
         motion_marker_names = [name for name in motion_marker_names if name not in fixed_markers]
         
         return motion_marker_names
@@ -595,12 +715,12 @@ class Kestrel3D(Animal3D):
         use_simple_markers = self.use_simple if use_simple is None else use_simple
         
         if use_simple_markers:
-            # In simple mode: 8 active markers + fixed markers
+            # In simple mode: active markers + fixed markers
             active_markers = self.skeleton_definition.get_marker_names_simple()
-            fixed_markers = self.skeleton_definition.fixed_marker_names_simple
+            fixed_markers = self.skeleton_definition.fixed_marker_names
             print("\nUsing SIMPLE marker set:")
         else:
-            # In full mode: 34 active markers + fixed markers
+            # In full mode: active markers + fixed markers
             active_markers = self.skeleton_definition.get_marker_names_full()
             fixed_markers = self.skeleton_definition.fixed_marker_names
             print("\nUsing DETAILED marker set:")
@@ -623,76 +743,17 @@ class Kestrel3D(Animal3D):
         for i, name in enumerate(active_markers):  # Using original order, not sorted
             print(f"  {i}: {name}")
 
-    def print_debug_info(self):
+    def get_marker_pairs_and_centers(self, use_simple: bool = None) -> tuple:
         """
-        Prints debugging information about the current state of the Kestrel3D object.
-        """
-        print(f"Number of marker names: {len(self.marker_names)}")
-        print(f"Number of marker indices: {len(self.marker_index)}")
-        
-        if len(self.marker_names) != len(self.marker_index):
-            print("WARNING: Mismatch between marker_names and marker_index lengths!")
-            
-        # Check for marker indices that might be out of bounds for current_shape
-        if hasattr(self, 'current_shape'):
-            total_markers = self.current_shape.shape[1]
-            out_of_bounds = [i for i in self.marker_index if i >= total_markers]
-            if out_of_bounds:
-                print(f"WARNING: The following marker indices are out of bounds: {out_of_bounds}")
-        
-        # Print the first few marker names and indices
-        print("\nFirst 10 marker names and indices:")
-        for i, name in enumerate(self.marker_names[:10]):
-            if i < len(self.marker_index):
-                print(f"{i}: {name} -> index {self.marker_index[i]}")
-            else:
-                print(f"{i}: {name} -> NO INDEX")
-        
-        print("\nPolygon definitions:")
-        for section, indices in self.polygons.items():
-            print(f"{section}: {len(indices)} points")
-
-    def validate_left_right_positions(self, motion_data: np.ndarray, left_indices: list, right_indices: list) -> np.ndarray:
-        """
-        Validates that left markers are always to the left of their corresponding right markers.
-        Returns a boolean mask indicating which frames are valid.
+        Returns lists of marker pairs and center markers based on the mode.
         
         Parameters:
-        - motion_data (np.ndarray): Motion data in shape [nFrames, nMarkers, 3]
-        - left_indices (list): Indices of left markers
-        - right_indices (list): Indices of right markers (in same order as left_indices)
+        - use_simple (bool, optional): Whether to use simple mode. If None, uses current setting.
         
         Returns:
-        - np.ndarray: Boolean mask of valid frames
+        - tuple: (left_markers, right_markers, center_markers)
         """
-        # Get x-coordinates for all frames
-        left_x = motion_data[:, left_indices, 0]  # [nFrames, nLeftMarkers]
-        right_x = motion_data[:, right_indices, 0]  # [nFrames, nRightMarkers]
-        
-        # Check if any left marker is to the right of its corresponding right marker
-        x_differences = right_x - left_x
-        min_difference = 0.001  # 1mm minimum difference
-        
-        # Frame is valid if all marker pairs have sufficient separation
-        valid_frames = np.all(x_differences >= min_difference, axis=1)
-        
-        # Print information about invalid frames
-        n_invalid = np.sum(~valid_frames)
-        if n_invalid > 0:
-            print(f"\nFound {n_invalid} invalid frames where left-right markers are too close or incorrectly positioned:")
-            # Find the first few invalid frames and their issues
-            invalid_frame_indices = np.where(~valid_frames)[0]
-            for frame_idx in invalid_frame_indices[:5]:  # Show up to 5 examples
-                problems = np.where(x_differences[frame_idx] < min_difference)[0]
-                for marker_idx in problems:
-                    left_marker = self.marker_names[left_indices[marker_idx]]
-                    right_marker = self.marker_names[right_indices[marker_idx]]
-                    diff = x_differences[frame_idx, marker_idx]
-                    print(f"  Frame {frame_idx}: {left_marker} - {right_marker} separation = {diff:.3f}m")
-            if len(invalid_frame_indices) > 5:
-                print(f"  ... and {len(invalid_frame_indices) - 5} more invalid frames")
-        
-        return valid_frames
+        return self.skeleton_definition.get_marker_pairs_and_centers(use_simple if use_simple is not None else self.use_simple)
 
     def make_unilateral(self, motion_data: np.ndarray, info_df: pd.DataFrame = None) -> tuple:
         """
@@ -838,3 +899,45 @@ class Kestrel3D(Animal3D):
             bilateral_data[:, center_indices, :] = center_data
         
         return bilateral_data
+
+    def validate_left_right_positions(self, motion_data: np.ndarray, left_indices: list, right_indices: list) -> np.ndarray:
+        """
+        Validates that left markers are always to the left of their corresponding right markers.
+        Returns a boolean mask indicating which frames are valid.
+        
+        Parameters:
+        - motion_data (np.ndarray): Motion data in shape [nFrames, nMarkers, 3]
+        - left_indices (list): Indices of left markers
+        - right_indices (list): Indices of right markers (in same order as left_indices)
+        
+        Returns:
+        - np.ndarray: Boolean mask of valid frames
+        """
+        # Get x-coordinates for all frames
+        left_x = motion_data[:, left_indices, 0]  # [nFrames, nLeftMarkers]
+        right_x = motion_data[:, right_indices, 0]  # [nFrames, nRightMarkers]
+        
+        # Check if any left marker is to the right of its corresponding right marker
+        x_differences = right_x - left_x
+        min_difference = 0.001  # 1mm minimum difference
+        
+        # Frame is valid if all marker pairs have sufficient separation
+        valid_frames = np.all(x_differences >= min_difference, axis=1)
+        
+        # Print information about invalid frames
+        n_invalid = np.sum(~valid_frames)
+        if n_invalid > 0:
+            print(f"\nFound {n_invalid} invalid frames where left-right markers are too close or incorrectly positioned:")
+            # Find the first few invalid frames and their issues
+            invalid_frame_indices = np.where(~valid_frames)[0]
+            for frame_idx in invalid_frame_indices[:5]:  # Show up to 5 examples
+                problems = np.where(x_differences[frame_idx] < min_difference)[0]
+                for marker_idx in problems:
+                    left_marker = self.marker_names[left_indices[marker_idx]]
+                    right_marker = self.marker_names[right_indices[marker_idx]]
+                    diff = x_differences[frame_idx, marker_idx]
+                    print(f"  Frame {frame_idx}: {left_marker} - {right_marker} separation = {diff:.3f}m")
+            if len(invalid_frame_indices) > 5:
+                print(f"  ... and {len(invalid_frame_indices) - 5} more invalid frames")
+        
+        return valid_frames
