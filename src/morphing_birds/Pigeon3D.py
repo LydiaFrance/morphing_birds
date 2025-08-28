@@ -557,7 +557,7 @@ class Pigeon3D(Animal3D):
         
         # Remove NaN frames
         if verbose:
-            rint("\\nRemoving NaN frames...")
+            print("\\nRemoving NaN frames...")
         clean_motion_data, valid_frames = self.remove_nan_frames(motion_data)
         
         # Filter info data to match clean frames
