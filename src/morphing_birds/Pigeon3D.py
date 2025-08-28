@@ -884,8 +884,9 @@ class Pigeon3D(Animal3D):
         # Get indices for each marker type in the final array
         left_indices = [self.marker_names.index(m) for m in left_markers]
         right_indices = [self.marker_names.index(m) for m in right_markers]
-        center_indices = [self.marker_names.index(m) for m in center_markers] if center_markers else []
-        
+        # center_indices = [self.marker_names.index(m) for m in center_markers] if center_markers else []
+        center_indices = []
+
         # Place data in correct positions
         bilateral_data[:, left_indices, :] = left_data
         bilateral_data[:, right_indices, :] = right_data
