@@ -410,14 +410,15 @@ def get_polygon_plotly(animal3d_instance, section_name, colour, alpha=1):
     # Add the first point to the end to close the polygon
     coords = np.vstack([coords, coords[0]])
 
+
     # Draw the lines too
     lines = go.Scatter3d(
                    x=coords[:, 0],
                    y=coords[:, 1],
                    z=coords[:, 2],
                    mode='lines',
-                   name='',
-                   line=dict(color= 'grey', width=1.5), hoverinfo='none'
+                   name=f'{section_name} {colour}',
+                   line=dict(color= 'grey', width=1.5), hoverinfo='name'
                 )  
 
     return mesh, lines

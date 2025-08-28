@@ -92,8 +92,7 @@ class PigeonSkeletonDefinition(SkeletonDefinition):
         self.fixed_marker_names = ["head", "centre_backpack", "centre_body_base", "left_tailbase", "right_tailbase"]
         
         # For simple mode, we fix additional markers
-        # self.fixed_marker_names_simple = self.fixed_marker_names + [
-        # ]
+        self.fixed_marker_names_simple = self.fixed_marker_names + ["right_shoulder", "left_shoulder"]
         
         # === Define body sections for visualization ===
         body_sections = {
@@ -108,12 +107,12 @@ class PigeonSkeletonDefinition(SkeletonDefinition):
             
             # Simple mode sections WITH WRIST(comparable to hawks)
             "head_simple": ["right_shoulder", "head", "left_shoulder"],
-            "body_simple": ["right_shoulder", "left_shoulder", "left_lastsecondary_tip", "right_lastsecondary_tip"], 
-            "tail_simple": ["centre_body_base","left_tailtip", "right_tailtip"],
-            "left_armwing_simple": ["left_wrist", "left_secondary", "left_lastsecondary_tip", "left_shoulder"], 
-            "right_armwing_simple": ["right_wrist", "right_secondary", "right_lastsecondary_tip", "right_shoulder"], 
+            "body_simple": ["right_shoulder", "left_shoulder", "left_tailbase", "right_tailbase"], 
+            "tail_simple": ["left_tailbase","left_tailtip", "right_tailtip", "right_tailbase"],
+            "left_armwing_simple": ["left_wrist", "left_secondary", "left_tailbase", "left_shoulder"], 
+            "right_armwing_simple": ["right_wrist", "right_secondary", "right_tailbase", "right_shoulder"], 
             "left_handwing_simple": ["left_wrist", "left_secondary", "left_wingtip"], 
-            "right_handwing_simple": ["right_wrist", "right_secondary", "right_wingtip"]
+            "right_handwing_simple": ["right_wrist", "right_secondary", "right_wingtip"],
 
             # Simple mode sections (comparable to hawks)
             # "head_simple": ["right_shoulder", "head", "left_shoulder"],
@@ -132,6 +131,8 @@ class PigeonSkeletonDefinition(SkeletonDefinition):
         active_markers = [name for name in all_marker_names 
                         if name not in self.ignored_marker_names 
                         and name not in self.fixed_marker_names]
+        
+
         
         super().__init__(active_markers, self.fixed_marker_names, body_sections)
 
@@ -208,19 +209,15 @@ class PigeonSkeletonDefinition(SkeletonDefinition):
             available_markers.update(self.body_sections[section])
             
         # Remove fixed markers (simple uses same fixed set unless overridden)
-        available_markers = available_markers - set(self.fixed_marker_names)
+        available_markers = available_markers - set(self.fixed_marker_names_simple)
 
-        # Keep only desired items that are available
-        canonical = [m for m in desired_order if m in available_markers]
-
-        # Validate left/right pairing order
-        for i in range(0, len(canonical), 2):
-            left = canonical[i]
-            right = canonical[i + 1] if i + 1 < len(canonical) else None
-            if not (left.startswith("left_") and right and right == "right_" + left[5:]):
-                raise ValueError(f"Unpaired or misordered markers around {left} in simple list.")
-
-        return canonical
+        # Verify all canonical markers are available
+        missing_markers = set(desired_order) - available_markers
+        if missing_markers:
+            raise ValueError(f"Missing expected markers in simple sections: {missing_markers}")
+        
+        # Return markers in canonical order
+        return desired_order
     
     def get_marker_names_full(self, verbose: bool = False) -> list:
         """

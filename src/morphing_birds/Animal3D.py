@@ -308,6 +308,7 @@ class Animal3D:
         # # Apply transformations
         # self.apply_transformation()
 
+
     def transform_keypoints(self, bodypitch=0, horzDist=0, vertDist=0, bodyyaw=0, bodyroll=0):
         """
         Transforms ONLY the fixed markers by applying scaling, rotation, and translation.

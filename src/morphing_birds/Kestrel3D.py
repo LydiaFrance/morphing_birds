@@ -174,10 +174,7 @@ class Kestrel3D(Animal3D):
                 print(f"Warning: Could not initialize polygon for section {section}: {str(e)}")
                 continue
 
-        # Print debug info about polygons
-        print("\nInitialized polygons:")
-        for section, indices in self.polygons.items():
-            print(f"{section}: {indices}")
+        
 
     def define_indices(self):
         """Define indices for active markers in canonical order."""

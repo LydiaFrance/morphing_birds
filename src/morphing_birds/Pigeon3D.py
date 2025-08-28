@@ -30,7 +30,7 @@ class Pigeon3D(Animal3D):
         # Get marker names in canonical order
         if self.use_simple:
             self.marker_names = self.skeleton_definition.get_marker_names_simple()
-            fixed_markers = self.skeleton_definition.fixed_marker_names
+            fixed_markers = self.skeleton_definition.fixed_marker_names_simple
         else:
             self.marker_names = self.skeleton_definition.get_marker_names_full(verbose=verbose)
             fixed_markers = self.skeleton_definition.fixed_marker_names
@@ -52,21 +52,20 @@ class Pigeon3D(Animal3D):
                 y = self.data[y_col].values
                 z = self.data[z_col].values
                 marker_data[marker_name] = np.stack([x, y, z], axis=1)
-                # print(f"Loaded marker {marker_name} from CSV columns: {x_col}, {y_col}, {z_col}")
-        
+                
         if not marker_data:
             raise ValueError("No markers were found in the CSV file. Check the column names.")
             
         # Now create all_markers array in the correct order
         all_markers = []
-        marker_to_idx = {}  # Map marker names to their position in all_markers
+        self.marker_to_idx = {}  # Map marker names to their position in all_markers
         idx = 0
         
         # First add active markers in canonical order
         for marker_name in self.marker_names:
             if marker_name in marker_data:
                 all_markers.append(marker_data[marker_name])
-                marker_to_idx[marker_name] = idx
+                self.marker_to_idx[marker_name] = idx
                 idx += 1
             else:
                 raise ValueError(f"Required marker {marker_name} not found in CSV data")
@@ -76,7 +75,7 @@ class Pigeon3D(Animal3D):
         for marker_name in fixed_markers:
             if marker_name in marker_data:
                 all_markers.append(marker_data[marker_name])
-                marker_to_idx[marker_name] = idx
+                self.marker_to_idx[marker_name] = idx
                 fixed_marker_indices.append(idx)
                 idx += 1
                 
@@ -91,17 +90,20 @@ class Pigeon3D(Animal3D):
         # Store the fixed marker indices
         self.fixed_marker_index = fixed_marker_indices
         
+        # # Create mapping from fixed marker names to their indices in all_markers
+        # self.fixed_marker_name_to_index = {name: self.marker_to_idx[name] for name in fixed_markers if name in self.marker_to_idx}
+        
         # Extract active markers (they're already in the right order at the start of all_markers)
         self._markers = all_markers[:, :len(self.marker_names)]
         
-        # Initialize polygons after markers are set up
+        # Define indices for active markers first
         self.init_polygons()
         
-        # Define indices for active markers
+        # Initialize polygons after indices are defined
         self.define_indices()
         
         # Specify which sections should be colored (rest will be grey)
-        self.colour_sections = ["handwing", "tail"]  # Only handwing and tail gets the color
+        self.colour_sections = ["wing", "tail"]  # Only handwing and tail gets the color
         if verbose:
             print(f"Input keypoints shape: {self._markers.shape}")
             print(f"Number of markers in self.marker_names: {len(self.marker_names)}")
@@ -145,7 +147,7 @@ class Pigeon3D(Animal3D):
             # Remove '_simple' suffix for the polygon dictionary
             sections_dict = {s.replace('_simple', ''): self.skeleton_definition.body_sections[s] 
                            for s in sections}
-            fixed_markers = self.skeleton_definition.fixed_marker_names
+            fixed_markers = self.skeleton_definition.fixed_marker_names_simple
         else:
             sections = [s for s in self.skeleton_definition.body_sections if not s.endswith("_simple")]
             sections_dict = {s: self.skeleton_definition.body_sections[s] for s in sections}
@@ -155,39 +157,30 @@ class Pigeon3D(Animal3D):
         self.polygons = {}
         for section, markers in sections_dict.items():
             # Get indices for each marker in the section
-            indices = []
-            missing_markers = []
-            
-            for marker in markers:
-                if marker in self.marker_names:
-                    idx = self.marker_names.index(marker)
-                    indices.append(self.marker_index[idx])
-                elif marker in fixed_markers:
-                    # For fixed markers, find their position in the fixed marker list
-                    fixed_idx = fixed_markers.index(marker)
-                    indices.append(self.fixed_marker_index[fixed_idx])
-                else:
-                    missing_markers.append(marker)
-            
-            # Only add the polygon if we have at least 3 markers (minimum for a polygon)
-            if len(indices) >= 3:
+            try:
+                # First try to find the marker in marker_names (for active markers)
+                indices = []
+                for marker in markers:
+                    if marker in self.marker_names:
+                        idx = self.marker_names.index(marker)
+                        indices.append(self.marker_index[idx])
+                    elif marker in fixed_markers:
+                        # For fixed markers, find their position in the fixed marker list
+                        fixed_idx = fixed_markers.index(marker)
+                        indices.append(self.fixed_marker_index[fixed_idx])
+                    else:
+                        raise ValueError(f"Marker {marker} not found in either active or fixed markers")
                 self.polygons[section] = indices
-            elif missing_markers:
-                # Silently skip sections with missing markers in simple mode
-                if not self.use_simple:  # Only warn in full mode
-                    print(f"Warning: Skipping polygon section '{section}' - missing markers: {missing_markers}")
+            except ValueError as e:
+                print(f"Warning: Could not initialize polygon for section {section}: {str(e)}")
+                continue
 
-        # Print debug info about polygons (only if any were created)
-        # if self.polygons:
-        #     print(f"\nInitialized {len(self.polygons)} polygon sections:")
-        #     for section, indices in self.polygons.items():
-        #         print(f"  {section}: {len(indices)} vertices")
-        # else:
-        #     print("\nNo polygon sections initialized")
 
     def define_indices(self):
         """Define indices for active markers in canonical order."""
+        # Create mapping from active marker names to their indices in current_shape
         self.marker_index = list(range(len(self.marker_names)))
+
 
     def load_csv(self, csv_path: str):
         """
@@ -447,17 +440,19 @@ class Pigeon3D(Animal3D):
         # Load the CSV data using pandas (more reliable than the original method)
         data = pd.read_csv(csv_path)
         
-        print(f"Loading motion data from: {csv_path}")
-        print(f"CSV shape: {data.shape}")
-        print(f"Using {'simple' if use_simple_markers else 'full'} marker set")
+        if verbose:
+            print(f"Loading motion data from: {csv_path}")
+            print(f"CSV shape: {data.shape}")
+            print(f"Using {'simple' if use_simple_markers else 'full'} marker set")
         
         # Get target marker names
         if use_simple_markers:
             target_markers = self.skeleton_definition.get_marker_names_simple()
         else:
             target_markers = self.skeleton_definition.get_marker_names_full(verbose=verbose)
-            
-        print(f"Target markers ({len(target_markers)}): {target_markers}")
+
+        if verbose:
+            print(f"Target markers ({len(target_markers)}): {target_markers}")
         
         # Load marker data using the reliable approach from constructor
         marker_data = {}
@@ -480,8 +475,8 @@ class Pigeon3D(Animal3D):
                 z = data[z_col].values
                 marker_data[marker_name] = np.stack([x, y, z], axis=1)
                 loaded_count += 1
-                
-        print(f"Successfully loaded {loaded_count} markers from CSV")
+        if verbose:
+            print(f"Successfully loaded {loaded_count} markers from CSV")
         
         # Extract motion data for target markers in correct order
         motion_list = []
