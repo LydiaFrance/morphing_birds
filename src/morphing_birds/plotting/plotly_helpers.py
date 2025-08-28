@@ -23,7 +23,7 @@ def calculate_axis_limits(animal3d_instance):
     
     # Calculate a base scale that's appropriate for your expected range
     # For 0.35-0.65 range, use 0.5 as reference
-    reference_scale = 0.5
+    reference_scale = 0.7
     scale_factor = natural_size / reference_scale
     
     # Round to nearest power of 2 for smoother transitions
