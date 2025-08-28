@@ -32,7 +32,7 @@ class Pigeon3D(Animal3D):
             self.marker_names = self.skeleton_definition.get_marker_names_simple()
             fixed_markers = self.skeleton_definition.fixed_marker_names
         else:
-            self.marker_names = self.skeleton_definition.get_marker_names_full()
+            self.marker_names = self.skeleton_definition.get_marker_names_full(verbose=verbose)
             fixed_markers = self.skeleton_definition.fixed_marker_names
         
         # First, create a mapping of all available markers in the CSV
@@ -423,7 +423,7 @@ class Pigeon3D(Animal3D):
         # Tell the user that the polygon shape is valid
         print("Polygon shape is valid")
         
-    def load_motion_data(self, csv_path: str, use_simple: bool = None) -> np.ndarray:
+    def load_motion_data(self, csv_path: str, use_simple: bool = None, verbose: bool = False) -> np.ndarray:
         """
         Load motion data from CSV file.
         Uses the same reliable approach as the Pigeon3D constructor.
@@ -455,7 +455,7 @@ class Pigeon3D(Animal3D):
         if use_simple_markers:
             target_markers = self.skeleton_definition.get_marker_names_simple()
         else:
-            target_markers = self.skeleton_definition.get_marker_names_full()
+            target_markers = self.skeleton_definition.get_marker_names_full(verbose=verbose)
             
         print(f"Target markers ({len(target_markers)}): {target_markers}")
         
@@ -699,7 +699,7 @@ class Pigeon3D(Animal3D):
         for i, name in enumerate(marker_names):
             print(f"{i}: {name}")
             
-    def print_fixed_vs_moving_markers(self, use_simple: bool = None):
+    def print_fixed_vs_moving_markers(self, use_simple: bool = None, verbose: bool = True):
         """
         Prints information about which markers are fixed vs. moving.
         
@@ -715,7 +715,7 @@ class Pigeon3D(Animal3D):
             print("\nUsing SIMPLE marker set:")
         else:
             # In full mode: active markers + fixed markers
-            active_markers = self.skeleton_definition.get_marker_names_full()
+            active_markers = self.skeleton_definition.get_marker_names_full(verbose=verbose)
             fixed_markers = self.skeleton_definition.fixed_marker_names
             print("\nUsing DETAILED marker set:")
         

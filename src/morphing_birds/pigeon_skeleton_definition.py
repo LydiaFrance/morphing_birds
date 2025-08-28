@@ -222,7 +222,7 @@ class PigeonSkeletonDefinition(SkeletonDefinition):
 
         return canonical
     
-    def get_marker_names_full(self) -> list:
+    def get_marker_names_full(self, verbose: bool = False) -> list:
         """
         Returns ordered active markers for full mode (no centre/fixed).
         Includes shoulders/elbows/wrists/secondaries/lastsecondary tips/wingtips/tail tips.
@@ -264,17 +264,18 @@ class PigeonSkeletonDefinition(SkeletonDefinition):
         available_markers = available_markers - set(self.fixed_marker_names) - set(self.ignored_marker_names)
         
         # Add debugging information
-        print("\nIn get_marker_names_full:")
-        print(f"Desired order length: {len(desired_order)}")
-        print(f"Available markers before filtering: {len(available_markers)}")
-        print(f"Fixed markers being removed: {self.fixed_marker_names}")
+        if verbose:
+            print("\nIn get_marker_names_full:")
+            print(f"Desired order length: {len(desired_order)}")
+            print(f"Available markers before filtering: {len(available_markers)}")
+            print(f"Fixed markers being removed: {self.fixed_marker_names}")
         
         # Filter the canonical order to only include available active markers
         canonical_order = [marker for marker in desired_order if marker in available_markers]
-        
-        print(f"Final canonical order length: {len(canonical_order)}")
-        print(f"Markers in canonical order but not available: {[m for m in desired_order if m not in available_markers]}")
-        print(f"Markers available but not in canonical order: {[m for m in available_markers if m not in desired_order]}")
+        if verbose:
+            print(f"Final canonical order length: {len(canonical_order)}")
+            print(f"Markers in canonical order but not available: {[m for m in desired_order if m not in available_markers]}")
+            print(f"Markers available but not in canonical order: {[m for m in available_markers if m not in desired_order]}")
         
         return canonical_order
     
@@ -309,7 +310,7 @@ class PigeonSkeletonDefinition(SkeletonDefinition):
             right_markers = marker_names[1::2]  # Odd indices
             center_markers = []
         else:
-            marker_names = self.get_marker_names_full()
+            marker_names = self.get_marker_names_full(verbose=False)
             # In full mode, we need to identify center markers
             left_markers = []
             right_markers = []
