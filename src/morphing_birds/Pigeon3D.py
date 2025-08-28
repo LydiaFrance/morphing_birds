@@ -178,12 +178,12 @@ class Pigeon3D(Animal3D):
                     print(f"Warning: Skipping polygon section '{section}' - missing markers: {missing_markers}")
 
         # Print debug info about polygons (only if any were created)
-        if self.polygons:
-            print(f"\nInitialized {len(self.polygons)} polygon sections:")
-            for section, indices in self.polygons.items():
-                print(f"  {section}: {len(indices)} vertices")
-        else:
-            print("\nNo polygon sections initialized")
+        # if self.polygons:
+        #     print(f"\nInitialized {len(self.polygons)} polygon sections:")
+        #     for section, indices in self.polygons.items():
+        #         print(f"  {section}: {len(indices)} vertices")
+        # else:
+        #     print("\nNo polygon sections initialized")
 
     def define_indices(self):
         """Define indices for active markers in canonical order."""
