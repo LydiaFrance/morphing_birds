@@ -85,7 +85,7 @@ class PigeonSkeletonDefinition(SkeletonDefinition):
         self.marker_name_change_reverse = {v: k for k, v in self.marker_name_change.items()}
         
         # === Define markers that are completely ignored (not stored, not plotted) ===
-        self.ignored_marker_names = []
+        self.ignored_marker_names = ["centre_tailtip"]
         
         # === Define fixed markers (stored and plotted, but not used in analysis) ===
         # These markers are loaded from mean shape and kept fixed
@@ -100,7 +100,7 @@ class PigeonSkeletonDefinition(SkeletonDefinition):
             # Full mode sections
             "head": ["right_shoulder", "head", "left_shoulder"], 
             "body": ["right_shoulder", "right_tailbase", "centre_body_base", "left_tailbase", "left_shoulder"], 
-            "tail": ["right_tailbase","centre_body_base","left_tailbase","left_tailtip",  "centre_tailtip", "right_tailtip"],
+            "tail": ["right_tailbase","centre_body_base","left_tailbase","left_tailtip",  "right_tailtip"],
             "right_armwing": ["right_shoulder", "right_elbow", "right_wrist", "right_secondary", "right_lastsecondary_tip", "right_tailbase"], 
             "left_armwing": ["left_shoulder", "left_elbow", "left_wrist", "left_secondary", "left_lastsecondary_tip", "left_tailbase"], 
             "left_handwing": ["left_wrist", "left_secondary", "left_wingtip"], 
@@ -241,7 +241,7 @@ class PigeonSkeletonDefinition(SkeletonDefinition):
          left_elbow, right_elbow,
          left_shoulder, right_shoulder,
          centre_body_base,
-         left_tailtip, centre_tailtip, right_tailtip]
+         left_tailtip, right_tailtip]
         """
         desired_order = [
             "left_wingtip", "right_wingtip",
@@ -251,7 +251,7 @@ class PigeonSkeletonDefinition(SkeletonDefinition):
             "left_elbow", "right_elbow",
             "left_shoulder", "right_shoulder",
             "centre_body_base",
-            "left_tailtip", "centre_tailtip", "right_tailtip",
+            "left_tailtip", "right_tailtip",
         ]
         
         # Get all markers from non-simple sections
