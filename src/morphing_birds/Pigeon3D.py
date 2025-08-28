@@ -10,7 +10,7 @@ class Pigeon3D(Animal3D):
     Inherits from Animal3D and provides specific functions for 
     loading CSV data and validating polygon shapes of a pigeon. 
     """
-    def __init__(self, csv_path: str, use_simple: bool = False):
+    def __init__(self, csv_path: str, use_simple: bool = False, verbose=False):
         """
         Initialize the Pigeon3D class.
         
@@ -102,13 +102,13 @@ class Pigeon3D(Animal3D):
         
         # Specify which sections should be colored (rest will be grey)
         self.colour_sections = ["handwing", "tail"]  # Only handwing and tail gets the color
-        
-        print(f"Input keypoints shape: {self._markers.shape}")
-        print(f"Number of markers in self.marker_names: {len(self.marker_names)}")
-        print(f"Number of markers in self.marker_index: {len(self.marker_index)}")
-        print(f"Marker names: {self.marker_names}")
-        print(f"Marker indices: {self.marker_index}")
-        print(f"Fixed marker indices: {self.fixed_marker_index}")
+        if verbose:
+            print(f"Input keypoints shape: {self._markers.shape}")
+            print(f"Number of markers in self.marker_names: {len(self.marker_names)}")
+            print(f"Number of markers in self.marker_index: {len(self.marker_index)}")
+            print(f"Marker names: {self.marker_names}")
+            print(f"Marker indices: {self.marker_index}")
+            print(f"Fixed marker indices: {self.fixed_marker_index}")
 
     @property
     def markers(self):
@@ -509,7 +509,7 @@ class Pigeon3D(Animal3D):
         
         return motion_data
     
-    def load_data_complete(self, csv_path: str, info_path: str = None, use_simple: bool = None) -> tuple:
+    def load_data_complete(self, csv_path: str, info_path: str = None, use_simple: bool = None, verbose: bool = False) -> tuple:
         """
         Complete workflow to load motion data and info data, with NaN removal.
         
@@ -532,8 +532,8 @@ class Pigeon3D(Animal3D):
         """
         import pandas as pd
         import os
-        
-        print("=== Complete Data Loading Workflow ===")
+        if verbose:
+            print("=== Complete Data Loading Workflow ===")
         
         # Load motion data
         motion_data = self.load_motion_data(csv_path, use_simple)
@@ -549,32 +549,27 @@ class Pigeon3D(Animal3D):
         # Load info data
         if os.path.exists(info_path):
             info_df = pd.read_csv(info_path)
-            print(f"✓ Loaded info data: {info_df.shape}")
+            if verbose:
+                print(f"✓ Loaded info data: {info_df.shape}")
         else:
             print(f"Warning: Info file not found at {info_path}")
-            # Create minimal info dataframe
-            n_frames = motion_data.shape[0]
-            info_df = pd.DataFrame({
-                'Frame': range(n_frames),
-                'Time': range(n_frames),  # Placeholder
-                'GustPosition': [0] * n_frames,  # Placeholder
-                'FileName': ['unknown'] * n_frames  # Placeholder
-            })
-            print(f"✓ Created placeholder info data: {info_df.shape}")
+            
         
         # Remove NaN frames
-        print("\\nRemoving NaN frames...")
+        if verbose:
+            rint("\\nRemoving NaN frames...")
         clean_motion_data, valid_frames = self.remove_nan_frames(motion_data)
         
         # Filter info data to match clean frames
         clean_info_df = info_df.iloc[valid_frames].reset_index(drop=True)
         
-        print(f"\\n=== Summary ===")
-        print(f"✓ Original frames: {motion_data.shape[0]}")
-        print(f"✓ Clean frames: {clean_motion_data.shape[0]}")
-        print(f"✓ Removed: {motion_data.shape[0] - clean_motion_data.shape[0]} frames")
-        print(f"✓ Markers: {clean_motion_data.shape[1]}")
-        print(f"✓ Info data: {clean_info_df.shape}")
+        if verbose:
+            print(f"\\n=== Summary ===")
+            print(f"✓ Original frames: {motion_data.shape[0]}")
+            print(f"✓ Clean frames: {clean_motion_data.shape[0]}")
+            print(f"✓ Removed: {motion_data.shape[0] - clean_motion_data.shape[0]} frames")
+            print(f"✓ Markers: {clean_motion_data.shape[1]}")
+            print(f"✓ Info data: {clean_info_df.shape}")
         
         return clean_motion_data, clean_info_df, valid_frames
     
@@ -598,7 +593,6 @@ class Pigeon3D(Animal3D):
         self.current_shape[:, self.marker_index, :] = frame_data
         self.untransformed_shape = self.current_shape.copy()
         
-        print(f"✓ Updated pigeon shape to frame {frame_idx}")
     
     def remove_nan_frames(self, motion_data: np.ndarray):
         """
