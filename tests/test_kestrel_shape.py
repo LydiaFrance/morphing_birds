@@ -595,6 +595,95 @@ class TestKestrelShape:
             except Exception as e:
                 pytest.fail(f"make_unilateral failed for config {config}: {e}")
 
+    def test_unilateral_bilateral_conversion_cycle(self, test_csv_path):
+        """Test the complete unilateral/bilateral conversion cycle."""
+        test_cases = [
+            {'use_simple': False, 'use_full': False, 'use_mean_alula': False},
+            {'use_simple': False, 'use_full': False, 'use_mean_alula': True},
+        ]
+        
+        for config in test_cases:
+            kestrel = Kestrel3D(str(test_csv_path), **config)
+            
+            # Create some test motion data with realistic coordinates
+            n_frames = 5
+            n_markers = len(kestrel.marker_names)
+            original_data = np.random.rand(n_frames, n_markers, 3) * 0.1
+            
+            # Ensure left markers have negative x, right markers have positive x
+            for i, marker_name in enumerate(kestrel.marker_names):
+                if marker_name.startswith('left_'):
+                    original_data[:, i, 0] = -np.abs(original_data[:, i, 0])
+                elif marker_name.startswith('right_'):
+                    original_data[:, i, 0] = np.abs(original_data[:, i, 0])
+            
+            # Test the complete cycle: bilateral -> unilateral -> bilateral
+            try:
+                # Step 1: Convert to unilateral
+                unilateral_data, is_left, _ = kestrel.make_unilateral(original_data)
+                
+                # Verify unilateral data shape
+                assert unilateral_data.shape[2] == 3, "Should maintain 3D coordinates"
+                assert unilateral_data.shape[0] <= n_frames * 2, "Should have doubled frames (or fewer due to validation)"
+                
+                # Step 2: Convert back to bilateral
+                reconstructed_data = kestrel.make_bilateral(unilateral_data, is_left)
+                
+                # Verify reconstructed data shape
+                assert reconstructed_data.shape[2] == 3, "Should maintain 3D coordinates"
+                assert reconstructed_data.shape[1] == n_markers, f"Should have {n_markers} markers"
+                
+                # Step 3: Test automatic unilateral detection in update_keypoints
+                # Use a single frame of unilateral data
+                single_unilateral_frame = unilateral_data[0:1]  # Shape: [1, n_unilateral_markers, 3]
+                
+                # This should automatically detect and convert unilateral data
+                kestrel.update_keypoints(single_unilateral_frame)
+                
+                # Verify the kestrel's current shape has the right total markers (including fixed)
+                total_markers = kestrel.current_shape.shape[1]  # This includes fixed markers
+                assert total_markers >= n_markers, \
+                    f"After update_keypoints with unilateral data, should have at least {n_markers} markers (got {total_markers})"
+                
+                print(f"✓ Unilateral/bilateral cycle works for config {config}")
+                print(f"  Original: {original_data.shape}")
+                print(f"  Unilateral: {unilateral_data.shape}")
+                print(f"  Reconstructed: {reconstructed_data.shape}")
+                print(f"  Single frame update: successful")
+                
+            except Exception as e:
+                pytest.fail(f"Unilateral/bilateral conversion failed for config {config}: {e}")
+
+    def test_update_keypoints_unilateral_detection(self, test_csv_path):
+        """Test that update_keypoints automatically detects and handles unilateral data."""
+        kestrel = Kestrel3D(str(test_csv_path), use_mean_alula=False)
+        
+        # Calculate expected unilateral marker count
+        left_markers = [m for m in kestrel.marker_names if m.startswith('left_')]
+        centre_markers = [m for m in kestrel.marker_names if m.startswith('centre_')]
+        expected_unilateral_markers = len(left_markers) + len(centre_markers)
+        
+        # Create fake unilateral data with the expected marker count
+        unilateral_data = np.random.rand(1, expected_unilateral_markers, 3) * 0.1
+        
+        # This should be detected as unilateral and automatically converted
+        try:
+            kestrel.update_keypoints(unilateral_data)
+            
+            # Verify the conversion worked - current_shape includes fixed markers too
+            total_markers = kestrel.current_shape.shape[1]  # This includes fixed markers
+            active_markers = len(kestrel.marker_names)  # This is only active markers
+            assert total_markers >= active_markers, \
+                f"Should have at least {active_markers} active markers (got {total_markers} total markers)"
+            
+            print(f"✓ Automatic unilateral detection works")
+            print(f"  Input unilateral markers: {expected_unilateral_markers}")
+            print(f"  Active markers: {active_markers}")
+            print(f"  Total markers in current_shape: {total_markers}")
+            
+        except Exception as e:
+            pytest.fail(f"Automatic unilateral detection failed: {e}")
+
 
 if __name__ == "__main__":
     # Run tests with pytest

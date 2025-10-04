@@ -320,7 +320,8 @@ class Kestrel3D(Animal3D):
         Override the parent's update_keypoints to handle motion data conversion automatically.
         
         This handles the case where motion data has individual alula markers but 
-        skeleton expects averaged alula markers.
+        skeleton expects averaged alula markers. It also automatically detects and
+        handles unilateral data by converting it back to bilateral format.
         """
         # Handle None case - pass to parent to reset to default
         if user_keypoints is None:
@@ -343,7 +344,35 @@ class Kestrel3D(Animal3D):
         expected_markers = len(self.marker_names)
         provided_markers = input_shape[1]
         
-        # Check for marker count mismatch
+        # Check if this might be unilateral data
+        if provided_markers != expected_markers:
+            # Calculate expected unilateral marker count (only active markers)
+            left_markers = [m for m in self.marker_names if m.startswith('left_')]
+            right_markers = [m for m in self.marker_names if 'right_' + m[5:] in self.marker_names]
+            centre_markers = [m for m in self.marker_names if m.startswith('centre_')]
+            expected_unilateral_markers = len(left_markers) + len(centre_markers)
+            
+            if provided_markers == expected_unilateral_markers:
+                print(f"Detected unilateral data ({provided_markers} markers). Converting to bilateral...")
+                
+                # Create is_left array - assume all frames are "left" for single frame
+                n_frames = input_shape[0]
+                is_left = np.ones(n_frames * 2, dtype=bool)
+                is_left[n_frames:] = False  # Second half are "right"
+                
+                # Duplicate the unilateral data to create the doubled frames expected by make_bilateral
+                doubled_unilateral = np.concatenate([user_keypoints, user_keypoints], axis=0)
+                
+                # Convert to bilateral - this returns only the active markers
+                bilateral_active_markers = self.make_bilateral(doubled_unilateral, is_left)
+                
+                # The bilateral data has the right number of active markers, 
+                # but update_keypoints expects only the active markers (not all markers including fixed)
+                user_keypoints = bilateral_active_markers
+                input_shape = user_keypoints.shape
+                provided_markers = input_shape[1]
+        
+        # Check for marker count mismatch after potential conversion
         if provided_markers != expected_markers:
             print(f"Marker count mismatch:")
             print(f"  Motion data: {provided_markers} markers")
@@ -1288,8 +1317,20 @@ class Kestrel3D(Animal3D):
         if is_left.dtype.kind in 'iu':  # integer type
             is_left = is_left.astype(bool)
             
-        # Get marker organisation
-        left_markers, right_markers, centre_markers = self.skeleton_definition.get_marker_pairs_and_centres(self.use_simple)
+        # Create pairs from current marker names directly (same as make_unilateral)
+        left_markers = []
+        right_markers = []
+        centre_markers = []
+        
+        for marker in self.marker_names:
+            if marker.startswith('left_'):
+                # Try to find corresponding right marker
+                right_marker = 'right_' + marker[5:]
+                if right_marker in self.marker_names:
+                    left_markers.append(marker)
+                    right_markers.append(right_marker)
+            elif marker.startswith('centre_'):
+                centre_markers.append(marker)
         n_pairs = len(left_markers)
         n_centres = len(centre_markers)
         
@@ -1331,5 +1372,13 @@ class Kestrel3D(Animal3D):
         bilateral_data[:, right_indices, :] = right_data
         if centre_data is not None:
             bilateral_data[:, centre_indices, :] = centre_data
+        
+        print(f"\nRecreated bilateral data:")
+        print(f"  Unilateral frames: {len(unilateral_data)}")
+        print(f"  Bilateral frames: {n_frames}")
+        print(f"  Left markers: {len(left_markers)}")
+        print(f"  Right markers: {len(right_markers)}")
+        print(f"  Centre markers: {len(centre_markers)}")
+        print(f"  Final shape: {bilateral_data.shape}")
         
         return bilateral_data

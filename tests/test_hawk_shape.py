@@ -236,6 +236,105 @@ class TestHawk3D(unittest.TestCase):
         self.hawk3d.restore_keypoints_to_average()
         self.assertTrue(np.allclose(self.hawk3d.current_shape, self.hawk3d.default_shape), "Shape should be restored to average after restore")
 
+    def test_backward_compatibility_after_kestrel_changes(self):
+        """
+        Test that hawks still work correctly after kestrel-specific changes.
+        This ensures our kestrel modifications didn't break hawk functionality.
+        """
+        # Store original state
+        original_shape = self.hawk3d.current_shape.copy()
+        
+        # Test that basic hawk functionality still works
+        n_active_markers = len(self.hawk3d.marker_index)  # Should be 8 for hawks
+        
+        # Create motion data with the correct number of active markers for hawks
+        motion_data = np.random.rand(1, n_active_markers, 3) * 0.1
+        
+        try:
+            # Test normal update_keypoints still works
+            self.hawk3d.update_keypoints(motion_data)
+            self.assertFalse(np.allclose(self.hawk3d.current_shape, original_shape), 
+                           "Shape should change after update_keypoints")
+            
+            # Test that we can restore to original
+            self.hawk3d.restore_keypoints_to_average()
+            self.assertTrue(np.allclose(self.hawk3d.current_shape, self.hawk3d.default_shape),
+                          "Should restore to default shape")
+            
+            print(f"✓ Hawk backward compatibility confirmed")
+            print(f"  Active markers: {n_active_markers}")
+            print(f"  Total markers: {self.hawk3d.current_shape.shape[1]}")
+            
+        except Exception as e:
+            self.fail(f"Hawk backward compatibility test failed: {e}")
+
+    def test_hawk_marker_structure(self):
+        """
+        Test that hawk marker structure is as expected and different from kestrels.
+        This validates that hawks maintain their own marker organization.
+        """
+        # Test marker counts
+        n_active_markers = len(self.hawk3d.marker_index)
+        n_fixed_markers = len(self.hawk3d.fixed_marker_index)
+        n_total_markers = self.hawk3d.current_shape.shape[1]
+        
+        # Hawks should have 8 active markers (4 left + 4 right)
+        self.assertEqual(n_active_markers, 8, "Hawks should have 8 active markers")
+        
+        # Total should be active + fixed
+        self.assertEqual(n_total_markers, n_active_markers + n_fixed_markers,
+                        "Total markers should equal active + fixed")
+        
+        # Test that marker names are hawk-specific
+        hawk_marker_names = self.hawk3d.csv_marker_names
+        self.assertIn('left_wingtip', hawk_marker_names, "Should have hawk-specific marker names")
+        self.assertIn('right_wingtip', hawk_marker_names, "Should have hawk-specific marker names")
+        
+        # Test that hawks don't have kestrel-specific methods
+        self.assertFalse(hasattr(self.hawk3d, 'make_unilateral'), 
+                        "Hawks should not have kestrel-specific make_unilateral method")
+        self.assertFalse(hasattr(self.hawk3d, 'make_bilateral'),
+                        "Hawks should not have kestrel-specific make_bilateral method")
+        
+        print(f"✓ Hawk marker structure validated")
+        print(f"  Active markers: {n_active_markers}")
+        print(f"  Fixed markers: {n_fixed_markers}")
+        print(f"  Total markers: {n_total_markers}")
+        print(f"  Sample marker names: {hawk_marker_names[:4]}")
+
+    def test_hawk_vs_kestrel_differences(self):
+        """
+        Test that confirms hawks and kestrels have different structures.
+        This validates that species-specific functionality is preserved.
+        """
+        # Test that hawk has expected methods
+        self.assertTrue(hasattr(self.hawk3d, 'validate_polygon_shape'),
+                       "Hawks should have validate_polygon_shape method")
+        self.assertTrue(hasattr(self.hawk3d, 'load_csv'),
+                       "Hawks should have load_csv method")
+        
+        # Test that hawk marker structure is different from kestrel expectations
+        n_active_markers = len(self.hawk3d.marker_index)
+        
+        # Hawks have 8 active markers, kestrels have 28 (much more complex)
+        self.assertLess(n_active_markers, 20, 
+                       "Hawks should have fewer active markers than kestrels")
+        
+        # Test that hawk polygons work
+        try:
+            polygon_coords = self.hawk3d.get_polygon_coords('left_handwing')
+            self.assertIsNotNone(polygon_coords, "Should be able to get hawk polygon coordinates")
+            
+            # Test polygon validation (hawk-specific method)
+            self.hawk3d.validate_polygon_shape()  # Should not raise an exception
+            
+            print(f"✓ Hawk-specific functionality confirmed")
+            print(f"  Polygon validation: successful")
+            print(f"  Species differentiation: confirmed")
+            
+        except Exception as e:
+            self.fail(f"Hawk-specific functionality test failed: {e}")
+
 if __name__ == '__main__':
     unittest.main()
 
