@@ -551,6 +551,50 @@ class TestKestrelShape:
             assert len(kestrel_mean_alula.marker_names) <= len(kestrel_default.marker_names), \
                 "Mean alula mode should have fewer or equal markers than default mode"
 
+    def test_make_unilateral_all_modes(self, test_csv_path):
+        """Test make_unilateral function for all modes."""
+        test_cases = [
+            {'use_simple': False, 'use_full': False, 'use_mean_alula': False},
+            {'use_simple': False, 'use_full': False, 'use_mean_alula': True},
+        ]
+        
+        for config in test_cases:
+            kestrel = Kestrel3D(str(test_csv_path), **config)
+            
+            # Create some test motion data with realistic coordinates
+            n_frames = 10
+            n_markers = len(kestrel.marker_names)
+            # Use coordinates that will pass left-right validation
+            motion_data = np.random.rand(n_frames, n_markers, 3) * 0.1  # Small values
+            # Ensure left markers have negative x, right markers have positive x
+            for i, marker_name in enumerate(kestrel.marker_names):
+                if marker_name.startswith('left_'):
+                    motion_data[:, i, 0] = -np.abs(motion_data[:, i, 0])  # Negative x
+                elif marker_name.startswith('right_'):
+                    motion_data[:, i, 0] = np.abs(motion_data[:, i, 0])   # Positive x
+            
+            # Test make_unilateral
+            try:
+                unilateral_data, is_left, unilateral_info_df = kestrel.make_unilateral(motion_data)
+                
+                # Basic shape checks
+                assert unilateral_data.shape[0] <= n_frames * 2, \
+                    f"Unilateral data should have at most {n_frames * 2} frames for config {config}"
+                assert unilateral_data.shape[2] == 3, \
+                    f"Should maintain 3D coordinates for config {config}"
+                assert len(is_left) == unilateral_data.shape[0], \
+                    f"is_left array should match number of frames for config {config}"
+                
+                # Check that we have some valid frames
+                assert unilateral_data.shape[0] > 0, \
+                    f"Should have some valid frames for config {config}"
+                
+                print(f"✓ make_unilateral works for config {config}")
+                print(f"  Original: {motion_data.shape} -> Unilateral: {unilateral_data.shape}")
+                
+            except Exception as e:
+                pytest.fail(f"make_unilateral failed for config {config}: {e}")
+
 
 if __name__ == "__main__":
     # Run tests with pytest

@@ -1173,8 +1173,8 @@ class Kestrel3D(Animal3D):
     def make_unilateral(self, motion_data: np.ndarray, info_df: pd.DataFrame = None) -> tuple:
         """
         Takes bilateral motion data and creates unilateral data by mirroring left markers
-        to match right markers and stacking them. Handles both simple and full modes,
-        including centre markers in full mode.
+        to match right markers and stacking them. Handles all kestrel configurations:
+        simple/full modes, mean_alula averaging, and centre markers.
 
         Parameters:
         - motion_data (np.ndarray): Motion data in shape [nFrames, nMarkers, 3]
@@ -1190,8 +1190,24 @@ class Kestrel3D(Animal3D):
         motion_data_copy = np.copy(motion_data)
         info_df_copy = info_df.copy() if info_df is not None else None
         
-        # Get marker organisation
-        left_markers, right_markers, centre_markers = self.skeleton_definition.get_marker_pairs_and_centres(self.use_simple)
+        # Create pairs from current marker names directly (most reliable approach)
+        left_markers = []
+        right_markers = []
+        centre_markers = []
+        
+        for marker in self.marker_names:
+            if marker.startswith('left_'):
+                # Try to find corresponding right marker
+                right_marker = 'right_' + marker[5:]
+                if right_marker in self.marker_names:
+                    left_markers.append(marker)
+                    right_markers.append(right_marker)
+            elif marker.startswith('centre_'):
+                centre_markers.append(marker)
+        
+        if not left_markers:
+            raise ValueError(f"Could not identify left-right marker pairs from current configuration. "
+                           f"Available markers: {self.marker_names[:10]}...")
         
         # Get indices for each marker type
         left_indices = [self.marker_names.index(m) for m in left_markers]
@@ -1248,6 +1264,9 @@ class Kestrel3D(Animal3D):
         print(f"\nCreated unilateral data:")
         print(f"  Original frames: {len(motion_data)}")
         print(f"  Valid frames: {n_valid_frames}")
+        print(f"  Left markers: {len(left_markers)}")
+        print(f"  Right markers: {len(right_markers)}")
+        print(f"  Centre markers: {len(centre_markers)}")
         print(f"  Final shape: {unilateral_data.shape}")
         
         return unilateral_data, is_left, unilateral_info_df

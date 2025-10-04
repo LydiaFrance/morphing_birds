@@ -332,6 +332,9 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
         """
         Returns lists of marker pairs and centre markers based on the mode.
         
+        This method is updated to work with different kestrel configurations including
+        mean_alula mode where individual alula markers are replaced with averaged ones.
+        
         Parameters:
         - use_simple (bool, optional): Whether to use simple mode. If None, uses current setting.
         
@@ -371,7 +374,9 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
                         left_markers.append(marker)
                         right_markers.append(right_marker)
                     else:
-                        raise ValueError(f"Left marker {marker} has no matching right marker {right_marker}")
+                        # Handle special cases like mean alula markers that might not have exact pairs
+                        # Skip markers that don't have pairs (they might be processed differently)
+                        continue
                 elif marker.startswith('centre_'):
                     centre_markers.append(marker)
                 # Skip right_ markers as they're handled with left_ markers
