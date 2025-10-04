@@ -317,18 +317,8 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
         # Remove fixed and ignored markers
         available_markers = available_markers - set(self.fixed_marker_names) - set(self.ignored_marker_names)
         
-        # Add debugging information
-        print("\nIn get_marker_names_full:")
-        print(f"Desired order length: {len(desired_order)}")
-        print(f"Available markers before filtering: {len(available_markers)}")
-        print(f"Fixed markers being removed: {self.fixed_marker_names}")
-        
         # Filter the canonical order to only include available active markers
         canonical_order = [marker for marker in desired_order if marker in available_markers]
-        
-        print(f"Final canonical order length: {len(canonical_order)}")
-        print(f"Markers in canonical order but not available: {[m for m in desired_order if m not in available_markers]}")
-        print(f"Markers available but not in canonical order: {[m for m in available_markers if m not in desired_order]}")
         
         return canonical_order
     

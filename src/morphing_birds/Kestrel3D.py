@@ -44,9 +44,6 @@ class Kestrel3D(Animal3D):
         self.marker_names = self._get_marker_names()
         fixed_markers = self._get_fixed_marker_names()
         
-        print(f"DEBUG: Initial marker names count: {len(self.marker_names)}")
-        print(f"DEBUG: Marker names: {self.marker_names[:10]}...")  # First 10
-        
         # First, create a mapping of all available markers in the CSV
         marker_data = {}  # Store marker data temporarily
         for marker_name in self.skeleton_definition.marker_name_change.keys():
@@ -122,9 +119,6 @@ class Kestrel3D(Animal3D):
         
         # Specify which sections should be coloured (rest will be grey)
         self.colour_sections = ["wing", "tail", "alula"]  # Only wing, tail and alula gets the colour
-        
-        # Print initialization info
-        self._debug_print_marker_info("Kestrel3D Initialization")
 
     # Remove the markers property override - use parent class implementation
     # The parent Animal3D.markers property correctly returns current_shape[:,marker_index,:]
@@ -585,9 +579,6 @@ class Kestrel3D(Animal3D):
             # Stack the new motion data
             new_motion_data = np.stack(new_motion_data_list, axis=1)
             
-            print(f"Applied alula averaging to motion data:")
-            print(f"  Original markers: {len(marker_names)} -> New markers: {len(new_marker_names)}")
-            
             return new_motion_data
             
         except Exception as e:
@@ -608,10 +599,6 @@ class Kestrel3D(Animal3D):
             else:
                 updated_names.append(name)
         
-        print(f"DEBUG: _update_marker_names_for_averaging")
-        print(f"  Input names: {len(marker_names)} -> Output names: {len(updated_names)}")
-        print(f"  Removed: {[n for n in marker_names if n not in updated_names]}")
-        print(f"  Added: {[n for n in updated_names if n not in marker_names]}")
         
         return updated_names
 
@@ -824,9 +811,6 @@ class Kestrel3D(Animal3D):
         # The target is to match exactly what the skeleton expects
         target_marker_names = self.marker_names  # This is what the skeleton expects
         
-        print(f"DEBUG load_motion_data: Target skeleton expects {len(target_marker_names)} markers")
-        print(f"DEBUG load_motion_data: Target markers: {target_marker_names}")
-        
         # Strategy: Load available markers from CSV, then process to match target
         available_markers = {}
         not_found = []
@@ -845,9 +829,6 @@ class Kestrel3D(Animal3D):
                     not_found.append(f"{marker_name} (original: {original_name})")
             except KeyError:
                 not_found.append(marker_name)
-        
-        print(f"DEBUG load_motion_data: Found {len(available_markers)} markers in CSV")
-        print(f"DEBUG load_motion_data: Missing from CSV: {not_found}")
         
         # Convert data to float and reshape
         motion_data = data[1:].astype(float)  # Skip header row
@@ -885,8 +866,6 @@ class Kestrel3D(Animal3D):
                 csv_marker_to_index[marker_name] = marker_idx
                 marker_idx += 1
         
-        print(f"DEBUG: CSV marker mapping: {list(csv_marker_to_index.keys())[:10]}...")  # First 10
-        
         result_data = []
         result_marker_names = []
         
@@ -908,7 +887,6 @@ class Kestrel3D(Animal3D):
                     result_data.append(motion_data[:, idx, :])
                     result_marker_names.append(target_marker)
                     marker_found = True
-                    print(f"DEBUG: Loaded {target_marker} from CSV marker {original_name}")
             
             # Special handling for mean alula markers
             if not marker_found and target_marker.endswith('_mean') and use_mean_alula_markers:
@@ -924,7 +902,6 @@ class Kestrel3D(Animal3D):
                         result_data.append(mean_data)
                         result_marker_names.append(target_marker)
                         marker_found = True
-                        print(f"DEBUG: Computed {target_marker} from individual alula markers")
                         
                 elif target_marker == 'right_alula_mean':
                     # Try to compute from individual markers
@@ -938,23 +915,18 @@ class Kestrel3D(Animal3D):
                         result_data.append(mean_data)
                         result_marker_names.append(target_marker)
                         marker_found = True
-                        print(f"DEBUG: Computed {target_marker} from individual alula markers")
             
             # If marker still not found, use zeros
             if not marker_found:
                 zero_data = np.zeros((n_frames, 3))
                 result_data.append(zero_data)
                 result_marker_names.append(target_marker)
-                print(f"DEBUG: Using zeros for missing {target_marker}")
         
         # Stack the result data
         if result_data:
             result_motion_data = np.stack(result_data, axis=1)
         else:
             raise ValueError("No valid markers found for motion data")
-        
-        print(f"DEBUG load_motion_data: Final motion data shape: {result_motion_data.shape}")
-        print(f"DEBUG load_motion_data: Expected skeleton markers: {len(target_marker_names)}")
         
         # Verify the shape matches expectations
         if result_motion_data.shape[1] != len(target_marker_names):
