@@ -220,7 +220,7 @@ class TestHawk3D(unittest.TestCase):
         self.assertTrue(np.allclose(self.hawk3d.current_shape, original_shape), "Shape should be unchanged after reset")
 
         # Yaw Test
-        self.hawk3d.transform_keypoints(yaw=25)
+        self.hawk3d.transform_keypoints(bodyyaw=25)
         self.assertFalse(np.allclose(self.hawk3d.current_shape, original_shape), "Shape should change after yaw rotation")
         self.assertTrue(np.allclose(self.hawk3d.untransformed_shape, original_shape), "Untransformed shape should be unchanged")
 

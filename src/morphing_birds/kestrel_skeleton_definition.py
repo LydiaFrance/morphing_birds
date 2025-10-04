@@ -36,7 +36,7 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
 
     def __init__(self):
         """
-        Initialize the KestrelSkeletonDefinition with three categories of markers:
+        Initialise the KestrelSkeletonDefinition with three categories of markers:
         1. Ignored Markers: Not used at all (not stored, not plotted)
         2. Fixed Markers: Loaded from mean shape, used for plotting but not for analysis
         3. Active Markers: Used for both plotting and analysis
@@ -127,19 +127,20 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
         self.fixed_marker_names_simple = self.fixed_marker_names + [
             "left_lastsecondary_tip", "right_lastsecondary_tip"
         ]
-        
-        # === Define body sections for visualization ===
+    
+
+        # === Define body sections for visualisation ===
         body_sections = {
-            # Full mode sections
-            "head": ["right_shoulder", "head", "left_shoulder"], 
-            "body": ["right_shoulder", "left_shoulder", "left_lastsecondary_tip","right_lastsecondary_tip"], 
-            "tail": ["right_lastsecondary_tip", "left_lastsecondary_tip", "left_tail_tip", "right_tail_tip"],
-            "right_armwing": ["right_shoulder", "right_elbow", "right_wrist", "right_lastprimary_tip", "right_secondary_tip", "right_lastsecondary_tip", "right_shoulder", "right_wrist"], 
-            "left_armwing": ["left_shoulder", "left_elbow", "left_wrist", "left_lastprimary_tip", "left_secondary_tip", "left_lastsecondary_tip", "left_shoulder", "left_wrist"], 
-            "left_handwing": ["left_wrist", "left_firstprimary_base", "left_firstprimary_mid", "left_firstprimary_tip", "left_secondprimary_tip", "left_secondprimary_mid", "left_secondprimary_base", "left_fourthprimary_tip", "left_lastprimary_tip"], 
-            "right_handwing": ["right_wrist", "right_firstprimary_base", "right_firstprimary_mid", "right_firstprimary_tip", "right_secondprimary_tip", "right_secondprimary_mid", "right_secondprimary_base", "right_fourthprimary_tip", "right_lastprimary_tip"], 
-            "left_alula": ["left_wrist", "left_alula", "left_alula_lower"],
-            "right_alula": ["right_wrist", "right_alula", "right_alula_lower"],
+            # Full mode sections, no markers removed
+            "head_full": ["right_shoulder", "head", "left_shoulder"], 
+            "body_full": ["right_shoulder", "left_shoulder", "left_lastsecondary_tip","right_lastsecondary_tip"], 
+            "tail_full": ["right_lastsecondary_tip", "left_lastsecondary_tip", "left_tail_tip", "right_tail_tip"],
+            "right_armwing_full": ["right_shoulder", "right_elbow", "right_wrist", "right_lastprimary_tip", "right_secondary_tip", "right_lastsecondary_tip", "right_shoulder", "right_wrist"], 
+            "left_armwing_full": ["left_shoulder", "left_elbow", "left_wrist", "left_lastprimary_tip", "left_secondary_tip", "left_lastsecondary_tip", "left_shoulder", "left_wrist"], 
+            "left_handwing_full": ["left_wrist", "left_firstprimary_base", "left_firstprimary_mid", "left_firstprimary_tip", "left_secondprimary_tip", "left_secondprimary_mid", "left_secondprimary_base", "left_fourthprimary_tip", "left_lastprimary_tip"], 
+            "right_handwing_full": ["right_wrist", "right_firstprimary_base", "right_firstprimary_mid", "right_firstprimary_tip", "right_secondprimary_tip", "right_secondprimary_mid", "right_secondprimary_base", "right_fourthprimary_tip", "right_lastprimary_tip"], 
+            "left_alula_full": ["left_wrist", "left_alula", "left_alula_lower"],
+            "right_alula_full": ["right_wrist", "right_alula", "right_alula_lower"],
             
             # Simple mode sections WITH WRIST(comparable to hawks)
             # "head_simple": ["right_shoulder", "head", "left_shoulder"],
@@ -149,6 +150,18 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
             # "right_armwing_simple": ["right_wrist", "right_secondary_tip", "right_lastsecondary_tip", "right_shoulder"], 
             # "left_handwing_simple": ["left_wrist", "left_secondprimary_tip", "left_secondary_tip"], 
             # "right_handwing_simple": ["right_wrist", "right_secondprimary_tip", "right_secondary_tip"]
+
+            # Still a full marker set but no elbow
+            "head": ["right_shoulder", "head", "left_shoulder"], 
+            "body": ["right_shoulder", "left_shoulder", "left_lastsecondary_tip","right_lastsecondary_tip"], 
+            "tail": ["right_lastsecondary_tip", "left_lastsecondary_tip", "left_tail_tip", "right_tail_tip"],
+            "right_armwing": ["right_shoulder", "right_wrist", "right_lastprimary_tip", "right_secondary_tip", "right_lastsecondary_tip", "right_shoulder", "right_wrist"], 
+            "left_armwing":  ["left_shoulder",  "left_wrist",  "left_lastprimary_tip", "left_secondary_tip", "left_lastsecondary_tip", "left_shoulder", "left_wrist"], 
+            "left_handwing":  ["left_wrist",   "left_firstprimary_base", "left_firstprimary_mid", "left_firstprimary_tip", "left_secondprimary_tip", "left_secondprimary_mid", "left_secondprimary_base", "left_fourthprimary_tip", "left_lastprimary_tip"], 
+            "right_handwing": ["right_wrist", "right_firstprimary_base", "right_firstprimary_mid", "right_firstprimary_tip", "right_secondprimary_tip", "right_secondprimary_mid", "right_secondprimary_base", "right_fourthprimary_tip", "right_lastprimary_tip"], 
+            "left_alula":  ["left_wrist", "left_alula", "left_alula_lower"],
+            "right_alula": ["right_wrist", "right_alula", "right_alula_lower"],
+            
 
             # Simple mode sections (comparable to hawks)
             "head_simple": ["right_shoulder", "head", "left_shoulder"],
@@ -162,7 +175,7 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
         
         }
 
-        # Initialize the parent class with only the active markers
+        # Initialise the parent class with only the active markers
         all_marker_names = list(self.marker_name_change.keys())
         active_markers = [name for name in all_marker_names 
                         if name not in self.ignored_marker_names 
@@ -277,9 +290,10 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
             "left_fourthprimary_tip", "right_fourthprimary_tip",
             "left_lastprimary_tip", "right_lastprimary_tip",
             
-            # Alula
+            # Alula - include both mean and individual markers
             "left_alula", "right_alula",
             "left_alula_lower", "right_alula_lower",
+            "left_alula_mean", "right_alula_mean",
             
             # Mid-wing + wrist
             "left_elbow", "right_elbow",
@@ -324,18 +338,18 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
         """
         return self.marker_name_change_to_hawk[marker_name]
 
-    def get_marker_pairs_and_centers(self, use_simple: bool = None) -> tuple:
+    def get_marker_pairs_and_centres(self, use_simple: bool = None) -> tuple:
         """
-        Returns lists of marker pairs and center markers based on the mode.
+        Returns lists of marker pairs and centre markers based on the mode.
         
         Parameters:
         - use_simple (bool, optional): Whether to use simple mode. If None, uses current setting.
         
         Returns:
-        - tuple: (left_markers, right_markers, center_markers)
+        - tuple: (left_markers, right_markers, centre_markers)
             - left_markers: List of left-side marker names in order
             - right_markers: List of right-side marker names in order (matching left_markers)
-            - center_markers: List of center marker names
+            - centre_markers: List of centre marker names
             
         Raises:
         - ValueError: If a left marker doesn't have a matching right marker
@@ -344,18 +358,18 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
         # Get the appropriate marker list
         if use_simple:
             marker_names = self.get_marker_names_simple()
-            # Simple mode has no center markers, just left-right pairs
+            # Simple mode has no centre markers, just left-right pairs
             left_markers = marker_names[::2]  # Even indices
             right_markers = marker_names[1::2]  # Odd indices
-            center_markers = []
+            centre_markers = []
         else:
             marker_names = self.get_marker_names_full()
-            # In full mode, we need to identify center markers
+            # In full mode, we need to identify centre markers
             left_markers = []
             right_markers = []
-            center_markers = []
+            centre_markers = []
             
-            # First pass: categorize markers
+            # First pass: categorise markers
             for marker in marker_names:
                 if not (marker.startswith('left_') or marker.startswith('right_') or marker.startswith('centre_')):
                     raise ValueError(f"Invalid marker name pattern: {marker}. Must start with 'left_', 'right_', or 'centre_'")
@@ -369,7 +383,7 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
                     else:
                         raise ValueError(f"Left marker {marker} has no matching right marker {right_marker}")
                 elif marker.startswith('centre_'):
-                    center_markers.append(marker)
+                    centre_markers.append(marker)
                 # Skip right_ markers as they're handled with left_ markers
         
         # Validate that we have matching numbers of left and right markers
@@ -383,4 +397,79 @@ class KestrelSkeletonDefinition(SkeletonDefinition):
             if left[5:] != right[6:]:
                 raise ValueError(f"Mismatched marker pair: {left} - {right}. Suffixes should be identical")
         
-        return left_markers, right_markers, center_markers
+        return left_markers, right_markers, centre_markers
+    
+    def get_mean_alula_positions(self, marker_data: dict) -> dict:
+        """
+        Calculate mean alula positions from alula and alula_lower markers.
+        
+        This method reduces noise by averaging the positions of the alula and alula_lower
+        markers for both left and right sides, replacing them with mean positions.
+        
+        Parameters:
+        - marker_data (dict): Dictionary containing marker positions with keys as marker names
+                             and values as position coordinates (e.g., numpy arrays or tuples)
+        
+        Returns:
+        - dict: Dictionary with mean alula positions:
+               {'left_alula_mean': mean_position, 'right_alula_mean': mean_position}
+               
+        Raises:
+        - KeyError: If required alula markers are not found in marker_data
+        - ValueError: If marker positions cannot be averaged (e.g., incompatible shapes)
+        """
+        import numpy as np
+        
+        # Check that all required markers are present
+        required_markers = ['left_alula', 'left_alula_lower', 'right_alula', 'right_alula_lower']
+        missing_markers = [marker for marker in required_markers if marker not in marker_data]
+        
+        if missing_markers:
+            raise KeyError(f"Missing required alula markers: {missing_markers}")
+        
+        try:
+            # Calculate mean positions
+            left_alula_mean = (np.array(marker_data['left_alula']) + 
+                              np.array(marker_data['left_alula_lower'])) / 2.0
+            
+            right_alula_mean = (np.array(marker_data['right_alula']) + 
+                               np.array(marker_data['right_alula_lower'])) / 2.0
+            
+            return {
+                'left_alula_mean': left_alula_mean,
+                'right_alula_mean': right_alula_mean
+            }
+            
+        except Exception as e:
+            raise ValueError(f"Error averaging alula positions: {e}")
+    
+    def get_marker_data_with_mean_alula(self, marker_data: dict) -> dict:
+        """
+        Returns marker data with mean alula positions replacing the individual alula markers.
+        
+        This method replaces the left_alula and right_alula markers with their mean positions
+        calculated from the alula and alula_lower markers, and removes the individual markers
+        to reduce noise from varying definitions.
+        
+        Parameters:
+        - marker_data (dict): Original marker data dictionary
+        
+        Returns:
+        - dict: New dictionary with mean alula positions replacing individual alula markers
+        """
+        # Create a copy to avoid modifying the original data
+        processed_marker_data = marker_data.copy()
+        
+        # Calculate mean alula positions
+        mean_alula = self.get_mean_alula_positions(marker_data)
+        
+        # Remove the individual alula markers
+        markers_to_remove = ['left_alula', 'left_alula_lower', 'right_alula', 'right_alula_lower']
+        for marker in markers_to_remove:
+            if marker in processed_marker_data:
+                del processed_marker_data[marker]
+        
+        # Add the mean alula positions
+        processed_marker_data.update(mean_alula)
+        
+        return processed_marker_data
