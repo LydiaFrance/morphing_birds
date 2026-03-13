@@ -1,0 +1,56 @@
+name: hawk
+laterality: prefix  # left_/right_ naming convention
+
+markers:
+  - left_wingtip
+  - right_wingtip
+  - left_primary
+  - right_primary
+  - left_secondary
+  - right_secondary
+  - left_tailtip
+  - right_tailtip
+  - left_shoulder
+  - right_shoulder
+  - left_tailbase
+  - right_tailbase
+  - hood
+  - tailpack
+
+analysis_exclude:
+  - left_shoulder
+  - right_shoulder
+  - left_tailbase
+  - right_tailbase
+  - hood
+  - tailpack
+
+body_sections:
+  left_handwing: [left_wingtip, left_primary, left_secondary]
+  right_handwing: [right_wingtip, right_primary, right_secondary]
+  left_armwing: [left_primary, left_secondary, left_tailbase, left_shoulder]
+  right_armwing: [right_primary, right_secondary, right_tailbase, right_shoulder]
+  body: [right_shoulder, left_shoulder, left_tailbase, right_tailbase]
+  head: [right_shoulder, hood, left_shoulder]
+  tail: [right_tailtip, left_tailtip, left_tailbase, right_tailbase]
+
+section_styles:
+  default: { alpha: 0.2 }
+  handwing: { alpha: 0.5 }
+  armwing: { alpha: 0.4 }
+  tail: { alpha: 0.5 }
+
+# Hawk CSVs use canonical marker names directly
+column_mapping: {}
+
+ignored_columns: []
+
+display_names: {}
+
+validation_rules:
+  - "left_wingtip.x < right_wingtip.x"
+  - "left_shoulder.x < right_shoulder.x"
+  - "hood.y > left_tailbase.y"
+  - "left_tailtip.y < left_tailbase.y"
+
+variants: {}

@@ -1,0 +1,99 @@
+name: pigeon
+laterality: prefix  # left_/right_/centre_ naming convention
+
+markers:
+  - left_wingtip
+  - right_wingtip
+  - left_wrist
+  - right_wrist
+  - left_secondary
+  - right_secondary
+  - left_lastsecondary_tip
+  - right_lastsecondary_tip
+  - left_elbow
+  - right_elbow
+  - left_shoulder
+  - right_shoulder
+  - left_tailtip
+  - right_tailtip
+  - centre_body_base
+  - head
+  - centre_backpack
+  - left_tailbase
+  - right_tailbase
+
+analysis_exclude:
+  - head
+  - centre_backpack
+  - centre_body_base
+  - left_tailbase
+  - right_tailbase
+
+body_sections:
+  head: [right_shoulder, head, left_shoulder]
+  body: [right_shoulder, right_tailbase, centre_body_base, left_tailbase, left_shoulder]
+  tail: [right_tailbase, centre_body_base, left_tailbase, left_tailtip, right_tailtip]
+  right_armwing: [right_shoulder, right_elbow, right_wrist, right_secondary, right_lastsecondary_tip, right_tailbase]
+  left_armwing: [left_shoulder, left_elbow, left_wrist, left_secondary, left_lastsecondary_tip, left_tailbase]
+  left_handwing: [left_wrist, left_secondary, left_wingtip]
+  right_handwing: [right_wrist, right_secondary, right_wingtip]
+
+section_styles:
+  default: { alpha: 0.2 }
+  handwing: { alpha: 0.5 }
+  armwing: { alpha: 0.4 }
+  tail: { alpha: 0.5 }
+
+column_mapping:
+  head: Head
+  centre_backpack: Body_Start
+  centre_body_base: Body_End
+  left_tailtip: Left_Tail
+  right_tailtip: Right_Tail
+  right_lastsecondary_tip: Right_Shoulder_Trailing_Edge
+  right_elbow: Right_Shoulder_End
+  right_shoulder: Right_Shoulder_Start
+  left_lastsecondary_tip: Left_Shoulder_Trailing_Edge
+  left_elbow: Left_Shoulder_End
+  left_shoulder: Left_Shoulder_Start
+  right_wingtip: Right_Tip
+  right_wrist: Right_Wrist_Leading_Edge
+  right_secondary: Right_Wrist_Trailing_Edge
+  left_wingtip: Left_Tip
+  left_wrist: Left_Wrist_Leading_Edge
+  left_secondary: Left_Wrist_Trailing_Edge
+  left_tailbase: Left_Tailbase
+  right_tailbase: Right_Tailbase
+
+ignored_columns:
+  - centre_tailtip
+
+display_names: {}
+
+validation_rules:
+  - "left_wingtip.x < right_wingtip.x"
+  - "left_shoulder.x < right_shoulder.x"
+
+variants:
+  simple:
+    analysis_exclude:
+      - head
+      - centre_backpack
+      - centre_body_base
+      - left_tailbase
+      - right_tailbase
+      - left_shoulder
+      - right_shoulder
+      - left_lastsecondary_tip
+      - right_lastsecondary_tip
+      - left_elbow
+      - right_elbow
+      - centre_body_base
+    body_sections:
+      head: [right_shoulder, head, left_shoulder]
+      body: [right_shoulder, left_shoulder, left_tailbase, right_tailbase]
+      tail: [left_tailbase, left_tailtip, right_tailtip, right_tailbase]
+      left_armwing: [left_wrist, left_secondary, left_tailbase, left_shoulder]
+      right_armwing: [right_wrist, right_secondary, right_tailbase, right_shoulder]
+      left_handwing: [left_wrist, left_secondary, left_wingtip]
+      right_handwing: [right_wrist, right_secondary, right_wingtip]

@@ -1,0 +1,155 @@
+name: kestrel
+laterality: prefix  # left_/right_/centre_ naming convention
+
+markers:
+  # Hand wing (primaries), outermost to innermost
+  - left_firstprimary_tip
+  - right_firstprimary_tip
+  - left_firstprimary_mid
+  - right_firstprimary_mid
+  - left_firstprimary_base
+  - right_firstprimary_base
+  - left_secondprimary_tip
+  - right_secondprimary_tip
+  - left_secondprimary_mid
+  - right_secondprimary_mid
+  - left_secondprimary_base
+  - right_secondprimary_base
+  - left_fourthprimary_tip
+  - right_fourthprimary_tip
+  - left_lastprimary_tip
+  - right_lastprimary_tip
+  # Alula
+  - left_alula
+  - right_alula
+  - left_alula_lower
+  - right_alula_lower
+  # Mid-wing + wrist
+  - left_elbow
+  - right_elbow
+  - left_wrist
+  - right_wrist
+  # Secondaries
+  - left_secondary_tip
+  - right_secondary_tip
+  - left_lastsecondary_tip
+  - right_lastsecondary_tip
+  # Tail feathers
+  - left_tail_base
+  - right_tail_base
+  - left_tail_tip
+  - right_tail_tip
+  # Shoulders + head (display-only)
+  - head
+  - left_shoulder
+  - right_shoulder
+
+analysis_exclude:
+  - head
+  - left_shoulder
+  - right_shoulder
+
+body_sections:
+  head: [right_shoulder, head, left_shoulder]
+  body: [right_shoulder, left_shoulder, left_lastsecondary_tip, right_lastsecondary_tip]
+  tail: [right_lastsecondary_tip, left_lastsecondary_tip, left_tail_tip, right_tail_tip]
+  right_armwing: [right_shoulder, right_elbow, right_wrist, right_lastprimary_tip, right_secondary_tip, right_lastsecondary_tip, right_shoulder, right_wrist]
+  left_armwing: [left_shoulder, left_elbow, left_wrist, left_lastprimary_tip, left_secondary_tip, left_lastsecondary_tip, left_shoulder, left_wrist]
+  left_handwing: [left_wrist, left_firstprimary_base, left_firstprimary_mid, left_firstprimary_tip, left_secondprimary_tip, left_secondprimary_mid, left_secondprimary_base, left_fourthprimary_tip, left_lastprimary_tip]
+  right_handwing: [right_wrist, right_firstprimary_base, right_firstprimary_mid, right_firstprimary_tip, right_secondprimary_tip, right_secondprimary_mid, right_secondprimary_base, right_fourthprimary_tip, right_lastprimary_tip]
+  left_alula: [left_wrist, left_alula, left_alula_lower]
+  right_alula: [right_wrist, right_alula, right_alula_lower]
+
+section_styles:
+  default: { alpha: 0.2 }
+  handwing: { alpha: 0.5 }
+  armwing: { alpha: 0.4 }
+  alula: { alpha: 0.5 }
+  tail: { alpha: 0.5 }
+
+column_mapping:
+  head: h1
+  left_shoulder: l_sh
+  right_shoulder: r_sh
+  left_elbow: l_e
+  right_elbow: r_e
+  left_wrist: l_w
+  right_wrist: r_w
+  left_alula: l_al_1
+  right_alula: r_al_1
+  left_alula_lower: l_al_3
+  right_alula_lower: r_al_3
+  left_firstprimary_tip: l_p1_3
+  right_firstprimary_tip: r_p1_3
+  left_firstprimary_mid: l_p1_2
+  right_firstprimary_mid: r_p1_2
+  left_firstprimary_base: l_p1_1
+  right_firstprimary_base: r_p1_1
+  left_secondprimary_tip: l_p2_3
+  right_secondprimary_tip: r_p2_3
+  left_secondprimary_mid: l_p2_2
+  right_secondprimary_mid: r_p2_2
+  left_secondprimary_base: l_p2_1
+  right_secondprimary_base: r_p2_1
+  left_fourthprimary_tip: l_p4_1
+  right_fourthprimary_tip: r_p4_1
+  left_lastprimary_tip: l_p9_1
+  right_lastprimary_tip: r_p9_1
+  left_secondary_tip: l_s1_1
+  right_secondary_tip: r_s1_1
+  left_lastsecondary_tip: l_sb_1
+  right_lastsecondary_tip: r_sb_1
+  left_tail_base: t_l_1
+  right_tail_base: t_r_1
+  left_tail_tip: t_l_3
+  right_tail_tip: t_r_3
+
+ignored_columns:
+  - head_mid
+  - left_head
+  - right_head
+  - left_backpack
+  - right_backpack
+  - centre_backpack
+  - centre_back_backpack
+  - left_tailpack
+  - right_tailpack
+  - centre_tailpack
+  - left_tail_mid
+  - right_tail_mid
+  - centre_tail_base
+  - centre_tail_mid
+  - centre_tail_tip
+
+display_names:
+  right_firstprimary_tip: "R 1st Primary Tip"
+  left_firstprimary_tip: "L 1st Primary Tip"
+  right_firstprimary_mid: "R 1st Primary Mid"
+  left_firstprimary_mid: "L 1st Primary Mid"
+  right_firstprimary_base: "R 1st Primary Base"
+  left_firstprimary_base: "L 1st Primary Base"
+  right_secondprimary_tip: "R 2nd Primary Tip"
+  left_secondprimary_tip: "L 2nd Primary Tip"
+  left_tail_tip: "L Tail Tip"
+  right_tail_tip: "R Tail Tip"
+
+validation_rules:
+  - "left_firstprimary_tip.x < right_firstprimary_tip.x"
+  - "left_shoulder.x < right_shoulder.x"
+
+variants:
+  simple:
+    analysis_exclude:
+      - head
+      - left_shoulder
+      - right_shoulder
+      - left_lastsecondary_tip
+      - right_lastsecondary_tip
+    body_sections:
+      head: [right_shoulder, head, left_shoulder]
+      body: [right_shoulder, left_shoulder, left_lastsecondary_tip, right_lastsecondary_tip]
+      tail: [right_lastsecondary_tip, left_lastsecondary_tip, left_tail_tip, right_tail_tip]
+      left_armwing: [left_firstprimary_base, left_secondary_tip, left_lastsecondary_tip, left_shoulder]
+      right_armwing: [right_firstprimary_base, right_secondary_tip, right_lastsecondary_tip, right_shoulder]
+      left_handwing: [left_firstprimary_base, left_secondprimary_tip, left_secondary_tip]
+      right_handwing: [right_firstprimary_base, right_secondprimary_tip, right_secondary_tip]
