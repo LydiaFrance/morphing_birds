@@ -85,9 +85,16 @@ port.exclude_lines = [
 ]
 
 
-
+[tool.ty.rules]
+# Matplotlib 3D axes and imageio have incomplete type stubs
+unresolved-attribute = "warn"
+call-non-callable = "warn"
 
 [tool.ruff]
+src = ["src"]
+exclude = []
+
+[tool.ruff.lint]
 select = [
   "E", "F", "W", # flake8
   "B",           # flake8-bugbear
@@ -113,12 +120,16 @@ select = [
 extend-ignore = [
   "PLR",    # Design related pylint codes
   "E501",   # Line too long
+  "RUF022", # __all__ sorting — intentionally grouped by category
+  "SIM108", # Ternary operator — if/else blocks are often clearer
 ]
-
-src = ["src"]
 unfixable = [
   "F841", # Would remove unused variables
 ]
-exclude = []
-flake8-unused-arguments.ignore-variadic-names = true
+
+[tool.ruff.lint.flake8-unused-arguments]
+ignore-variadic-names = true
+
+[tool.ruff.lint.per-file-ignores]
+"src/morphing_birds/plotting/*" = ["ARG001"]  # Public API — unused params are intentional
 

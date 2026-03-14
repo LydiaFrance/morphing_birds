@@ -1,10 +1,10 @@
 """Config loading utilities for builtin skeleton definitions."""
 
-import os
+from pathlib import Path
+
 import yaml
 
-
-_CONFIG_DIR = os.path.dirname(__file__)
+_CONFIG_DIR = Path(__file__).parent
 
 _BUILTIN_CONFIGS = {
     "hawk": "hawk.yaml",
@@ -33,12 +33,9 @@ def load_config(name: str) -> dict:
         If the name is not a recognised builtin config.
     """
     if name not in _BUILTIN_CONFIGS:
-        raise ValueError(
-            f"Unknown builtin config '{name}'. "
-            f"Available: {list(_BUILTIN_CONFIGS.keys())}"
-        )
-    path = os.path.join(_CONFIG_DIR, _BUILTIN_CONFIGS[name])
-    with open(path, "r") as f:
+        msg = f"Unknown builtin config '{name}'. Available: {list(_BUILTIN_CONFIGS.keys())}"
+        raise ValueError(msg)
+    with (_CONFIG_DIR / _BUILTIN_CONFIGS[name]).open() as f:
         return yaml.safe_load(f)
 
 

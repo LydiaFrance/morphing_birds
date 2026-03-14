@@ -1,20 +1,21 @@
 # Import necessary libraries
-import plotly.graph_objs as go
-from plotly.subplots import make_subplots
-import numpy as np
+from timeit import default_timer as timer
+
 import dash
+import numpy as np
+import plotly.graph_objs as go
 from dash import dcc, html
 from dash.dependencies import Input, Output, State
-from timeit import default_timer as timer
-from dash import callback_context
 from dash.exceptions import PreventUpdate
+from plotly.subplots import make_subplots
 
-from .plotly_plots import plot_plotly, plot_settings_plotly
+from .plotly_plots import plot_plotly
+
 
 def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
-    from morphing_birds import Hawk3D
-    # Initialize Hawk3D
-    hawk3d = Hawk3D("../data/mean_hawk_shape.csv")
+    from morphing_birds import Animal3D  # noqa: PLC0415
+    # Initialise hawk
+    hawk3d = Animal3D("hawk", data="../data/mean_hawk_shape.csv")
     hawk3d.restore_keypoints_to_average()
 
 
@@ -29,7 +30,7 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
     if mean_scores is None:
         # Generate fake mean scores data for testing purposes
         mean_scores = np.random.normal(0, 1, (100, 8))
-    
+
     if binned_horzDist is None:
         # Generate fake binned horizontal distance data for testing purposes
         binned_horzDist = np.random.randint(0, 10, 100)
@@ -42,11 +43,11 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
         nScores = 5
 
         # The specific colours for each score
-        colour_list = ['#B5E675', '#6ED8A9', '#51B3D4', 
-                       '#4579AA', '#BC96C9', '#917AC2', 
-                       '#5A488B', '#888888', '#888888', 
+        colour_list = ['#B5E675', '#6ED8A9', '#51B3D4',
+                       '#4579AA', '#BC96C9', '#917AC2',
+                       '#5A488B', '#888888', '#888888',
                        '#888888', '#888888', '#888888']
-        
+
         # Define an 8x9 grid to accommodate the new column on the left for time
         specs = [
             [{'type': 'scatter'} for _ in range(nScores+1)]  # Initialize all cells as scatter plot cells
@@ -60,23 +61,23 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
             cols=nScores+1,  # Include the new column on the left
             specs=specs
             )
-        
+
         # Plot time as a straight line in the first column top row
         fig.add_trace(
             go.Scattergl(
                 x= binned_horzDist,
                 y= np.zeros_like(binned_horzDist),
                 mode='markers',
-                marker=dict(
-                    size=3,
-                    color='black', 
-                    line=dict(
-                    width=0  # No border around the markers
-                )),
+                marker={
+                    "size": 3,
+                    "color": 'black',
+                    "line": {
+                    "width": 0  # No border around the markers
+                }},
                 showlegend=False,
                 hoverinfo='none'
             ),
-            row = 1, 
+            row = 1,
             col = 1)  # First column for time plots
 
         # Plotting variable against time in the first column
@@ -86,12 +87,12 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
                     x= binned_horzDist,
                     y= mean_scores[:, ii],
                     mode='markers',
-                    marker=dict(
-                        size=3,
-                        color=colour_list[ii], 
-                        line=dict(
-                        width=0  # No border around the markers
-                    )),
+                    marker={
+                        "size": 3,
+                        "color": colour_list[ii],
+                        "line": {
+                        "width": 0  # No border around the markers
+                    }},
                     showlegend=False,
                     hoverinfo='none'
                 ),
@@ -106,12 +107,12 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
                     x= mean_scores[:, ii],
                     y= mean_scores[:, ii],
                     mode='markers',
-                    marker=dict(
-                        size=3,
-                        color=colour_list[ii], 
-                        line=dict(
-                        width=0  # No border around the markers
-                    )),
+                    marker={
+                        "size": 3,
+                        "color": colour_list[ii],
+                        "line": {
+                        "width": 0  # No border around the markers
+                    }},
                     showlegend=False,
                     hoverinfo='none'
                 ),
@@ -127,13 +128,13 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
                         x= mean_scores[:, ii],
                         y= mean_scores[:, jj],
                         mode='markers',
-                        marker=dict(
-                            size=3,
-                            color=colour_list[ii], 
-                            line=dict(
-                            width=0  # No border around the markers
-                        )),
-                        showlegend=False, 
+                        marker={
+                            "size": 3,
+                            "color": colour_list[ii],
+                            "line": {
+                            "width": 0  # No border around the markers
+                        }},
+                        showlegend=False,
                         hoverinfo='none'
                     ),
                     row = ii + 2,
@@ -148,14 +149,14 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
         fig.update_layout(
         plot_bgcolor='white',  # Background color within the plot area
         paper_bgcolor='white',  # Background color around the plot area
-        xaxis=dict(
-            showgrid=False,  # No gridlines
-            zeroline=True  # No zero line for the X-axis
-        ),
-        yaxis=dict(
-            showgrid=False,  # No gridlines
-            zeroline=True  # No zero line for the Y-axis
-        )
+        xaxis={
+            "showgrid": False,  # No gridlines
+            "zeroline": True  # No zero line for the X-axis
+        },
+        yaxis={
+            "showgrid": False,  # No gridlines
+            "zeroline": True  # No zero line for the Y-axis
+        }
     )
 
 
@@ -166,7 +167,7 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
         hawk3d.restore_keypoints_to_average()
         fig = plot_plotly(hawk3d)
         fig.update_layout(height=400, width=400,
-                        scene=dict(camera=dict(eye=dict(x=1.25, y=1.25, z=1.25))))
+                        scene={"camera": {"eye": {"x": 1.25, "y": 1.25, "z": 1.25}}})
         return fig
 
 

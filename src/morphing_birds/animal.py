@@ -11,15 +11,15 @@ import copy
 import numpy as np
 import pandas as pd
 
-from .skeleton import SkeletonDefinition
 from .data_loading import (
     load_from_csv,
     load_from_dataframe,
     load_from_dict,
     load_mean_shape_csv,
 )
+from .scaling import compute_body_length, compute_wingspan, unit_conversion_factor
+from .skeleton import SkeletonDefinition
 from .transforms import TransformState
-from .scaling import unit_conversion_factor, compute_wingspan, compute_body_length
 
 
 class Animal3D:
@@ -98,7 +98,8 @@ class Animal3D:
         elif isinstance(data, np.ndarray):
             shape = self._validate_array(data)
         else:
-            raise TypeError(f"Unsupported data type: {type(data)}")
+            msg = f"Unsupported data type: {type(data)}"
+            raise TypeError(msg)
 
         self.default_shape = shape.copy()
         self.current_shape = shape.copy()
@@ -107,16 +108,17 @@ class Animal3D:
     def _validate_array(self, arr: np.ndarray) -> np.ndarray:
         """Validate and reshape a raw numpy array to ``[1, n_markers, 3]``."""
         if arr.size == 0:
-            raise ValueError("No keypoints provided.")
+            msg = "No keypoints provided."
+            raise ValueError(msg)
         if arr.shape[-1] != 3:
-            raise ValueError("Keypoints must be in 3D space (last dim must be 3).")
+            msg = "Keypoints must be in 3D space (last dim must be 3)."
+            raise ValueError(msg)
         if arr.ndim == 2:
             arr = arr.reshape(1, -1, 3)
         if arr.shape[1] != self.skeleton.n_markers:
             # Might be analysis-only data — try to handle
-            raise ValueError(
-                f"Expected {self.skeleton.n_markers} markers, got {arr.shape[1]}."
-            )
+            msg = f"Expected {self.skeleton.n_markers} markers, got {arr.shape[1]}."
+            raise ValueError(msg)
         return arr
 
     def load_data(
@@ -172,10 +174,11 @@ class Animal3D:
             Index of the frame to use.
         """
         if frame_idx >= motion_data.shape[0]:
-            raise ValueError(
+            msg = (
                 f"Frame index {frame_idx} out of range "
                 f"(max {motion_data.shape[0] - 1})."
             )
+            raise ValueError(msg)
         self.current_shape = motion_data[frame_idx : frame_idx + 1].copy()
         self.untransformed_shape = self.current_shape.copy()
 
@@ -306,7 +309,8 @@ class Animal3D:
         """
         for n in names:
             if n not in self.skeleton.all_marker_names:
-                raise ValueError(f"Unknown marker: '{n}'")
+                msg = f"Unknown marker: '{n}'"
+                raise ValueError(msg)
         self._analysis_exclude.update(names)
 
     def include_markers(self, names: list[str]) -> None:
@@ -509,9 +513,11 @@ class Animal3D:
     def _validate_user_keypoints(self, keypoints: np.ndarray) -> np.ndarray:
         """Validate and possibly mirror user-provided keypoints."""
         if keypoints.size == 0:
-            raise ValueError("No keypoints provided.")
+            msg = "No keypoints provided."
+            raise ValueError(msg)
         if keypoints.shape[-1] != 3:
-            raise ValueError("Keypoints must be in 3D space.")
+            msg = "Keypoints must be in 3D space."
+            raise ValueError(msg)
         if keypoints.ndim == 2:
             keypoints = keypoints.reshape(1, -1, 3)
 
@@ -526,9 +532,8 @@ class Animal3D:
             keypoints = self.mirror_keypoints(keypoints)
 
         if keypoints.shape[1] != n_analysis:
-            raise ValueError(
-                f"Expected {n_analysis} analysis markers, got {keypoints.shape[1]}."
-            )
+            msg = f"Expected {n_analysis} analysis markers, got {keypoints.shape[1]}."
+            raise ValueError(msg)
 
         return keypoints
 
@@ -572,9 +577,11 @@ class Animal3D:
             Shape ``(1, n_analysis_markers, 3)``.
         """
         if keypoints.shape[0] != 1:
-            raise ValueError("Keypoints must have shape (1, n_markers, 3).")
+            msg = "Keypoints must have shape (1, n_markers, 3)."
+            raise ValueError(msg)
         if keypoints.shape[2] != 3:
-            raise ValueError("Keypoints must be 3D coordinates.")
+            msg = "Keypoints must be 3D coordinates."
+            raise ValueError(msg)
 
         new_shape = np.zeros_like(self.default_shape)
         new_shape[:, self.analysis_indices, :] = keypoints
@@ -586,7 +593,7 @@ class Animal3D:
         self.current_shape = new_shape.copy()
         self.untransformed_shape = new_shape.copy()
 
-    def copy(self) -> "Animal3D":
+    def copy(self) -> Animal3D:
         """Return a deep copy."""
         return copy.deepcopy(self)
 
@@ -608,7 +615,8 @@ class Animal3D:
             Coordinates of shape ``(n_vertices, 3)``.
         """
         if section_name not in self.polygons:
-            raise ValueError(f"Section name '{section_name}' not recognised.")
+            msg = f"Section name '{section_name}' not recognised."
+            raise ValueError(msg)
         indices = self.polygons[section_name]
         return self.current_shape[0, indices, :]
 
@@ -713,9 +721,11 @@ class Animal3D:
         right_val = resolve(right_ref)
 
         if op == "<" and not (left_val < right_val):
-            raise ValueError(f"Validation failed: {rule} ({left_val} >= {right_val})")
+            msg = f"Validation failed: {rule} ({left_val} >= {right_val})"
+            raise ValueError(msg)
         if op == ">" and not (left_val > right_val):
-            raise ValueError(f"Validation failed: {rule} ({left_val} <= {right_val})")
+            msg = f"Validation failed: {rule} ({left_val} <= {right_val})"
+            raise ValueError(msg)
 
     # ------------------------------------------------------------------
     # NaN handling
@@ -735,7 +745,7 @@ class Animal3D:
         tuple[np.ndarray, np.ndarray]
             ``(clean_data, valid_frames_mask)``
         """
-        valid = ~np.isnan(motion_data).any(axis=(1, 2))
+        valid = np.asarray(~np.isnan(motion_data).any(axis=(1, 2)))
         return motion_data[valid], valid
 
     # ------------------------------------------------------------------

@@ -2,45 +2,45 @@
 
 from __future__ import annotations
 
-from .skeleton import SkeletonDefinition
 from .animal import Animal3D
 from .bilateral import (
-    mirror_to_bilateral,
-    make_unilateral,
     make_bilateral,
+    make_unilateral,
+    mirror_to_bilateral,
     validate_left_right,
 )
-from .transforms import TransformState
-from .scaling import (
-    unit_conversion_factor,
-    compute_wingspan,
-    compute_body_length,
-    UNIT_FACTORS,
-)
+from .configs import list_configs, load_config
 from .data_loading import (
     load_from_csv,
     load_from_dataframe,
     load_from_dict,
     load_mean_shape_csv,
 )
-from .configs import load_config, list_configs
 from .plotting import (
-    plot,
-    interactive_plot,
-    plot_multiple,
-    plot_plotly,
-    plot_plotly_compare,
-    plot_compare_plotly,
-    plot_partial_plotly,
-    plot_plotly_with_trace,
     animate,
     animate_compare,
     animate_plotly,
     animate_plotly_compare,
     animate_plotly_partial,
-    save_plotly_animation,
     create_dash_app,
+    interactive_plot,
+    plot,
+    plot_compare_plotly,
+    plot_multiple,
+    plot_partial_plotly,
+    plot_plotly,
+    plot_plotly_compare,
+    plot_plotly_with_trace,
+    save_plotly_animation,
 )
+from .scaling import (
+    UNIT_FACTORS,
+    compute_body_length,
+    compute_wingspan,
+    unit_conversion_factor,
+)
+from .skeleton import SkeletonDefinition
+from .transforms import TransformState
 
 __all__ = (
     "__version__",

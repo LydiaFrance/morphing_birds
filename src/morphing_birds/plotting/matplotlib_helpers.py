@@ -2,13 +2,12 @@
 
 import io
 
+import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-import matplotlib.pyplot as plt
 from PIL import Image
 
 from .plotly_helpers import get_section_style
-
 
 # ....... Helper Plot Functions ........
 
@@ -55,7 +54,8 @@ def plot_sections(ax, animal3d_instance, colour, alpha=1, section_name=None):
 def get_polygon(animal3d_instance, section_name, colour, alpha=1):
     """Build a Poly3DCollection for a body section."""
     if section_name not in animal3d_instance.polygons:
-        raise ValueError(f"Section name {section_name} not recognised.")
+        msg = f"Section name {section_name} not recognised."
+        raise ValueError(msg)
 
     # Resolve colour and alpha using the unified style system
     resolved_colour, resolved_alpha = get_section_style(
@@ -65,7 +65,7 @@ def get_polygon(animal3d_instance, section_name, colour, alpha=1):
     coords = animal3d_instance.get_polygon_coords(section_name)
     coords = np.vstack([coords, coords[0]])
 
-    polygon = Poly3DCollection(
+    return Poly3DCollection(
         [coords],
         alpha=resolved_alpha,
         facecolor=resolved_colour,
@@ -74,7 +74,6 @@ def get_polygon(animal3d_instance, section_name, colour, alpha=1):
         antialiased=True,
         rasterized=False,
     )
-    return polygon
 
 
 def plot_settings(ax, origin, lims=None):

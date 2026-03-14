@@ -28,12 +28,11 @@ def calculate_axis_limits(animal3d_instance):
     centres[0] = 0 if origin[0] == 0 else centres[0]
     centres[2] = 0 if origin[2] == 0 else centres[2]
 
-    fixed_range = [
+    return [
         [centres[0] - view_radius, centres[0] + view_radius],
         [centres[1] - view_radius, centres[1] + view_radius],
         [centres[2] - view_radius, centres[2] + view_radius],
     ]
-    return fixed_range
 
 
 def calculate_animation_limits(animal3d_instance, keypoints_frames, transform_frames=None):

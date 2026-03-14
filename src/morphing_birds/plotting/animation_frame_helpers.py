@@ -31,8 +31,7 @@ def check_transformation_frames(num_frames, transformation_frames):
         return np.zeros(num_frames)
 
     if len(transformation_frames) != num_frames:
-        raise ValueError(
-            "Transformation frames must be the same length as keypoints_frames."
-        )
+        msg = "Transformation frames must be the same length as keypoints_frames."
+        raise ValueError(msg)
 
     return transformation_frames

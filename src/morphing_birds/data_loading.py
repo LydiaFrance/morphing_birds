@@ -114,10 +114,8 @@ def load_from_dict(
 
     for name, pos in positions.items():
         if name not in all_names:
-            raise ValueError(
-                f"Unknown marker name: '{name}'. "
-                f"Valid markers: {all_names}"
-            )
+            msg = f"Unknown marker name: '{name}'. Valid markers: {all_names}"
+            raise ValueError(msg)
         idx = all_names.index(name)
         data[0, idx] = np.asarray(pos)
 
@@ -155,9 +153,8 @@ def load_mean_shape_csv(
     # If we got NaN for some markers, they might be in the ignored list
     # That's fine — leave them as NaN or zero
     # Replace remaining NaNs with zeros for display-only markers
-    result = np.nan_to_num(result, nan=0.0)
+    return np.nan_to_num(result, nan=0.0)
 
-    return result
 
 
 # ------------------------------------------------------------------

@@ -34,7 +34,7 @@ class TransformState:
         axis : str
             ``'x'``, ``'y'``, or ``'z'``.
         """
-        degrees = float(degrees) if np.isscalar(degrees) else float(degrees[0])
+        degrees = float(np.asarray(degrees).flat[0])
         radians = np.deg2rad(degrees)
         c, s = np.cos(radians), np.sin(radians)
 
@@ -60,7 +60,8 @@ class TransformState:
                 [0,  0, 0, 1],
             ])
         else:
-            raise ValueError(f"Unknown axis '{axis}'. Must be 'x', 'y', or 'z'.")
+            msg = f"Unknown axis '{axis}'. Must be 'x', 'y', or 'z'."
+            raise ValueError(msg)
 
         self.matrix = self.matrix @ rot
 

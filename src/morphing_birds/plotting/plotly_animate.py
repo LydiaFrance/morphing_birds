@@ -1,15 +1,14 @@
 """Plotly animation functions for Animal3D."""
 
-import os
+from pathlib import Path
 
+import imageio
 import numpy as np
 import plotly.graph_objs as go
-import plotly.io as pio
-import imageio
 
-from .animation_frame_helpers import format_keypoint_frames, check_transformation_frames
+from .animation_frame_helpers import check_transformation_frames, format_keypoint_frames
 from .plotly_helpers import calculate_animation_limits
-from .plotly_plots import plot_sections_plotly, plot_keypoints_plotly
+from .plotly_plots import plot_keypoints_plotly, plot_sections_plotly
 
 
 def animate_plotly(animal3d_instance, keypoints_frames, alpha=0.3, colour=None,
@@ -21,7 +20,8 @@ def animate_plotly(animal3d_instance, keypoints_frames, alpha=0.3, colour=None,
     # Format keypoints
     keypoints_frames = format_keypoint_frames(animal3d_instance, keypoints_frames)
     if keypoints_frames.shape[0] == 0:
-        raise ValueError("No frames to animate.")
+        msg = "No frames to animate."
+        raise ValueError(msg)
 
     num_frames = keypoints_frames.shape[0]
 
@@ -72,12 +72,12 @@ def animate_plotly(animal3d_instance, keypoints_frames, alpha=0.3, colour=None,
         updatemenus=[_create_play_button()],
         sliders=[_create_slider(num_frames, slider_vals)],
         width=800, height=700,
-        margin=dict(l=50, r=50, t=100, b=100),
-        scene=dict(
-            domain=dict(x=[0, 1], y=[0.1, 1]),
-            aspectmode='cube',
-            camera=dict(eye=dict(x=1.5, y=1.5, z=1.5), up=dict(x=0, y=0, z=1)),
-        ),
+        margin={"l": 50, "r": 50, "t": 100, "b": 100},
+        scene={
+            "domain": {"x": [0, 1], "y": [0.1, 1]},
+            "aspectmode": 'cube',
+            "camera": {"eye": {"x": 1.5, "y": 1.5, "z": 1.5}, "up": {"x": 0, "y": 0, "z": 1}},
+        },
     )
 
     return initial_fig
@@ -95,14 +95,16 @@ def animate_plotly_compare(animal3d_instance, keypoints_frames_list, alpha=0.3,
     # Format keypoints
     formatted_list = []
     for kf in keypoints_frames_list:
-        kf = format_keypoint_frames(animal3d_instance, kf)
-        if kf.shape[0] == 0:
-            raise ValueError("No frames in one of the keypoint sets.")
-        formatted_list.append(kf)
+        formatted = format_keypoint_frames(animal3d_instance, kf)
+        if formatted.shape[0] == 0:
+            msg = "No frames in one of the keypoint sets."
+            raise ValueError(msg)
+        formatted_list.append(formatted)
 
     num_frames = formatted_list[0].shape[0]
     if not all(kp.shape[0] == num_frames for kp in formatted_list):
-        raise ValueError("All keypoint sets must have the same number of frames.")
+        msg = "All keypoint sets must have the same number of frames."
+        raise ValueError(msg)
 
     # Check transforms
     if horzDist_frames_list:
@@ -158,12 +160,12 @@ def animate_plotly_compare(animal3d_instance, keypoints_frames_list, alpha=0.3,
         updatemenus=[_create_play_button()],
         sliders=[_create_slider(num_frames, slider_vals)],
         width=800, height=700,
-        margin=dict(l=50, r=50, t=100, b=100),
-        scene=dict(
-            domain=dict(x=[0, 1], y=[0.1, 1]),
-            aspectmode='cube',
-            camera=dict(eye=dict(x=1.5, y=1.5, z=1.5), up=dict(x=0, y=0, z=1)),
-        ),
+        margin={"l": 50, "r": 50, "t": 100, "b": 100},
+        scene={
+            "domain": {"x": [0, 1], "y": [0.1, 1]},
+            "aspectmode": 'cube',
+            "camera": {"eye": {"x": 1.5, "y": 1.5, "z": 1.5}, "up": {"x": 0, "y": 0, "z": 1}},
+        },
     )
 
     return initial_fig
@@ -224,12 +226,12 @@ def animate_plotly_partial(animal3d_instance, keypoints_frames, section_name=Non
         updatemenus=[_create_play_button()],
         sliders=[_create_slider(num_frames, slider_vals)],
         width=800, height=700,
-        margin=dict(l=50, r=50, t=100, b=100),
-        scene=dict(
-            domain=dict(x=[0, 1], y=[0.1, 1]),
-            aspectmode='cube',
-            camera=dict(eye=dict(x=1.5, y=1.5, z=1.5), up=dict(x=0, y=0, z=1)),
-        ),
+        margin={"l": 50, "r": 50, "t": 100, "b": 100},
+        scene={
+            "domain": {"x": [0, 1], "y": [0.1, 1]},
+            "aspectmode": 'cube',
+            "camera": {"eye": {"x": 1.5, "y": 1.5, "z": 1.5}, "up": {"x": 0, "y": 0, "z": 1}},
+        },
     )
 
     return initial_fig
@@ -238,14 +240,14 @@ def animate_plotly_partial(animal3d_instance, keypoints_frames, section_name=Non
 def save_plotly_animation(fig, filename, format='gif', fps=10, width=800, height=700):
     """Save a Plotly animation as GIF or HTML."""
     if format.lower() == 'gif':
-        temp_dir = "temp_images"
-        os.makedirs(temp_dir, exist_ok=True)
+        temp_dir = Path("temp_images")
+        temp_dir.mkdir(parents=True, exist_ok=True)
 
         images = []
         for frame in fig.frames:
             fig.update(data=frame.data)
-            image_path = os.path.join(temp_dir, f"frame_{frame.name}.png")
-            fig.write_image(image_path, width=width, height=height)
+            image_path = temp_dir / f"frame_{frame.name}.png"
+            fig.write_image(str(image_path), width=width, height=height)
             images.append(image_path)
 
         with imageio.get_writer(filename, mode='I', fps=fps) as writer:
@@ -253,13 +255,14 @@ def save_plotly_animation(fig, filename, format='gif', fps=10, width=800, height
                 writer.append_data(imageio.imread(image))
 
         for image in images:
-            os.remove(image)
-        os.rmdir(temp_dir)
+            image.unlink()
+        temp_dir.rmdir()
 
     elif format.lower() == 'html':
         fig.write_html(filename, auto_play=False, include_plotlyjs=True)
     else:
-        raise ValueError("Format must be either 'gif' or 'html'.")
+        msg = "Format must be either 'gif' or 'html'."
+        raise ValueError(msg)
 
 
 # ------------------------------------------------------------------
@@ -268,14 +271,14 @@ def save_plotly_animation(fig, filename, format='gif', fps=10, width=800, height
 
 def _apply_animation_layout(fig, fixed_range, axes_visible=True):
     """Apply consistent layout with pre-computed axis limits."""
-    axes_config = dict(
-        gridcolor="grey",
-        zerolinecolor="grey",
-        showbackground=True,
-        backgroundcolor="white",
-        gridwidth=0.5,
-        dtick=fixed_range[0][1] / 2,
-    )
+    axes_config = {
+        "gridcolor": "grey",
+        "zerolinecolor": "grey",
+        "showbackground": True,
+        "backgroundcolor": "white",
+        "gridwidth": 0.5,
+        "dtick": fixed_range[0][1] / 2,
+    }
 
     if not axes_visible:
         axes_config.update(
@@ -284,14 +287,14 @@ def _apply_animation_layout(fig, fixed_range, axes_visible=True):
         )
 
     fig.update_layout(
-        scene=dict(
-            xaxis=dict(range=fixed_range[0], **axes_config),
-            yaxis=dict(range=fixed_range[1], **axes_config),
-            zaxis=dict(range=fixed_range[2], **axes_config),
-            aspectmode='cube',
-            aspectratio=dict(x=1, y=1, z=1),
-        ),
-        margin=dict(r=10, l=10, b=10, t=10),
+        scene={
+            "xaxis": dict(range=fixed_range[0], **axes_config),
+            "yaxis": dict(range=fixed_range[1], **axes_config),
+            "zaxis": dict(range=fixed_range[2], **axes_config),
+            "aspectmode": 'cube',
+            "aspectratio": {"x": 1, "y": 1, "z": 1},
+        },
+        margin={"r": 10, "l": 10, "b": 10, "t": 10},
         showlegend=False,
     )
     return fig

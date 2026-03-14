@@ -8,6 +8,7 @@ dictionary (typically loaded from YAML).
 from __future__ import annotations
 
 import copy
+from pathlib import Path
 
 import yaml
 
@@ -54,7 +55,7 @@ class SkeletonDefinition:
     # ------------------------------------------------------------------
 
     @classmethod
-    def from_yaml(cls, path: str) -> "SkeletonDefinition":
+    def from_yaml(cls, path: str) -> SkeletonDefinition:
         """Load a skeleton definition from a YAML file.
 
         Parameters
@@ -62,12 +63,12 @@ class SkeletonDefinition:
         path : str
             Path to the YAML file.
         """
-        with open(path, "r") as f:
+        with Path(path).open() as f:
             cfg = yaml.safe_load(f)
         return cls(cfg)
 
     @classmethod
-    def from_builtin(cls, name: str) -> "SkeletonDefinition":
+    def from_builtin(cls, name: str) -> SkeletonDefinition:
         """Load a shipped builtin config by name.
 
         Parameters
@@ -217,7 +218,7 @@ class SkeletonDefinition:
             right_suffixes = self.laterality.get("right", [])
             left_suffixes = self.laterality.get("left", [])
             pairs = []
-            for rs, ls in zip(right_suffixes, left_suffixes):
+            for rs, ls in zip(right_suffixes, left_suffixes, strict=True):
                 for name in self._all_marker_names:
                     if name.endswith(rs):
                         base = name[: -len(rs)]
@@ -242,7 +243,7 @@ class SkeletonDefinition:
     # Variant support
     # ------------------------------------------------------------------
 
-    def get_variant(self, name: str) -> "SkeletonDefinition":
+    def get_variant(self, name: str) -> SkeletonDefinition:
         """Return a new ``SkeletonDefinition`` with the named variant applied.
 
         Variants can override ``analysis_exclude`` and ``body_sections``.
@@ -253,10 +254,8 @@ class SkeletonDefinition:
             Name of the variant (must exist in the config's ``variants``).
         """
         if name not in self.variants:
-            raise ValueError(
-                f"Unknown variant '{name}' for skeleton '{self.name}'. "
-                f"Available: {list(self.variants.keys())}"
-            )
+            msg = f"Unknown variant '{name}' for skeleton '{self.name}'. Available: {list(self.variants.keys())}"
+            raise ValueError(msg)
         variant_cfg = self.variants[name]
         new_config = copy.deepcopy(self._config)
 

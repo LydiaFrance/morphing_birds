@@ -48,14 +48,14 @@ def plot_plotly(animal3d_instance, colour='lightblue', alpha=0.5, axes_visible=T
                                 show_display_markers=show_display_markers)
 
     if not axes_visible:
-        fig.update_layout(scene=dict(
-            xaxis=dict(visible=False, showgrid=False, showticklabels=False,
-                       showline=False, showbackground=False),
-            yaxis=dict(visible=False, showgrid=False, showticklabels=False,
-                       showline=False, showbackground=False),
-            zaxis=dict(visible=False, showgrid=False, showticklabels=False,
-                       showline=False, showbackground=False),
-        ))
+        fig.update_layout(scene={
+            'xaxis': {'visible': False, 'showgrid': False, 'showticklabels': False,
+                       'showline': False, 'showbackground': False},
+            'yaxis': {'visible': False, 'showgrid': False, 'showticklabels': False,
+                       'showline': False, 'showbackground': False},
+            'zaxis': {'visible': False, 'showgrid': False, 'showticklabels': False,
+                       'showline': False, 'showbackground': False},
+        })
 
     fig = plot_settings_plotly(fig, animal3d_instance)
 
@@ -79,7 +79,7 @@ def plot_plotly_compare(animal3d_instances, colours=None, alpha=0.5, axes_visibl
 
     has_transform = any(p is not None for p in [bodypitch, bodyyaw, bodyroll, horzDist, vertDist])
 
-    for animal3d_instance, colour in zip(animal3d_instances, colours):
+    for animal3d_instance, colour in zip(animal3d_instances, colours, strict=True):
         if has_transform:
             current_state = animal3d_instance.current_shape.copy()
             animal3d_instance.reset_transformation()
@@ -94,11 +94,11 @@ def plot_plotly_compare(animal3d_instances, colours=None, alpha=0.5, axes_visibl
         fig = plot_sections_plotly(fig, animal3d_instance, colour, alpha)
 
         if not axes_visible:
-            fig.update_layout(scene=dict(
-                xaxis=dict(visible=False),
-                yaxis=dict(visible=False),
-                zaxis=dict(visible=False),
-            ))
+            fig.update_layout(scene={
+                'xaxis': {'visible': False},
+                'yaxis': {'visible': False},
+                'zaxis': {'visible': False},
+            })
 
         fig = plot_settings_plotly(fig, animal3d_instance)
 
@@ -140,11 +140,11 @@ def plot_compare_plotly(animal3d_instance, keypoints_list, alpha=0.5, colours=No
                                     show_display_markers=show_display_markers)
 
     if not axes_visible:
-        fig.update_layout(scene=dict(
-            xaxis=dict(visible=False),
-            yaxis=dict(visible=False),
-            zaxis=dict(visible=False),
-        ))
+        fig.update_layout(scene={
+            'xaxis': {'visible': False},
+            'yaxis': {'visible': False},
+            'zaxis': {'visible': False},
+        })
 
     fig = plot_settings_plotly(fig, animal3d_instance)
     animal3d_instance.current_shape = current_state
@@ -185,11 +185,11 @@ def plot_partial_plotly(animal3d_instance, section_name=None, leg_number=None,
         fig = plot_sections_plotly(fig, animal3d_instance, colour=colour, alpha=alpha)
 
     if not axes_visible:
-        fig.update_layout(scene=dict(
-            xaxis=dict(visible=False),
-            yaxis=dict(visible=False),
-            zaxis=dict(visible=False),
-        ))
+        fig.update_layout(scene={
+            'xaxis': {'visible': False},
+            'yaxis': {'visible': False},
+            'zaxis': {'visible': False},
+        })
 
     fig = plot_settings_plotly(fig, animal3d_instance)
 
@@ -222,12 +222,12 @@ def plot_plotly_with_trace(animal3d_instance, keypoints_frames, colour='lightblu
         y=trace_coords[:, 1],
         z=trace_coords[:, 2],
         mode='markers',
-        marker=dict(
-            size=trace_marker_size,
-            color=np.linspace(0, 1, n_points),
-            colorscale='plasma_r',
-            showscale=False,
-        ),
+        marker={
+            'size': trace_marker_size,
+            'color': np.linspace(0, 1, n_points),
+            'colorscale': 'plasma_r',
+            'showscale': False,
+        },
         hoverinfo='none',
     )
     fig.add_trace(scatter_trace)
@@ -261,7 +261,7 @@ def plot_keypoints_plotly(fig, animal3d_instance, colour='black', alpha=1,
     scatter = go.Scatter3d(
         x=coords[:, 0], y=coords[:, 1], z=coords[:, 2],
         mode='markers',
-        marker=dict(size=2.5, color=colour, opacity=alpha),
+        marker={'size': 2.5, 'color': colour, 'opacity': alpha},
         hoverinfo='none',
     )
     fig.add_trace(scatter)
@@ -313,7 +313,7 @@ def get_polygon_plotly(animal3d_instance, section_name, colour, alpha=1):
         z=coords_closed[:, 2],
         mode='lines',
         name=f'{section_name} {resolved_colour}',
-        line=dict(color='grey', width=1.5),
+        line={'color': 'grey', 'width': 1.5},
         hoverinfo='name',
     )
 
@@ -324,25 +324,25 @@ def plot_settings_plotly(fig, animal3d_instance):
     """Apply standard layout settings to a static Plotly figure."""
     fixed_range = calculate_axis_limits(animal3d_instance)
 
-    axes_config = dict(
-        gridcolor="grey",
-        zerolinecolor="grey",
-        showbackground=True,
-        backgroundcolor="white",
-        gridwidth=0.5,
-        dtick=fixed_range[0][1] / 2,
-    )
+    axes_config = {
+        'gridcolor': "grey",
+        'zerolinecolor': "grey",
+        'showbackground': True,
+        'backgroundcolor': "white",
+        'gridwidth': 0.5,
+        'dtick': fixed_range[0][1] / 2,
+    }
 
     fig.update_layout(
-        font=dict(family="Andale Mono, Courier New, sans-serif"),
-        scene=dict(
-            xaxis=dict(range=fixed_range[0], **axes_config),
-            yaxis=dict(range=fixed_range[1], **axes_config),
-            zaxis=dict(range=fixed_range[2], **axes_config),
-            aspectmode='cube',
-            aspectratio=dict(x=1, y=1, z=1),
-        ),
-        margin=dict(r=10, l=10, b=10, t=10),
+        font={'family': "Andale Mono, Courier New, sans-serif"},
+        scene={
+            'xaxis': dict(range=fixed_range[0], **axes_config),
+            'yaxis': dict(range=fixed_range[1], **axes_config),
+            'zaxis': dict(range=fixed_range[2], **axes_config),
+            'aspectmode': 'cube',
+            'aspectratio': {'x': 1, 'y': 1, 'z': 1},
+        },
+        margin={'r': 10, 'l': 10, 'b': 10, 't': 10},
         showlegend=False,
     )
     return fig

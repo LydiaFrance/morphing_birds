@@ -4,12 +4,13 @@ pre-applied transforms.
 
 import numpy as np
 import pytest
+
 from morphing_birds import (
     Animal3D,
-    plot_plotly,
-    plot_plotly_compare,
     plot_compare_plotly,
     plot_partial_plotly,
+    plot_plotly,
+    plot_plotly_compare,
     plot_plotly_with_trace,
 )
 

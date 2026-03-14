@@ -1,13 +1,11 @@
 """Matplotlib animation functions for Animal3D."""
 
-import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
-from .animation_frame_helpers import format_keypoint_frames, check_transformation_frames
-from .matplotlib_helpers import get_plot3d_view, get_camera_angles
+from .animation_frame_helpers import check_transformation_frames, format_keypoint_frames
+from .matplotlib_helpers import get_camera_angles, get_plot3d_view, plot_settings
 from .matplotlib_plots import plot
-from .matplotlib_helpers import plot_settings
 
 
 def animate(animal3d_instance, keypoints_frames, fig=None, ax=None,
@@ -18,7 +16,8 @@ def animate(animal3d_instance, keypoints_frames, fig=None, ax=None,
     """Create an animated 3D plot using matplotlib."""
     keypoints_frames = format_keypoint_frames(animal3d_instance, keypoints_frames)
     if keypoints_frames.shape[0] == 0:
-        raise ValueError("No frames to animate.")
+        msg = "No frames to animate."
+        raise ValueError(msg)
 
     num_frames = keypoints_frames.shape[0]
 
@@ -57,10 +56,9 @@ def animate(animal3d_instance, keypoints_frames, fig=None, ax=None,
 
     animal3d_instance.restore_keypoints_to_average()
 
-    animation = FuncAnimation(
+    return FuncAnimation(
         fig, update_animated_plot, frames=num_frames, interval=20, repeat=True,
     )
-    return animation
 
 
 def animate_compare(animal3d_instance, keypoints_frames_list, fig=None, ax=None,
@@ -70,10 +68,11 @@ def animate_compare(animal3d_instance, keypoints_frames_list, fig=None, ax=None,
     """Create an animated 3D comparison plot using matplotlib."""
     formatted_list = []
     for kf in keypoints_frames_list:
-        kf = format_keypoint_frames(animal3d_instance, kf)
-        if kf.shape[0] == 0:
-            raise ValueError("No frames to animate.")
-        formatted_list.append(kf)
+        formatted = format_keypoint_frames(animal3d_instance, kf)
+        if formatted.shape[0] == 0:
+            msg = "No frames to animate."
+            raise ValueError(msg)
+        formatted_list.append(formatted)
 
     num_frames = formatted_list[0].shape[0]
 
@@ -108,7 +107,6 @@ def animate_compare(animal3d_instance, keypoints_frames_list, fig=None, ax=None,
 
     animal3d_instance.restore_keypoints_to_average()
 
-    animation = FuncAnimation(
+    return FuncAnimation(
         fig, update_animated_plot, frames=num_frames, interval=20, repeat=True,
     )
-    return animation

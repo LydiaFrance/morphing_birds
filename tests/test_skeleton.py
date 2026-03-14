@@ -1,6 +1,7 @@
 """Tests for SkeletonDefinition config loading."""
 
 import pytest
+
 from morphing_birds import SkeletonDefinition
 from morphing_birds.configs import list_configs
 
@@ -60,10 +61,10 @@ class TestHawkSkeleton:
     def test_marker_pairs(self, hawk):
         pairs = hawk.get_marker_pairs()
         assert len(pairs) == 6
-        for l, r in pairs:
-            assert l.startswith("left_")
-            assert r.startswith("right_")
-            assert l[5:] == r[6:]
+        for left, right in pairs:
+            assert left.startswith("left_")
+            assert right.startswith("right_")
+            assert left[5:] == right[6:]
 
     def test_centre_markers(self, hawk):
         centres = hawk.get_centre_markers()

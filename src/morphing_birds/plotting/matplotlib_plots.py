@@ -1,13 +1,16 @@
 """Matplotlib static plotting functions for Animal3D."""
 
-import numpy as np
-import matplotlib.pyplot as plt
 import ipywidgets as widgets
-from IPython.display import display, clear_output
+import matplotlib.pyplot as plt
+import numpy as np
+from IPython.display import clear_output, display
 
 from .matplotlib_helpers import (
-    get_plot3d_view, plot_sections, plot_keypoints,
-    plot_settings, save_plot_as_image,
+    get_plot3d_view,
+    plot_keypoints,
+    plot_sections,
+    plot_settings,
+    save_plot_as_image,
 )
 
 
@@ -28,7 +31,7 @@ def plot(animal3d_instance, ax=None, el=20, az=60, colour=None, alpha=0.5,
         axes_visible = axisOn
 
     if ax is None:
-        fig, ax = get_plot3d_view()
+        _fig, ax = get_plot3d_view()
 
     ax = plot_sections(ax, animal3d_instance, colour, alpha)
     ax = plot_keypoints(ax, animal3d_instance, colour, alpha,
@@ -125,5 +128,4 @@ def plot_multiple(animal3d_instance, keypoints, num_plots, spacing=(0.4, 0.7),
     ax.set_zticks([])
     ax.grid(False)
 
-    cropped_img = save_plot_as_image(fig, cut_off)
-    return cropped_img
+    return save_plot_as_image(fig, cut_off)

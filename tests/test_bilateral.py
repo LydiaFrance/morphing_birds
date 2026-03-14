@@ -2,8 +2,9 @@
 
 import numpy as np
 import pytest
+
 from morphing_birds import SkeletonDefinition
-from morphing_birds.bilateral import make_unilateral, make_bilateral
+from morphing_birds.bilateral import make_bilateral, make_unilateral
 
 
 class TestBilateralRoundTrip:
@@ -35,16 +36,16 @@ class TestBilateralRoundTrip:
         pairs = hawk_skel.get_marker_pairs()
         centres = hawk_skel.get_centre_markers()
 
-        for l, r in pairs:
-            l_idx = hawk_skel.marker_index(l)
-            r_idx = hawk_skel.marker_index(r)
+        for left, right in pairs:
+            l_idx = hawk_skel.marker_index(left)
+            r_idx = hawk_skel.marker_index(right)
             np.testing.assert_array_almost_equal(
                 reconstructed[:, l_idx, :], data[:, l_idx, :],
-                err_msg=f"Left marker {l} mismatch after round trip",
+                err_msg=f"Left marker {left} mismatch after round trip",
             )
             np.testing.assert_array_almost_equal(
                 reconstructed[:, r_idx, :], data[:, r_idx, :],
-                err_msg=f"Right marker {r} mismatch after round trip",
+                err_msg=f"Right marker {right} mismatch after round trip",
             )
 
         for c in centres:

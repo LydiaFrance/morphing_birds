@@ -86,13 +86,13 @@ def make_unilateral(
     motion_data_copy = motion_data_copy[valid_frames]
 
     if len(motion_data_copy) == 0:
-        raise ValueError("No valid frames found after left-right validation.")
+        msg = "No valid frames found after left-right validation."
+        raise ValueError(msg)
 
     if info_df_copy is not None:
         if len(info_df_copy) != len(motion_data):
-            raise ValueError(
-                "info_df must have same number of rows as motion_data frames."
-            )
+            msg = "info_df must have same number of rows as motion_data frames."
+            raise ValueError(msg)
         info_df_copy = info_df_copy.iloc[valid_frames]
 
     # Extract left and right data

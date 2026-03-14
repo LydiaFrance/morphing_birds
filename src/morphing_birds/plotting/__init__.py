@@ -1,32 +1,25 @@
-from .matplotlib_plots import (
-    plot, 
-    interactive_plot, 
-    plot_multiple
-)
-from .matplotlib_animate import (
-    animate, 
-    animate_compare
+from .dash_app import create_dash_app
+from .matplotlib_animate import animate, animate_compare
+from .matplotlib_plots import interactive_plot, plot, plot_multiple
+from .plotly_animate import (
+    animate_plotly,
+    animate_plotly_compare,
+    animate_plotly_partial,
+    save_plotly_animation,
 )
 from .plotly_plots import (
-    plot_plotly, 
+    plot_compare_plotly,
+    plot_partial_plotly,
+    plot_plotly,
     plot_plotly_compare,
-    plot_compare_plotly, 
-    plot_partial_plotly, 
-    plot_plotly_with_trace
+    plot_plotly_with_trace,
 )
-from .plotly_animate import (
-    animate_plotly, 
-    animate_plotly_compare, 
-    animate_plotly_partial,
-    save_plotly_animation
-)
-from .dash_app import create_dash_app
 
 __all__ = [
-    "plot", 
-    "interactive_plot", 
+    "plot",
+    "interactive_plot",
     "plot_multiple",
-    "animate", 
+    "animate",
     "animate_compare",
     "plot_plotly",
     "plot_plotly_compare",

@@ -6,7 +6,6 @@ import numpy as np
 
 from .skeleton import SkeletonDefinition
 
-
 # Common length unit factors (relative to metres)
 UNIT_FACTORS: dict[str, float] = {
     "mm": 0.001,
@@ -34,9 +33,11 @@ def unit_conversion_factor(from_unit: str, to_unit: str) -> float:
         If either unit is not recognised.
     """
     if from_unit not in UNIT_FACTORS:
-        raise ValueError(f"Unknown unit '{from_unit}'. Known: {list(UNIT_FACTORS)}")
+        msg = f"Unknown unit '{from_unit}'. Known: {list(UNIT_FACTORS)}"
+        raise ValueError(msg)
     if to_unit not in UNIT_FACTORS:
-        raise ValueError(f"Unknown unit '{to_unit}'. Known: {list(UNIT_FACTORS)}")
+        msg = f"Unknown unit '{to_unit}'. Known: {list(UNIT_FACTORS)}"
+        raise ValueError(msg)
     return UNIT_FACTORS[from_unit] / UNIT_FACTORS[to_unit]
 
 
@@ -76,7 +77,8 @@ def compute_wingspan(shape: np.ndarray, skeleton: SkeletonDefinition) -> float:
             right_idx = names.index(right_name)
             return float(np.linalg.norm(shape[left_idx] - shape[right_idx]))
 
-    raise ValueError("Could not find wingtip markers in the skeleton definition.")
+    msg = "Could not find wingtip markers in the skeleton definition."
+    raise ValueError(msg)
 
 
 def compute_body_length(shape: np.ndarray, skeleton: SkeletonDefinition) -> float:
@@ -122,6 +124,7 @@ def compute_body_length(shape: np.ndarray, skeleton: SkeletonDefinition) -> floa
             break
 
     if head_idx is None or tail_idx is None:
-        raise ValueError("Could not find head/tail markers in the skeleton definition.")
+        msg = "Could not find head/tail markers in the skeleton definition."
+        raise ValueError(msg)
 
     return float(np.linalg.norm(shape[head_idx] - shape[tail_idx]))
