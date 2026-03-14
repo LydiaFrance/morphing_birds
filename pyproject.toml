@@ -3,13 +3,13 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 [project]
 name = "morphing_birds"
-version = "0.1.0"  # need to also update version in src/morphing_birds/__init__.py
+version = "0.2.0"  # need to also update version in src/morphing_birds/__init__.py
 authors = [
   { name = "Lydia France", email = "lfrance@turing.ac.uk" },
 ]
 description = "Plot and animate morphing bird wings and tail shapes in flight."
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 classifiers = [
   "Development Status :: 1 - Planning",
   "Intended Audience :: Science/Research",
@@ -30,9 +30,10 @@ classifiers = [
 dependencies = ["numpy",
                 "pandas",
                 "matplotlib",
-                "ipywidgets", 
-                "ipynb", 
-                'notebook==6.1.5', 
+                "pyyaml",
+                "ipywidgets",
+                "ipynb",
+                'notebook==6.1.5',
                 "dash",
                 "plotly",
                 "imageio"
