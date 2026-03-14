@@ -1,6 +1,10 @@
 [build-system]
 requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.package-data]
+"morphing_birds.configs" = ["*.yaml"]
+
 [project]
 name = "morphing_birds"
 version = "0.2.0"  # need to also update version in src/morphing_birds/__init__.py
