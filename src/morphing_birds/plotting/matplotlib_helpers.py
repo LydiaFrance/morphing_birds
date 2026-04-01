@@ -1,9 +1,6 @@
 """Matplotlib helper functions for plotting Animal3D."""
 
-from __future__ import annotations
-
 import io
-import math
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -168,37 +165,6 @@ def save_plot_as_image(fig, cut_off=0.2):
     plt.close(fig)
 
     return cropped_img
-
-
-def camera_from_plotly(fig) -> dict:
-    """Extract camera position from a Plotly figure and convert to matplotlib angles.
-
-    Reads ``layout.scene.camera.eye`` from the given Plotly figure and
-    converts the (x, y, z) eye coordinates to matplotlib elevation and
-    azimuth angles.
-
-    Parameters
-    ----------
-    fig : plotly.graph_objects.Figure
-        A Plotly figure with a 3D scene.
-
-    Returns
-    -------
-    dict
-        Dictionary with ``'elev'`` and ``'azim'`` keys (values in degrees).
-    """
-    eye = fig.layout.scene.camera.eye
-    # Plotly uses (1.25, 1.25, 1.25) as the default camera eye when
-    # the user hasn't explicitly set or rotated the view.
-    x = float(eye.x) if eye.x is not None else 1.25
-    y = float(eye.y) if eye.y is not None else 1.25
-    z = float(eye.z) if eye.z is not None else 1.25
-
-    r = math.sqrt(x * x + y * y + z * z)
-    elev = math.degrees(math.asin(z / r))
-    azim = math.degrees(math.atan2(y, x))
-
-    return {"elev": elev, "azim": azim}
 
 
 def get_camera_angles(num_frames, rotation_type, el=20, az=60):
