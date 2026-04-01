@@ -1,5 +1,9 @@
 """Matplotlib static plotting functions for Animal3D."""
 
+from __future__ import annotations
+
+from pathlib import Path
+
 import ipywidgets as widgets
 import matplotlib
 import matplotlib.pyplot as plt
@@ -7,6 +11,7 @@ import numpy as np
 from IPython.display import clear_output, display
 
 from .matplotlib_helpers import (
+    camera_from_plotly,
     get_plot3d_view,
     plot_keypoints,
     plot_sections,
@@ -126,3 +131,52 @@ def plot_multiple(animal3d_instance, keypoints, num_plots, spacing=(0.4, 0.7),
     ax.grid(False)
 
     return save_plot_as_image(fig, cut_off)
+
+
+def export_svg(
+    animal3d,
+    output_path,
+    camera_from=None,
+    colour="cornflowerblue",
+    axes_visible=False,
+):
+    """Export the current animal shape as a vector SVG file.
+
+    Uses matplotlib's SVG backend to produce true vector output, unlike
+    Plotly's WebGL-based rendering which rasterises 3D scenes.
+
+    Parameters
+    ----------
+    animal3d : Animal3D
+        Animal instance with ``current_shape`` set.
+    output_path : str or Path
+        Where to save the SVG file.
+    camera_from : plotly.graph_objects.Figure, optional
+        If provided, extract camera angle from this Plotly figure.
+        If ``None``, use matplotlib's default view.
+    colour : str
+        Colour for the body sections.
+    axes_visible : bool
+        Whether to show axes in the SVG. ``False`` gives clean paper
+        figures.
+    """
+    output_path = Path(output_path)
+
+    fig, ax = get_plot3d_view()
+
+    ax = plot_sections(ax, animal3d, colour, alpha=0.5)
+    ax = plot_keypoints(ax, animal3d, colour, alpha=1.0)
+
+    if camera_from is not None:
+        angles = camera_from_plotly(camera_from)
+        ax.view_init(elev=angles["elev"], azim=angles["azim"])
+
+    if axes_visible:
+        origin = animal3d.origin
+        ax = plot_settings(ax, origin)
+    else:
+        ax.set_axis_off()
+
+    fig.savefig(output_path, format="svg", bbox_inches="tight")
+    plt.close(fig)
+    print(f"SVG saved to {output_path}")

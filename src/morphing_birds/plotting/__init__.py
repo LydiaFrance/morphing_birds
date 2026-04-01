@@ -1,6 +1,7 @@
 from .dash_app import create_dash_app
 from .matplotlib_animate import animate, animate_compare
-from .matplotlib_plots import interactive_plot, plot, plot_multiple
+from .matplotlib_helpers import camera_from_plotly
+from .matplotlib_plots import export_svg, interactive_plot, plot, plot_multiple
 from .plotly_animate import (
     animate_plotly,
     animate_plotly_compare,
@@ -19,6 +20,8 @@ __all__ = [
     "plot",
     "interactive_plot",
     "plot_multiple",
+    "export_svg",
+    "camera_from_plotly",
     "animate",
     "animate_compare",
     "plot_plotly",
