@@ -1,6 +1,7 @@
 """Matplotlib static plotting functions for Animal3D."""
 
 import ipywidgets as widgets
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from IPython.display import clear_output, display
@@ -98,7 +99,7 @@ def plot_multiple(animal3d_instance, keypoints, num_plots, spacing=(0.4, 0.7),
         col = i % grid_cols
 
         if colour_list is None:
-            colour = plt.cm.Set3(i)
+            colour = matplotlib.colormaps["Set3"](i)
         else:
             colour = colour_list[i]
 

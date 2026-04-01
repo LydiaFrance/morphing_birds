@@ -25,9 +25,9 @@ def plot_plotly(animal3d_instance, colour='lightblue', alpha=0.5, axes_visible=T
         Whether to show display-only marker dots. Default ``False``.
     """
     has_transform = any(p is not None for p in [bodypitch, bodyyaw, bodyroll, horzDist, vertDist])
+    current_state = animal3d_instance.current_shape.copy()
 
     if has_transform:
-        current_state = animal3d_instance.current_shape.copy()
         animal3d_instance.reset_transformation()
         animal3d_instance.transform_display_only(
             bodypitch=bodypitch or 0,
@@ -72,8 +72,8 @@ def plot_plotly_compare(animal3d_instances, colours=None, alpha=0.5, axes_visibl
     has_transform = any(p is not None for p in [bodypitch, bodyyaw, bodyroll, horzDist, vertDist])
 
     for animal3d_instance, colour in zip(animal3d_instances, colours, strict=True):
+        current_state = animal3d_instance.current_shape.copy()
         if has_transform:
-            current_state = animal3d_instance.current_shape.copy()
             animal3d_instance.reset_transformation()
             animal3d_instance.transform_display_only(
                 bodypitch=bodypitch or 0,
@@ -148,9 +148,9 @@ def plot_partial_plotly(animal3d_instance, section_name=None, leg_number=None,
 ):
     """Plot a specific section or leg of the animal."""
     has_transform = any(p is not None for p in [bodypitch, bodyyaw, bodyroll, horzDist, vertDist])
+    current_state = animal3d_instance.current_shape.copy()
 
     if has_transform:
-        current_state = animal3d_instance.current_shape.copy()
         animal3d_instance.reset_transformation()
         animal3d_instance.transform_display_only(
             bodypitch=bodypitch or 0,
@@ -222,7 +222,7 @@ def plot_plotly_with_trace(animal3d_instance, keypoints_frames, colour='lightblu
 #       Helper functions
 # ------------------------------------------------------------
 
-def plot_keypoints_plotly(fig, animal3d_instance, colour='black', alpha=1,
+def plot_keypoints_plotly(fig, animal3d_instance, colour='black', alpha: float = 1.0,
                           indices=None, show_display_markers=False):
     """Plot keypoints as a scatter on a Plotly figure.
 
@@ -251,7 +251,7 @@ def plot_keypoints_plotly(fig, animal3d_instance, colour='black', alpha=1,
     return fig
 
 
-def plot_sections_plotly(fig, animal3d_instance, colour, alpha=1, section_name=None):
+def plot_sections_plotly(fig, animal3d_instance, colour, alpha: float = 1.0, section_name=None):
     """Plot body section polygons on a Plotly figure."""
     if section_name is not None:
         if section_name in animal3d_instance.polygons:
@@ -270,7 +270,7 @@ def plot_sections_plotly(fig, animal3d_instance, colour, alpha=1, section_name=N
     return fig
 
 
-def get_polygon_plotly(animal3d_instance, section_name, colour, alpha=1):
+def get_polygon_plotly(animal3d_instance, section_name, colour, alpha: float = 1.0):
     """Build Plotly mesh and line traces for a polygon section."""
     if section_name not in animal3d_instance.polygons:
         return None, None

@@ -1,5 +1,6 @@
 """Matplotlib animation functions for Animal3D."""
 
+import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
@@ -92,7 +93,7 @@ def animate_compare(animal3d_instance, keypoints_frames_list, fig=None, ax=None,
     def update_animated_plot(frame):
         ax.clear()
         for ii, kf in enumerate(formatted_list):
-            c = plt.cm.Set1(ii)
+            c = matplotlib.colormaps["Set1"](ii)
             animal3d_instance.reset_transformation()
             animal3d_instance.update_keypoints(kf[frame])
             animal3d_instance.transform_display_only(

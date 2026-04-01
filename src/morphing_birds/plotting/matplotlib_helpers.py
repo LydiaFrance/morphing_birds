@@ -11,7 +11,7 @@ from .plotly_helpers import get_section_style
 
 # ....... Helper Plot Functions ........
 
-def plot_keypoints(ax, animal3d_instance, colour='k', alpha=1, indices=None,
+def plot_keypoints(ax, animal3d_instance, colour='k', alpha: float = 1.0, indices=None,
                    show_display_markers=False):
     """Plot keypoints of the animal using matplotlib.
 
@@ -38,7 +38,7 @@ def plot_keypoints(ax, animal3d_instance, colour='k', alpha=1, indices=None,
     return ax
 
 
-def plot_sections(ax, animal3d_instance, colour, alpha=1, section_name=None):
+def plot_sections(ax, animal3d_instance, colour, alpha: float = 1.0, section_name=None):
     """Plot body section polygons using matplotlib."""
     if section_name is not None:
         if section_name in animal3d_instance.polygons:
@@ -51,7 +51,7 @@ def plot_sections(ax, animal3d_instance, colour, alpha=1, section_name=None):
     return ax
 
 
-def get_polygon(animal3d_instance, section_name, colour, alpha=1):
+def get_polygon(animal3d_instance, section_name, colour, alpha: float = 1.0):
     """Build a Poly3DCollection for a body section."""
     if section_name not in animal3d_instance.polygons:
         msg = f"Section name {section_name} not recognised."
