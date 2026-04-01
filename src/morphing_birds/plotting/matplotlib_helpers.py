@@ -188,7 +188,11 @@ def camera_from_plotly(fig) -> dict:
         Dictionary with ``'elev'`` and ``'azim'`` keys (values in degrees).
     """
     eye = fig.layout.scene.camera.eye
-    x, y, z = float(eye.x), float(eye.y), float(eye.z)
+    # Plotly uses (1.25, 1.25, 1.25) as the default camera eye when
+    # the user hasn't explicitly set or rotated the view.
+    x = float(eye.x) if eye.x is not None else 1.25
+    y = float(eye.y) if eye.y is not None else 1.25
+    z = float(eye.z) if eye.z is not None else 1.25
 
     r = math.sqrt(x * x + y * y + z * z)
     elev = math.degrees(math.asin(z / r))
