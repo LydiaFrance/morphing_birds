@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from morphing_birds import Animal3D, SkeletonDefinition, compute_wingspan
+from morphing_birds import Animal3D, SkeletonDefinition
 
 
 class TestAnimalLoading:
@@ -187,9 +187,3 @@ class TestAnimalScaling:
         hawk.set_scale(factor=2.0)
         assert np.isclose(hawk.current_shape.max(), before_max * 2.0)
 
-    def test_wingspan_normalisation(self):
-        hawk = Animal3D("hawk", data="data/mean_hawk_shape.csv")
-        hawk.set_scale(normalise_by="wingspan")
-        # After normalisation, wingspan should be ~1.0
-        ws = compute_wingspan(hawk.current_shape, hawk.skeleton)
-        assert np.isclose(ws, 1.0, atol=0.01)

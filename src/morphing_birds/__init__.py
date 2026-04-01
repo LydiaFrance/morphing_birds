@@ -35,8 +35,6 @@ from .plotting import (
 )
 from .scaling import (
     UNIT_FACTORS,
-    compute_body_length,
-    compute_wingspan,
     unit_conversion_factor,
 )
 from .skeleton import SkeletonDefinition
@@ -55,8 +53,6 @@ __all__ = (
     "validate_left_right",
     # Scaling
     "unit_conversion_factor",
-    "compute_wingspan",
-    "compute_body_length",
     "UNIT_FACTORS",
     # Data loading
     "load_from_csv",

@@ -17,7 +17,7 @@ from .data_loading import (
     load_from_dict,
     load_mean_shape_csv,
 )
-from .scaling import compute_body_length, compute_wingspan, unit_conversion_factor
+from .scaling import unit_conversion_factor
 from .skeleton import SkeletonDefinition
 from .transforms import TransformState
 
@@ -640,7 +640,6 @@ class Animal3D:
         self,
         unit_from: str | None = None,
         unit_to: str | None = None,
-        normalise_by: str | None = None,
         factor: float | None = None,
     ) -> None:
         """Scale marker positions.
@@ -649,19 +648,11 @@ class Animal3D:
         ----------
         unit_from, unit_to : str, optional
             Unit conversion (e.g. ``'mm'`` -> ``'m'``).
-        normalise_by : str, optional
-            Biological normalisation — ``'wingspan'`` or ``'body_length'``.
         factor : float, optional
             Direct scaling factor.
         """
         if unit_from and unit_to:
             f = unit_conversion_factor(unit_from, unit_to)
-        elif normalise_by == "wingspan":
-            ws = compute_wingspan(self.current_shape, self.skeleton)
-            f = 1.0 / ws if ws > 0 else 1.0
-        elif normalise_by == "body_length":
-            bl = compute_body_length(self.current_shape, self.skeleton)
-            f = 1.0 / bl if bl > 0 else 1.0
         elif factor is not None:
             f = factor
         else:
