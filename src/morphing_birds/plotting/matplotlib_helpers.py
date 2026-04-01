@@ -26,7 +26,7 @@ def plot_keypoints(ax, animal3d_instance, colour='k', alpha=1, indices=None,
     elif show_display_markers:
         plot_indices = list(range(animal3d_instance.skeleton.n_markers))
     else:
-        plot_indices = animal3d_instance.marker_index
+        plot_indices = animal3d_instance.analysis_indices
 
     coords = animal3d_instance.current_shape[:, plot_indices, :][0]
 

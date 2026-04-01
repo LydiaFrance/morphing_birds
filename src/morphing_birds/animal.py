@@ -216,16 +216,6 @@ class Animal3D:
         ]
 
     @property
-    def marker_index(self) -> list[int]:
-        """Indices of analysis markers (backward compat with old API)."""
-        return self.analysis_indices
-
-    @property
-    def fixed_marker_index(self) -> list[int]:
-        """Indices of display-only markers (backward compat with old API)."""
-        return self.display_only_indices
-
-    @property
     def markers(self) -> np.ndarray:
         """Analysis marker coordinates from ``current_shape``."""
         return self.current_shape[:, self.analysis_indices, :]
@@ -413,26 +403,6 @@ class Animal3D:
             vertDist=vertDist,
         )
 
-    def transform_keypoints(
-        self,
-        bodypitch: float = 0,
-        horzDist: float = 0,
-        vertDist: float = 0,
-        bodyyaw: float = 0,
-        bodyroll: float = 0,
-    ) -> None:
-        """Backward-compatible transform — transforms display-only markers.
-
-        This matches the old ``Animal3D.transform_keypoints`` behaviour
-        where only fixed (display-only) markers were transformed.
-        """
-        self.transform_display_only(
-            bodypitch=bodypitch,
-            bodyyaw=bodyyaw,
-            bodyroll=bodyroll,
-            horzDist=horzDist,
-            vertDist=vertDist,
-        )
 
     def _apply_transform(
         self,
@@ -486,9 +456,6 @@ class Animal3D:
         self.untransformed_shape = self.current_shape.copy()
         self._transform.reset()
 
-    def restore_keypoints_to_average(self) -> None:
-        """Backward-compatible alias for :meth:`restore_default`."""
-        self.restore_default()
 
     # ------------------------------------------------------------------
     # Keypoint update (backward compat)
@@ -758,7 +725,3 @@ class Animal3D:
                 coloured.append(key)
         return coloured if coloured else ["handwing", "tail"]
 
-    @property
-    def skeleton_definition(self) -> SkeletonDefinition:
-        """Backward-compatible alias for ``self.skeleton``."""
-        return self.skeleton
