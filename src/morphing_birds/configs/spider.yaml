@@ -67,7 +67,7 @@ body_sections:
 
 section_styles:
   default: { alpha: 0.2 }
-  leg: { alpha: 0.5 }
+  leg: { alpha: 0.5, surface: false }
 
 column_mapping: {}
 

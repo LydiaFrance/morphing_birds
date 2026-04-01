@@ -144,3 +144,51 @@ def get_section_style(section_name, caller_colour, caller_alpha, animal3d_instan
         if kw in section_name:
             return colour, 0.2
     return colour, caller_alpha
+
+
+def is_surface_section(section_name, animal3d_instance=None):
+    """Determine whether a section should be rendered as a filled surface.
+
+    Sections fall into two rendering categories controlled by the ``surface``
+    option in ``section_styles`` within the YAML skeleton config:
+
+    * **surface: true** (the default) — the section is drawn as a filled 3D
+      polygon (``Mesh3d``).  This is appropriate for broad, planar structures
+      such as wing surfaces, body panels, and tail fans where a filled mesh
+      conveys the real shape.
+
+    * **surface: false** — the section is drawn as connected lines only
+      (``Scatter3d`` in ``lines`` mode).  This is appropriate for thin,
+      elongated structures like legs, antennae, or other appendages where
+      filling the polygon would produce a misleading or visually incorrect
+      surface.
+
+    The lookup uses the same keyword-matching strategy as
+    ``get_section_style``: each key in ``section_styles`` (other than
+    ``"default"``) is tested as a substring of *section_name*.  If a match
+    is found and that style entry contains ``surface: false``, the section
+    is treated as non-surface.
+
+    Parameters
+    ----------
+    section_name : str
+        Name of the body section (e.g. ``"left_handwing"``, ``"leg_3"``).
+    animal3d_instance : Animal3D, optional
+        Animal instance whose skeleton holds the ``section_styles`` config.
+
+    Returns
+    -------
+    bool
+        ``True`` if the section should be rendered as a filled polygon,
+        ``False`` if it should be drawn as lines only.
+    """
+    if animal3d_instance is not None and hasattr(animal3d_instance, "skeleton"):
+        styles = animal3d_instance.skeleton.section_styles
+        if styles:
+            for keyword, style in styles.items():
+                if keyword == "default":
+                    continue
+                if keyword in section_name:
+                    return style.get("surface", True)
+    # Default: render as a filled surface
+    return True

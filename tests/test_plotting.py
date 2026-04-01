@@ -3,6 +3,7 @@ pre-applied transforms.
 """
 
 import numpy as np
+import plotly.graph_objs as go
 import pytest
 
 from morphing_birds import (
@@ -13,6 +14,8 @@ from morphing_birds import (
     plot_plotly_compare,
     plot_plotly_with_trace,
 )
+from morphing_birds.plotting.plotly_helpers import is_surface_section
+from morphing_birds.plotting.plotly_plots import get_polygon_plotly
 
 
 @pytest.fixture
@@ -182,3 +185,56 @@ class TestPlotWithTracePreservesTransform:
             hawk.current_shape, transformed,
             err_msg="plot_plotly_with_trace clobbered a pre-applied transform",
         )
+
+
+# ------------------------------------------------------------------
+# Config-driven surface rendering
+# ------------------------------------------------------------------
+
+class TestSurfaceConfig:
+    """Sections with surface: false in config should render as lines only."""
+
+    def test_is_surface_section_hawk_wing(self, hawk):
+        """Hawk wing sections default to surface=true (no explicit setting)."""
+        assert is_surface_section("left_handwing", hawk) is True
+        assert is_surface_section("right_armwing", hawk) is True
+
+    def test_is_surface_section_hawk_body(self, hawk):
+        """Hawk body/head sections also default to surface=true."""
+        assert is_surface_section("body", hawk) is True
+        assert is_surface_section("head", hawk) is True
+
+    def test_is_surface_section_spider_leg(self, spider):
+        """Spider leg sections have surface: false in config."""
+        assert is_surface_section("leg_1", spider) is False
+        assert is_surface_section("leg_5", spider) is False
+
+    def test_is_surface_section_spider_body(self, spider):
+        """Spider body section defaults to surface=true."""
+        assert is_surface_section("body", spider) is True
+
+    def test_is_surface_section_no_instance(self):
+        """Without an animal instance, default to surface=true."""
+        assert is_surface_section("leg_1") is True
+        assert is_surface_section("anything") is True
+
+    def test_spider_leg_produces_no_mesh(self, spider):
+        """Spider leg sections should produce no Mesh3d trace."""
+        mesh, lines = get_polygon_plotly(spider, "leg_1", "blue", alpha=0.5)
+        assert mesh is None
+        assert lines is not None
+        assert isinstance(lines, go.Scatter3d)
+
+    def test_spider_body_produces_mesh(self, spider):
+        """Spider body section should produce a Mesh3d trace."""
+        mesh, lines = get_polygon_plotly(spider, "body", "blue", alpha=0.5)
+        assert mesh is not None
+        assert isinstance(mesh, go.Mesh3d)
+        assert lines is not None
+
+    def test_hawk_wing_produces_mesh(self, hawk):
+        """Hawk wing sections should produce a Mesh3d trace."""
+        mesh, lines = get_polygon_plotly(hawk, "left_handwing", "blue", alpha=0.5)
+        assert mesh is not None
+        assert isinstance(mesh, go.Mesh3d)
+        assert lines is not None

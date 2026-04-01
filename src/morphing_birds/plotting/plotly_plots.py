@@ -3,7 +3,7 @@
 import numpy as np
 import plotly.graph_objs as go
 
-from .plotly_helpers import calculate_axis_limits, get_section_style
+from .plotly_helpers import calculate_axis_limits, get_section_style, is_surface_section
 
 
 def plot_plotly(animal3d_instance, colour='lightblue', alpha=0.5, axes_visible=True,
@@ -281,13 +281,13 @@ def get_polygon_plotly(animal3d_instance, section_name, colour, alpha=1):
 
     coords = animal3d_instance.get_polygon_coords(section_name)
 
-    if "leg" in section_name:
-        mesh = None
-    else:
+    if is_surface_section(section_name, animal3d_instance):
         mesh = go.Mesh3d(
             x=coords[:, 0], y=coords[:, 1], z=coords[:, 2],
             color=resolved_colour, opacity=resolved_alpha, hoverinfo='none',
         )
+    else:
+        mesh = None
 
     coords_closed = np.vstack([coords, coords[0]])
     lines = go.Scatter3d(

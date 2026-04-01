@@ -151,3 +151,8 @@ class TestSpiderSkeleton:
         centres = spider.get_centre_markers()
         assert "clypeus" in centres
         assert "spinneret" in centres
+
+    def test_leg_surface_false(self, spider):
+        """Spider leg section_styles should have surface: false."""
+        leg_style = spider.section_styles.get("leg", {})
+        assert leg_style.get("surface") is False
