@@ -161,3 +161,7 @@ Thumbs.db
 # Common editor files
 *~
 *.swp
+
+# Dolt database files (added by bd init)
+.dolt/
+*.db

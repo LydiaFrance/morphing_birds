@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "server",
+  "dolt_database": "morphing_birds",
+  "project_id": "05624b28-a4b4-4310-829c-6317e0a90bb5"
+}
