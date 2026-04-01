@@ -88,6 +88,41 @@ def load_from_dataframe(
     return data
 
 
+def get_matched_csv_columns(
+    df: pd.DataFrame,
+    skeleton: SkeletonDefinition,
+    column_mapping: dict[str, str] | None = None,
+) -> set[str]:
+    """Return the set of CSV column names that were matched to markers.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame with marker coordinate columns.
+    skeleton : SkeletonDefinition
+        Skeleton definition.
+    column_mapping : dict, optional
+        Override mapping from canonical name -> CSV column name.
+
+    Returns
+    -------
+    set[str]
+        CSV column names that were successfully matched.
+    """
+    mapping = dict(skeleton.column_mapping)
+    if column_mapping:
+        mapping.update(column_mapping)
+
+    matched: set[str] = set()
+    for canonical_name in skeleton.all_marker_names:
+        if canonical_name in skeleton.ignored_columns:
+            continue
+        csv_name = mapping.get(canonical_name, canonical_name)
+        cols = _matched_xyz_columns(df, csv_name)
+        matched.update(cols)
+    return matched
+
+
 def load_from_dict(
     positions: dict[str, list | np.ndarray],
     skeleton: SkeletonDefinition,
@@ -197,3 +232,22 @@ def _extract_xyz(df: pd.DataFrame, base_name: str) -> np.ndarray | None:
         ])
 
     return None
+
+
+def _matched_xyz_columns(df: pd.DataFrame, base_name: str) -> list[str]:
+    """Return the CSV column names matched for *base_name*, or empty list.
+
+    Mirrors the logic of :func:`_extract_xyz` but returns column names
+    instead of data.
+    """
+    # Try underscore format first
+    cols = [f"{base_name}_x", f"{base_name}_y", f"{base_name}_z"]
+    if all(c in df.columns for c in cols):
+        return cols
+
+    # Try no-underscore format
+    cols = [f"{base_name}x", f"{base_name}y", f"{base_name}z"]
+    if all(c in df.columns for c in cols):
+        return cols
+
+    return []

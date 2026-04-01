@@ -1,6 +1,9 @@
 """Tests for the new Animal3D class."""
 
+import tempfile
+
 import numpy as np
+import pandas as pd
 import pytest
 
 from morphing_birds import Animal3D, SkeletonDefinition
@@ -166,6 +169,55 @@ class TestAnimalPolygons:
         assert all(min_c <= max_c)
 
 
+class TestGetAnalysisData:
+    """Test get_analysis_data slicing."""
+
+    @pytest.fixture
+    def hawk(self):
+        return Animal3D("hawk", data="data/mean_hawk_shape.csv")
+
+    def test_include_all_returns_full_array(self, hawk):
+        n_markers = hawk.skeleton.n_markers
+        motion = np.random.rand(5, n_markers, 3)
+        result = hawk.get_analysis_data(motion, include_all=True)
+        assert result.shape == (5, n_markers, 3)
+        np.testing.assert_array_equal(result, motion)
+
+    def test_default_slices_to_analysis_indices(self, hawk):
+        n_markers = hawk.skeleton.n_markers
+        motion = np.random.rand(5, n_markers, 3)
+        result = hawk.get_analysis_data(motion)
+        n_analysis = len(hawk.analysis_indices)
+        assert result.shape == (5, n_analysis, 3)
+        # Verify it matches manual slicing
+        expected = motion[:, hawk.analysis_indices, :]
+        np.testing.assert_array_equal(result, expected)
+
+    def test_respects_exclude_markers(self, hawk):
+        n_markers = hawk.skeleton.n_markers
+        motion = np.random.rand(5, n_markers, 3)
+        n_before = len(hawk.analysis_indices)
+        hawk.exclude_markers(["left_wingtip"])
+        result = hawk.get_analysis_data(motion)
+        assert result.shape == (5, n_before - 1, 3)
+
+    def test_prints_excluded_marker_names(self, hawk, capsys):
+        n_markers = hawk.skeleton.n_markers
+        motion = np.random.rand(2, n_markers, 3)
+        hawk.exclude_markers(["left_wingtip"])
+        hawk.get_analysis_data(motion)
+        captured = capsys.readouterr()
+        assert "left_wingtip" in captured.out
+        assert "excluded:" in captured.out
+
+    def test_prints_all_included_message(self, hawk, capsys):
+        n_markers = hawk.skeleton.n_markers
+        motion = np.random.rand(2, n_markers, 3)
+        hawk.get_analysis_data(motion, include_all=True)
+        captured = capsys.readouterr()
+        assert "all included" in captured.out
+
+
 class TestAnimalCopy:
     """Test deep copy."""
 
@@ -186,4 +238,116 @@ class TestAnimalScaling:
         before_max = hawk.current_shape.max()
         hawk.set_scale(factor=2.0)
         assert np.isclose(hawk.current_shape.max(), before_max * 2.0)
+
+
+# ------------------------------------------------------------------
+# Helper to create a temporary multi-frame CSV for hawk markers
+# ------------------------------------------------------------------
+
+def _make_hawk_csv(
+    n_frames: int = 5,
+    extra_columns: dict[str, list] | None = None,
+    drop_markers: list[str] | None = None,
+) -> str:
+    """Create a temporary CSV file with hawk marker data.
+
+    Returns the path to the temporary file.
+    """
+    skel = SkeletonDefinition.from_builtin("hawk")
+    marker_names = skel.all_marker_names
+
+    rng = np.random.default_rng(42)
+    data = {}
+    for name in marker_names:
+        if drop_markers and name in drop_markers:
+            continue
+        for axis in ("x", "y", "z"):
+            data[f"{name}_{axis}"] = rng.standard_normal(n_frames)
+
+    if extra_columns:
+        data.update(extra_columns)
+
+    df = pd.DataFrame(data)
+    tmp = tempfile.NamedTemporaryFile(suffix=".csv", delete=False, mode="w")
+    df.to_csv(tmp.name, index=False)
+    tmp.close()
+    return tmp.name
+
+
+class TestLoadMotionDataFeedback:
+    """Test that load_motion_data prints informative feedback."""
+
+    def test_prints_summary(self, capsys):
+        path = _make_hawk_csv(n_frames=10)
+        hawk = Animal3D("hawk")
+        hawk.load_motion_data(path)
+        captured = capsys.readouterr()
+        assert "Loaded 10 frames with 14 markers" in captured.out
+        assert "'hawk'" in captured.out
+
+    def test_warns_zero_data_markers(self, capsys):
+        # Drop left_wingtip and right_wingtip from the CSV
+        path = _make_hawk_csv(drop_markers=["left_wingtip", "right_wingtip"])
+        hawk = Animal3D("hawk")
+        hawk.load_motion_data(path)
+        captured = capsys.readouterr()
+        assert "Warning:" in captured.out
+        assert "left_wingtip" in captured.out
+        assert "right_wingtip" in captured.out
+        assert "column mapping mismatch" in captured.out
+
+    def test_notes_unmatched_csv_columns(self, capsys):
+        extra = {
+            "extra_point_x": [1.0] * 5,
+            "extra_point_y": [2.0] * 5,
+            "extra_point_z": [3.0] * 5,
+        }
+        path = _make_hawk_csv(extra_columns=extra)
+        hawk = Animal3D("hawk")
+        hawk.load_motion_data(path)
+        captured = capsys.readouterr()
+        assert "Note:" in captured.out
+        assert "extra_point_x" in captured.out
+
+    def test_no_warnings_on_clean_load(self, capsys):
+        path = _make_hawk_csv()
+        hawk = Animal3D("hawk")
+        hawk.load_motion_data(path)
+        captured = capsys.readouterr()
+        assert "Warning:" not in captured.out
+        assert "Note:" not in captured.out
+        assert "Loaded 5 frames" in captured.out
+
+    def test_custom_column_mapping_label(self, capsys):
+        path = _make_hawk_csv()
+        hawk = Animal3D("hawk")
+        hawk.load_motion_data(path, column_mapping={"left_wingtip": "left_wingtip"})
+        captured = capsys.readouterr()
+        assert "custom" in captured.out
+
+
+class TestAnimalRepr:
+    """Test __repr__ on Animal3D."""
+
+    def test_repr_no_motion_data(self):
+        hawk = Animal3D("hawk")
+        r = repr(hawk)
+        assert "Animal3D('hawk'" in r
+        assert "14 markers" in r
+        assert "no motion data loaded" in r
+
+    def test_repr_with_motion_data(self):
+        path = _make_hawk_csv(n_frames=20)
+        hawk = Animal3D("hawk")
+        hawk.load_motion_data(path)
+        r = repr(hawk)
+        assert "Animal3D('hawk'" in r
+        assert "20 frames loaded" in r
+        assert "8 in analysis set" in r
+
+    def test_repr_with_initial_data(self):
+        hawk = Animal3D("hawk", data="data/mean_hawk_shape.csv")
+        r = repr(hawk)
+        # Initial data via constructor doesn't set motion frames
+        assert "no motion data loaded" in r
 

@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 
 from .data_loading import (
+    get_matched_csv_columns,
     load_from_csv,
     load_from_dataframe,
     load_from_dict,
@@ -68,6 +69,9 @@ class Animal3D:
         # Transformation state
         self._transform = TransformState()
 
+        # Track how many motion frames have been loaded (for __repr__)
+        self._motion_frames_loaded: int = 0
+
         # Colour sections for backward-compatible plotting
         self.colour_sections: list[str] = self._default_colour_sections()
 
@@ -77,6 +81,19 @@ class Animal3D:
         # Load initial data if provided
         if data is not None:
             self._load_initial_data(data)
+
+    def __repr__(self) -> str:
+        name = self.skeleton.name
+        n_markers = self.skeleton.n_markers
+        n_analysis = len(self.analysis_indices)
+
+        if self._motion_frames_loaded > 0:
+            return (
+                f"Animal3D('{name}', {n_markers} markers, "
+                f"{self._motion_frames_loaded} frames loaded, "
+                f"{n_analysis} in analysis set)"
+            )
+        return f"Animal3D('{name}', {n_markers} markers, no motion data loaded)"
 
     # ------------------------------------------------------------------
     # Data loading
@@ -148,6 +165,9 @@ class Animal3D:
     ) -> np.ndarray:
         """Load multi-frame motion data from a CSV file.
 
+        Prints a summary of what was loaded, warns about markers with no
+        data, and notes any unmatched CSV columns.
+
         Parameters
         ----------
         path : str
@@ -161,7 +181,69 @@ class Animal3D:
             Motion data, shape ``(n_frames, n_markers, 3)``.
         """
         mapping = column_mapping or self._column_mapping_override
-        return load_from_csv(path, self.skeleton, mapping)
+
+        # Read CSV and load data
+        df = pd.read_csv(path)
+        data = load_from_dataframe(df, self.skeleton, mapping)
+
+        n_frames = data.shape[0]
+        n_markers = self.skeleton.n_markers
+        skeleton_name = self.skeleton.name
+        self._motion_frames_loaded = n_frames
+
+        # Determine mapping source label
+        if column_mapping:
+            mapping_label = "custom"
+        elif self._column_mapping_override:
+            mapping_label = "custom"
+        else:
+            mapping_label = f"'{skeleton_name}'"
+
+        print(
+            f"Loaded {n_frames} frames with {n_markers} markers "
+            f"using {mapping_label} column mapping"
+        )
+
+        # Warn about markers that ended up as all NaN (no data found)
+        all_names = self.skeleton.all_marker_names
+        zero_markers: list[str] = []
+        for idx, name in enumerate(all_names):
+            if name in self.skeleton.ignored_columns:
+                continue
+            marker_data = data[:, idx, :]
+            if np.all(np.isnan(marker_data)) or np.all(marker_data == 0):
+                zero_markers.append(name)
+
+        if zero_markers:
+            names_str = ", ".join(zero_markers)
+            print(
+                f"Warning: {len(zero_markers)} markers have no data "
+                f"(all zeros): {names_str}"
+            )
+            print(
+                "  This may indicate missing CSV columns "
+                "or a column mapping mismatch"
+            )
+
+        # Note any unmatched CSV columns that look like marker data
+        matched_cols = get_matched_csv_columns(df, self.skeleton, mapping)
+        _xyz_suffixes = ("_x", "_y", "_z", "x", "y", "z")
+        unmatched: list[str] = []
+        for col in df.columns:
+            if col in matched_cols:
+                continue
+            # Check if it looks like marker coordinate data
+            if any(col.endswith(s) for s in _xyz_suffixes):
+                unmatched.append(col)
+
+        if unmatched:
+            cols_str = ", ".join(sorted(unmatched))
+            print(
+                f"Note: {len(unmatched)} CSV columns not matched "
+                f"to any marker: {cols_str}"
+            )
+
+        return data
 
     def update_to_frame(self, motion_data: np.ndarray, frame_idx: int) -> None:
         """Update the current shape to a specific frame from motion data.
@@ -312,6 +394,48 @@ class Animal3D:
             Marker names to re-include in analysis.
         """
         self._analysis_exclude -= set(names)
+
+    def get_analysis_data(
+        self,
+        motion_data: np.ndarray,
+        include_all: bool = False,
+    ) -> np.ndarray:
+        """Slice motion data to the current analysis marker subset.
+
+        Parameters
+        ----------
+        motion_data : np.ndarray
+            Motion data of shape ``(n_frames, n_markers, 3)`` as returned
+            by :meth:`load_motion_data`.
+        include_all : bool
+            If ``True``, return all markers without slicing.
+
+        Returns
+        -------
+        np.ndarray
+            Sliced array of shape ``(n_frames, n_analysis_markers, 3)``,
+            or the full array when *include_all* is ``True``.
+        """
+        n_total = self.skeleton.n_markers
+
+        if include_all:
+            print(f"Analysis data: {n_total} of {n_total} markers (all included)")
+            return motion_data
+
+        indices = self.analysis_indices
+        excluded_names = sorted(self._analysis_exclude)
+        n_analysis = len(indices)
+
+        if excluded_names:
+            excluded_str = ", ".join(excluded_names)
+            print(
+                f"Analysis data: {n_analysis} of {n_total} markers "
+                f"(excluded: {excluded_str})"
+            )
+        else:
+            print(f"Analysis data: {n_total} of {n_total} markers (all included)")
+
+        return motion_data[:, indices, :]
 
     def set_variant(self, name: str) -> None:
         """Apply a named variant, updating exclusions and body sections.
