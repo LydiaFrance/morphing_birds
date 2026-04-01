@@ -40,7 +40,7 @@ def animate_plotly(animal3d_instance, keypoints_frames, alpha=0.3, colour=None,
     for frame in range(num_frames):
         animal3d_instance.reset_transformation()
         animal3d_instance.update_keypoints(keypoints_frames[frame])
-        animal3d_instance.transform_keypoints(
+        animal3d_instance.transform_display_only(
             bodypitch=bodypitch_frames[frame],
             horzDist=horzDist_frames[frame],
             vertDist=vertDist_frames[frame],
@@ -136,7 +136,7 @@ def animate_plotly_compare(animal3d_instance, keypoints_frames_list, alpha=0.3,
             yaw = bodyyaw_frames_list[idx][frame] if bodyyaw_frames_list else 0
             roll = bodyroll_frames_list[idx][frame] if bodyroll_frames_list else 0
 
-            animal3d_instance.transform_keypoints(
+            animal3d_instance.transform_display_only(
                 bodypitch=pitch, horzDist=horz, vertDist=vert,
                 bodyyaw=yaw, bodyroll=roll,
             )
@@ -192,7 +192,7 @@ def animate_plotly_partial(animal3d_instance, keypoints_frames, section_name=Non
     for frame_idx in range(num_frames):
         animal3d_instance.reset_transformation()
         animal3d_instance.update_keypoints(keypoints_frames[frame_idx])
-        animal3d_instance.transform_keypoints(
+        animal3d_instance.transform_display_only(
             bodypitch=bodypitch_frames[frame_idx],
             horzDist=horzDist_frames[frame_idx],
             vertDist=vertDist_frames[frame_idx],

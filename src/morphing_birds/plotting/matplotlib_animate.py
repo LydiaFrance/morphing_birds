@@ -42,7 +42,7 @@ def animate(animal3d_instance, keypoints_frames, fig=None, ax=None,
         ax.clear()
         animal3d_instance.reset_transformation()
         animal3d_instance.update_keypoints(keypoints_frames[frame])
-        animal3d_instance.transform_keypoints(
+        animal3d_instance.transform_display_only(
             bodypitch=bodypitch_frames[frame],
             horzDist=horzDist_frames[frame],
             vertDist=vertDist_frames[frame],
@@ -54,7 +54,7 @@ def animate(animal3d_instance, keypoints_frames, fig=None, ax=None,
         plot_settings(ax, animal3d_instance.origin, lims)
         return fig, ax
 
-    animal3d_instance.restore_keypoints_to_average()
+    animal3d_instance.restore_default()
 
     return FuncAnimation(
         fig, update_animated_plot, frames=num_frames, interval=20, repeat=True,
@@ -95,7 +95,7 @@ def animate_compare(animal3d_instance, keypoints_frames_list, fig=None, ax=None,
             c = plt.cm.Set1(ii)
             animal3d_instance.reset_transformation()
             animal3d_instance.update_keypoints(kf[frame])
-            animal3d_instance.transform_keypoints(
+            animal3d_instance.transform_display_only(
                 bodypitch=bodypitch_frames[frame],
                 horzDist=horzDist_frames[frame],
                 vertDist=vertDist_frames[frame],
@@ -105,7 +105,7 @@ def animate_compare(animal3d_instance, keypoints_frames_list, fig=None, ax=None,
         plot_settings(ax, animal3d_instance.origin)
         return fig, ax
 
-    animal3d_instance.restore_keypoints_to_average()
+    animal3d_instance.restore_default()
 
     return FuncAnimation(
         fig, update_animated_plot, frames=num_frames, interval=20, repeat=True,

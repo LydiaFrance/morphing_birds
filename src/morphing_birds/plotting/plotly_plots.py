@@ -8,7 +8,7 @@ from .plotly_helpers import calculate_axis_limits, get_section_style
 
 def plot_plotly(animal3d_instance, colour='lightblue', alpha=0.5, axes_visible=True,
                 horzDist=None, vertDist=None, bodypitch=None, bodyroll=None, bodyyaw=None,
-                show_display_markers=False, axisOn=None):
+                show_display_markers=False):
     """Create a static 3D plot of an animal using Plotly.
 
     Parameters
@@ -23,18 +23,13 @@ def plot_plotly(animal3d_instance, colour='lightblue', alpha=0.5, axes_visible=T
         Whether to show axes, grid, and tick labels.
     show_display_markers : bool
         Whether to show display-only marker dots. Default ``False``.
-    axisOn : bool, optional
-        Deprecated alias for *axes_visible*.
     """
-    if axisOn is not None:
-        axes_visible = axisOn
-
     has_transform = any(p is not None for p in [bodypitch, bodyyaw, bodyroll, horzDist, vertDist])
 
     if has_transform:
         current_state = animal3d_instance.current_shape.copy()
         animal3d_instance.reset_transformation()
-        animal3d_instance.transform_keypoints(
+        animal3d_instance.transform_display_only(
             bodypitch=bodypitch or 0,
             horzDist=horzDist or 0,
             vertDist=vertDist or 0,
@@ -67,11 +62,8 @@ def plot_plotly(animal3d_instance, colour='lightblue', alpha=0.5, axes_visible=T
 
 def plot_plotly_compare(animal3d_instances, colours=None, alpha=0.5, axes_visible=True,
                         horzDist=None, vertDist=None, bodypitch=None, bodyroll=None,
-                        bodyyaw=None, show_display_markers=False, axisOn=None):
+                        bodyyaw=None, show_display_markers=False):
     """Create a static 3D comparison plot of multiple animals."""
-    if axisOn is not None:
-        axes_visible = axisOn
-
     fig = go.Figure()
 
     if colours is None:
@@ -83,7 +75,7 @@ def plot_plotly_compare(animal3d_instances, colours=None, alpha=0.5, axes_visibl
         if has_transform:
             current_state = animal3d_instance.current_shape.copy()
             animal3d_instance.reset_transformation()
-            animal3d_instance.transform_keypoints(
+            animal3d_instance.transform_display_only(
                 bodypitch=bodypitch or 0,
                 horzDist=horzDist or 0,
                 vertDist=vertDist or 0,
@@ -111,11 +103,8 @@ def plot_plotly_compare(animal3d_instances, colours=None, alpha=0.5, axes_visibl
 def plot_compare_plotly(animal3d_instance, keypoints_list, alpha=0.5, colours=None,
                         horzDist=None, bodypitch=None, vertDist=None, bodyyaw=None,
                         bodyroll=None, axes_visible=True, show_display_markers=False,
-                        axisOn=None):
+):
     """Create a static 3D comparison of multiple poses."""
-    if axisOn is not None:
-        axes_visible = axisOn
-
     if colours is None:
         colours = [None, 'red']
 
@@ -127,7 +116,7 @@ def plot_compare_plotly(animal3d_instance, keypoints_list, alpha=0.5, colours=No
         animal3d_instance.update_keypoints(keypoints)
         if has_transform:
             animal3d_instance.reset_transformation()
-            animal3d_instance.transform_keypoints(
+            animal3d_instance.transform_display_only(
                 bodypitch=bodypitch or 0,
                 horzDist=horzDist or 0,
                 vertDist=vertDist or 0,
@@ -156,17 +145,14 @@ def plot_partial_plotly(animal3d_instance, section_name=None, leg_number=None,
                         colour='blue', alpha=1, axes_visible=True,
                         horzDist=None, vertDist=None, bodypitch=None,
                         bodyroll=None, bodyyaw=None, show_display_markers=False,
-                        axisOn=None):
+):
     """Plot a specific section or leg of the animal."""
-    if axisOn is not None:
-        axes_visible = axisOn
-
     has_transform = any(p is not None for p in [bodypitch, bodyyaw, bodyroll, horzDist, vertDist])
 
     if has_transform:
         current_state = animal3d_instance.current_shape.copy()
         animal3d_instance.reset_transformation()
-        animal3d_instance.transform_keypoints(
+        animal3d_instance.transform_display_only(
             bodypitch=bodypitch or 0,
             horzDist=horzDist or 0,
             vertDist=vertDist or 0,
@@ -203,11 +189,8 @@ def plot_plotly_with_trace(animal3d_instance, keypoints_frames, colour='lightblu
                            alpha=0.5, trace_colour='red', trace_marker_size=2,
                            axes_visible=True, horzDist=None, vertDist=None,
                            bodypitch=None, bodyroll=None, bodyyaw=None,
-                           show_display_markers=False, axisOn=None):
+                           show_display_markers=False):
     """Create a static 3D plot with a trace of keypoint frames."""
-    if axisOn is not None:
-        axes_visible = axisOn
-
     fig = plot_plotly(animal3d_instance, colour=colour, alpha=alpha,
                       axes_visible=axes_visible, horzDist=horzDist,
                       vertDist=vertDist, bodypitch=bodypitch,
@@ -254,7 +237,7 @@ def plot_keypoints_plotly(fig, animal3d_instance, colour='black', alpha=1,
     elif show_display_markers:
         plot_indices = list(range(animal3d_instance.skeleton.n_markers))
     else:
-        plot_indices = animal3d_instance.marker_index
+        plot_indices = animal3d_instance.analysis_indices
 
     coords = animal3d_instance.current_shape[:, plot_indices, :][0]
 

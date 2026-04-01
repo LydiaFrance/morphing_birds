@@ -16,7 +16,7 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
     from morphing_birds import Animal3D  # noqa: PLC0415
     # Initialise hawk
     hawk3d = Animal3D("hawk", data="../data/mean_hawk_shape.csv")
-    hawk3d.restore_keypoints_to_average()
+    hawk3d.restore_default()
 
 
     # Generate fake keypoints and mean scores data for testing purposes
@@ -24,7 +24,7 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
         # Generate fake keypoints data for testing purposes
         np.random.seed(0)
         hawk3d.reset_transformation()
-        hawk3d.restore_keypoints_to_average()
+        hawk3d.restore_default()
         new_keypoints = np.random.normal(0, 0.01, (100, 8, 3)) + hawk3d.markers
 
     if mean_scores is None:
@@ -164,7 +164,7 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
 
     # Function to create a 3D scatter plot figure
     def create_3d_scatter_plot():
-        hawk3d.restore_keypoints_to_average()
+        hawk3d.restore_default()
         fig = plot_plotly(hawk3d)
         fig.update_layout(height=400, width=400,
                         scene={"camera": {"eye": {"x": 1.25, "y": 1.25, "z": 1.25}}})

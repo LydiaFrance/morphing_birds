@@ -56,9 +56,9 @@ class TestAnimalMarkers:
     def hawk(self):
         return Animal3D("hawk", data="data/mean_hawk_shape.csv")
 
-    def test_marker_index(self, hawk):
-        assert len(hawk.marker_index) == 8
-        assert len(hawk.fixed_marker_index) == 6
+    def test_analysis_indices(self, hawk):
+        assert len(hawk.analysis_indices) == 8
+        assert len(hawk.display_only_indices) == 6
 
     def test_markers_property(self, hawk):
         assert hawk.markers.shape == (1, 8, 3)
@@ -118,10 +118,10 @@ class TestAnimalTransforms:
         # ALL markers should change
         assert not np.allclose(hawk.current_shape, before)
 
-    def test_backward_compat_transform_keypoints(self, hawk):
-        """transform_keypoints should transform display-only only."""
+    def test_transform_display_only_leaves_analysis_unchanged(self, hawk):
+        """transform_display_only should leave analysis markers unchanged."""
         before = hawk.current_shape.copy()
-        hawk.transform_keypoints(bodypitch=25)
+        hawk.transform_display_only(bodypitch=25)
 
         # Analysis markers unchanged
         np.testing.assert_array_almost_equal(
@@ -131,7 +131,7 @@ class TestAnimalTransforms:
 
     def test_reset_transformation(self, hawk):
         before = hawk.current_shape.copy()
-        hawk.transform_keypoints(bodypitch=25, horzDist=10)
+        hawk.transform_display_only(bodypitch=25, horzDist=10)
         hawk.reset_transformation()
         np.testing.assert_array_almost_equal(hawk.current_shape, before)
 

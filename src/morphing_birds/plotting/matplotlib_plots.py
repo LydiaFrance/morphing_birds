@@ -15,7 +15,7 @@ from .matplotlib_helpers import (
 
 
 def plot(animal3d_instance, ax=None, el=20, az=60, colour=None, alpha=0.5,
-         axes_visible=True, show_display_markers=False, axisOn=None):
+         axes_visible=True, show_display_markers=False):
     """Create a static 3D matplotlib plot of an animal.
 
     Parameters
@@ -24,11 +24,7 @@ def plot(animal3d_instance, ax=None, el=20, az=60, colour=None, alpha=0.5,
         Whether to show axes. When ``False``, calls ``ax.set_axis_off()``.
     show_display_markers : bool
         Whether to show display-only marker dots. Default ``False``.
-    axisOn : bool, optional
-        Deprecated alias for *axes_visible*.
     """
-    if axisOn is not None:
-        axes_visible = axisOn
 
     if ax is None:
         _fig, ax = get_plot3d_view()
@@ -94,7 +90,7 @@ def plot_multiple(animal3d_instance, keypoints, num_plots, spacing=(0.4, 0.7),
     middle_col = (grid_cols - 1) / 2
 
     for i in range(num_plots):
-        animal3d_instance.restore_keypoints_to_average()
+        animal3d_instance.restore_default()
         animal3d_instance.update_keypoints(keypoints[i])
         animal3d_instance.reset_transformation()
 
@@ -109,7 +105,7 @@ def plot_multiple(animal3d_instance, keypoints, num_plots, spacing=(0.4, 0.7),
         vertDist = (row - middle_row) * spacing[0]
         horzDist = (col - middle_col) * spacing[1]
 
-        animal3d_instance.transform_keypoints(vertDist=vertDist, horzDist=horzDist, bodyyaw=rot)
+        animal3d_instance.transform_display_only(vertDist=vertDist, horzDist=horzDist, bodyyaw=rot)
         plot(animal3d_instance, ax=ax, el=el, az=az, colour=colour, alpha=alpha, axes_visible=False)
 
     max_vert = (num_plots * 0.15) * spacing[0]
