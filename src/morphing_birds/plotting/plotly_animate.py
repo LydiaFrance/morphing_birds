@@ -14,8 +14,17 @@ from .plotly_plots import plot_keypoints_plotly, plot_sections_plotly
 def animate_plotly(animal3d_instance, keypoints_frames, alpha=0.3, colour=None,
                    horzDist_frames=None, bodypitch_frames=None, vertDist_frames=None,
                    bodyyaw_frames=None, bodyroll_frames=None, score_vals=None,
-                   axes_visible=True):
-    """Create an animated 3D plot using Plotly."""
+                   axes_visible=True, display_only_transform=False):
+    """Create an animated 3D plot using Plotly.
+
+    Parameters
+    ----------
+    display_only_transform : bool
+        If ``False`` (default), body pitch/yaw/roll rotates all markers.
+        If ``True``, only display-only (fixed) markers are rotated — use
+        this for PCA shape-mode animations where analysis markers already
+        encode the morphing shape.
+    """
 
     # Format keypoints
     keypoints_frames = format_keypoint_frames(animal3d_instance, keypoints_frames)
@@ -36,11 +45,13 @@ def animate_plotly(animal3d_instance, keypoints_frames, alpha=0.3, colour=None,
     fixed_range = calculate_animation_limits(animal3d_instance, keypoints_frames)
 
     # Create frames
+    transform = (animal3d_instance.transform_display_only if display_only_transform
+                 else animal3d_instance.transform_all)
     frames = []
     for frame in range(num_frames):
         animal3d_instance.reset_transformation()
         animal3d_instance.update_keypoints(keypoints_frames[frame])
-        animal3d_instance.transform_display_only(
+        transform(
             bodypitch=bodypitch_frames[frame],
             horzDist=horzDist_frames[frame],
             vertDist=vertDist_frames[frame],
@@ -87,7 +98,8 @@ def animate_plotly_compare(animal3d_instance, keypoints_frames_list, alpha=0.3,
                            colours=None, horzDist_frames_list=None,
                            bodypitch_frames_list=None, vertDist_frames_list=None,
                            bodyyaw_frames_list=None, bodyroll_frames_list=None,
-                           score_vals=None, axes_visible=True):
+                           score_vals=None, axes_visible=True,
+                           display_only_transform=False):
     """Create an animated 3D comparison plot."""
     if colours is None:
         colours = [None, 'red']
@@ -123,6 +135,8 @@ def animate_plotly_compare(animal3d_instance, keypoints_frames_list, alpha=0.3,
     fixed_range = calculate_animation_limits(animal3d_instance, all_kf)
 
     # Create frames
+    transform = (animal3d_instance.transform_display_only if display_only_transform
+                 else animal3d_instance.transform_all)
     frames = []
     for frame in range(num_frames):
         fig = go.Figure()
@@ -136,7 +150,7 @@ def animate_plotly_compare(animal3d_instance, keypoints_frames_list, alpha=0.3,
             yaw = bodyyaw_frames_list[idx][frame] if bodyyaw_frames_list else 0
             roll = bodyroll_frames_list[idx][frame] if bodyroll_frames_list else 0
 
-            animal3d_instance.transform_display_only(
+            transform(
                 bodypitch=pitch, horzDist=horz, vertDist=vert,
                 bodyyaw=yaw, bodyroll=roll,
             )
@@ -175,7 +189,8 @@ def animate_plotly_partial(animal3d_instance, keypoints_frames, section_name=Non
                            leg_number=None, colour='blue', alpha=1,
                            horzDist_frames=None, vertDist_frames=None,
                            bodypitch_frames=None, bodyyaw_frames=None,
-                           bodyroll_frames=None, score_vals=None, axes_visible=True):
+                           bodyroll_frames=None, score_vals=None, axes_visible=True,
+                           display_only_transform=False):
     """Animate a specific section or leg."""
     keypoints_frames = format_keypoint_frames(animal3d_instance, keypoints_frames)
     num_frames = keypoints_frames.shape[0]
@@ -188,11 +203,13 @@ def animate_plotly_partial(animal3d_instance, keypoints_frames, section_name=Non
 
     fixed_range = calculate_animation_limits(animal3d_instance, keypoints_frames)
 
+    transform = (animal3d_instance.transform_display_only if display_only_transform
+                 else animal3d_instance.transform_all)
     frames = []
     for frame_idx in range(num_frames):
         animal3d_instance.reset_transformation()
         animal3d_instance.update_keypoints(keypoints_frames[frame_idx])
-        animal3d_instance.transform_display_only(
+        transform(
             bodypitch=bodypitch_frames[frame_idx],
             horzDist=horzDist_frames[frame_idx],
             vertDist=vertDist_frames[frame_idx],
