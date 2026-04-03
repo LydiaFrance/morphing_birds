@@ -3,7 +3,12 @@
 import numpy as np
 import plotly.graph_objs as go
 
-from .plotly_helpers import calculate_axis_limits, get_section_style, is_surface_section
+from .plotly_helpers import (
+    calculate_axis_limits,
+    calculate_nice_tick_step,
+    get_section_style,
+    is_surface_section,
+)
 
 
 def plot_plotly(animal3d_instance, colour='lightblue', alpha=0.5, axes_visible=True,
@@ -307,13 +312,17 @@ def plot_settings_plotly(fig, animal3d_instance):
     """Apply standard layout settings to a static Plotly figure."""
     fixed_range = calculate_axis_limits(animal3d_instance)
 
+    x_span = fixed_range[0][1] - fixed_range[0][0]
+    nice_step = calculate_nice_tick_step(x_span)
+
     axes_config = {
         'gridcolor': "grey",
         'zerolinecolor': "grey",
         'showbackground': True,
         'backgroundcolor': "white",
         'gridwidth': 0.5,
-        'dtick': fixed_range[0][1] / 2,
+        'dtick': nice_step,
+        'tick0': 0,
     }
 
     fig.update_layout(

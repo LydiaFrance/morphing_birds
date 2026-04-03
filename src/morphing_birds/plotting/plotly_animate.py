@@ -7,7 +7,7 @@ import numpy as np
 import plotly.graph_objs as go
 
 from .animation_frame_helpers import check_transformation_frames, format_keypoint_frames
-from .plotly_helpers import calculate_animation_limits
+from .plotly_helpers import calculate_animation_limits, calculate_nice_tick_step
 from .plotly_plots import plot_keypoints_plotly, plot_sections_plotly
 
 
@@ -271,13 +271,17 @@ def save_plotly_animation(fig, filename, format='gif', fps=10, width=800, height
 
 def _apply_animation_layout(fig, fixed_range, axes_visible=True):
     """Apply consistent layout with pre-computed axis limits."""
+    x_span = fixed_range[0][1] - fixed_range[0][0]
+    nice_step = calculate_nice_tick_step(x_span)
+
     axes_config = {
         "gridcolor": "grey",
         "zerolinecolor": "grey",
         "showbackground": True,
         "backgroundcolor": "white",
         "gridwidth": 0.5,
-        "dtick": fixed_range[0][1] / 2,
+        "dtick": nice_step,
+        "tick0": 0,
     }
 
     if not axes_visible:

@@ -7,7 +7,7 @@ import numpy as np
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from PIL import Image
 
-from .plotly_helpers import get_section_style
+from .plotly_helpers import calculate_nice_tick_step, get_section_style
 
 # ....... Helper Plot Functions ........
 
@@ -125,10 +125,14 @@ def plot_settings(ax, origin, lims=None):
     ax.tick_params(axis='both', which='major', labelsize=8, width=0.5, length=3)
     ax.tick_params(axis='both', which='minor', labelsize=8, width=0.5, length=2)
 
-    n_ticks = 5
-    ax.set_xticks(np.linspace(-increment, increment, n_ticks))
-    ax.set_yticks(np.linspace(-increment, increment, n_ticks))
-    ax.set_zticks(np.linspace(-increment, increment, n_ticks))
+    step = calculate_nice_tick_step(2 * increment)
+    ticks = np.arange(0, increment + step / 2, step)
+    ticks = np.concatenate([-ticks[:0:-1], ticks])  # symmetric around 0
+    # Exclude ticks too close to the axis edges (avoids label collisions)
+    ticks = ticks[(ticks > -increment + step * 0.3) & (ticks < increment - step * 0.3)]
+    ax.set_xticks(ticks)
+    ax.set_yticks(ticks)
+    ax.set_zticks(ticks)
 
     ax.set_aspect('equal', 'box')
     ax.set_facecolor('white')

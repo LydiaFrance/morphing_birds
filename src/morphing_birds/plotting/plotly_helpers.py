@@ -3,6 +3,22 @@
 import numpy as np
 
 
+def calculate_nice_tick_step(data_range):
+    """Compute a round tick spacing that gives ~3 ticks across *data_range*.
+
+    Picks from the {1, 2, 2.5, 5} x 10^n family so tick labels are
+    clean numbers like 0.1, 0.2, 0.25, 0.5 rather than 0.2084.
+    """
+    raw_step = abs(data_range) / 3
+    if raw_step == 0:
+        return 1.0
+    magnitude = 10 ** np.floor(np.log10(raw_step))
+    normalised = raw_step / magnitude
+    nice_numbers = [1, 2, 2.5, 5, 10]
+    nice = min(nice_numbers, key=lambda x: abs(x - normalised))
+    return nice * magnitude
+
+
 def calculate_axis_limits(animal3d_instance):
     """Calculate axis limits for a single-frame plot.
 

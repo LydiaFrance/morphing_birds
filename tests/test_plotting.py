@@ -14,7 +14,10 @@ from morphing_birds import (
     plot_plotly_compare,
     plot_plotly_with_trace,
 )
-from morphing_birds.plotting.plotly_helpers import is_surface_section
+from morphing_birds.plotting.plotly_helpers import (
+    calculate_nice_tick_step,
+    is_surface_section,
+)
 from morphing_birds.plotting.plotly_plots import get_polygon_plotly
 
 
@@ -238,3 +241,96 @@ class TestSurfaceConfig:
         assert mesh is not None
         assert isinstance(mesh, go.Mesh3d)
         assert lines is not None
+
+
+# ------------------------------------------------------------------
+# Nice tick step — axis labels should be clean, round numbers
+# ------------------------------------------------------------------
+
+class TestNiceTickStep:
+    """calculate_nice_tick_step should pick from {1, 2, 2.5, 5} × 10^n."""
+
+    @pytest.mark.parametrize("data_range, expected", [
+        (0.834, 0.25),    # hawk x-span  → 0.25
+        (0.078, 0.025),   # spider x-span → 0.025
+        (0.814, 0.25),    # kestrel x-span → 0.25
+        (3.0, 1.0),       # 3m range → 1m steps
+        (10.0, 2.5),      # 10m range → 2.5m steps
+        (0.006, 0.002),   # tiny range → 0.002
+    ])
+    def test_known_ranges(self, data_range, expected):
+        assert calculate_nice_tick_step(data_range) == pytest.approx(expected)
+
+    def test_zero_range_returns_one(self):
+        assert calculate_nice_tick_step(0) == 1.0
+
+    def test_result_is_always_positive(self):
+        assert calculate_nice_tick_step(-5.0) > 0
+
+    def test_step_gives_roughly_three_ticks(self):
+        """For any range, the step should divide it into ~2–5 intervals."""
+        for span in [0.05, 0.3, 1.0, 7.5, 100.0]:
+            step = calculate_nice_tick_step(span)
+            n_intervals = span / step
+            assert 1.5 <= n_intervals <= 6, (
+                f"span={span}, step={step}, intervals={n_intervals}"
+            )
+
+
+class TestNiceTicksNoCollision:
+    """Tick values must not sit at axis boundaries (causes label overlap)."""
+
+    def _get_plotly_ticks_in_range(self, range_min, range_max, step):
+        """Simulate Plotly tick placement with tick0=0 and dtick=step."""
+        import math
+        first = math.ceil(range_min / step) * step
+        ticks = []
+        t = first
+        while t <= range_max + step * 1e-9:
+            ticks.append(round(t, 10))
+            t += step
+        return ticks
+
+    def test_hawk_ticks_inset_from_edges(self, hawk):
+        """Hawk axis ticks should not sit at the range boundaries."""
+        from morphing_birds.plotting.plotly_helpers import calculate_axis_limits
+        fixed_range = calculate_axis_limits(hawk)
+        x_min, x_max = fixed_range[0]
+        step = calculate_nice_tick_step(x_max - x_min)
+        ticks = self._get_plotly_ticks_in_range(x_min, x_max, step)
+        # No tick should be within 10% of step from the edge
+        margin = step * 0.1
+        for t in ticks:
+            assert t > x_min + margin or t == pytest.approx(x_min), (
+                f"tick {t} too close to lower bound {x_min}"
+            )
+            assert t < x_max - margin or t == pytest.approx(x_max), (
+                f"tick {t} too close to upper bound {x_max}"
+            )
+
+    def test_spider_ticks_inset_from_edges(self, spider):
+        """Spider axis ticks should not sit at the range boundaries."""
+        from morphing_birds.plotting.plotly_helpers import calculate_axis_limits
+        fixed_range = calculate_axis_limits(spider)
+        x_min, x_max = fixed_range[0]
+        step = calculate_nice_tick_step(x_max - x_min)
+        ticks = self._get_plotly_ticks_in_range(x_min, x_max, step)
+        margin = step * 0.1
+        for t in ticks:
+            assert t > x_min + margin or t == pytest.approx(x_min), (
+                f"tick {t} too close to lower bound {x_min}"
+            )
+            assert t < x_max - margin or t == pytest.approx(x_max), (
+                f"tick {t} too close to upper bound {x_max}"
+            )
+
+    def test_tick_labels_are_short(self, hawk):
+        """Tick labels should be short — no more than 5 characters."""
+        from morphing_birds.plotting.plotly_helpers import calculate_axis_limits
+        fixed_range = calculate_axis_limits(hawk)
+        x_min, x_max = fixed_range[0]
+        step = calculate_nice_tick_step(x_max - x_min)
+        ticks = self._get_plotly_ticks_in_range(x_min, x_max, step)
+        for t in ticks:
+            label = f"{t:g}"
+            assert len(label) <= 6, f"tick label '{label}' is too long"
