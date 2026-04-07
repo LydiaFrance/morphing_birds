@@ -90,10 +90,14 @@ def animate_compare(animal3d_instance, keypoints_frames_list, fig=None, ax=None,
 
     ax = plot_settings(ax, animal3d_instance.origin)
 
+    colours = colour if colour is not None else [
+        matplotlib.colormaps["Set1"](ii) for ii in range(len(formatted_list))
+    ]
+
     def update_animated_plot(frame):
         ax.clear()
         for ii, kf in enumerate(formatted_list):
-            c = matplotlib.colormaps["Set1"](ii)
+            c = colours[ii]
             animal3d_instance.reset_transformation()
             animal3d_instance.update_keypoints(kf[frame])
             animal3d_instance.transform_display_only(
