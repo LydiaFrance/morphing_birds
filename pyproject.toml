@@ -37,7 +37,7 @@ dependencies = ["numpy",
                 "pyyaml",
                 "ipywidgets",
                 "ipynb",
-                'notebook==6.1.5',
+                "notebook",
                 "dash",
                 "plotly",
                 "imageio"

@@ -1,6 +1,7 @@
 """Plotly animation functions for Animal3D."""
 
 from pathlib import Path
+from typing import Callable
 
 import imageio
 import numpy as np
@@ -9,6 +10,95 @@ import plotly.graph_objs as go
 from .animation_frame_helpers import check_transformation_frames, format_keypoint_frames
 from .plotly_helpers import calculate_animation_limits, calculate_nice_tick_step
 from .plotly_plots import plot_keypoints_plotly, plot_sections_plotly
+
+
+def animate_mode(
+    pc_number: int,
+    hawk3d,
+    principal_components: np.ndarray,
+    scores: np.ndarray,
+    mu: np.ndarray,
+    colour_list: list,
+    num_frames: int = 25,
+    unilateral: bool = True,
+    sign_fn: Callable | None = None,
+) -> go.Figure:
+    """Animate a single PCA morphing mode as a 3D hawk shape.
+
+    Sweeps the selected PC score between ±2 standard deviations while
+    holding all other scores at zero, then reconstructs and animates the
+    resulting shape sequence.
+
+    Parameters
+    ----------
+    pc_number : int
+        1-based PC index to animate.
+    hawk3d : Animal3D
+        Hawk 3-D model used for rendering.
+    principal_components : numpy.ndarray
+        Component matrix, shape ``(n_components, n_features)``.
+    scores : numpy.ndarray
+        Score matrix, shape ``(n_frames, n_components)``, used to
+        determine the sweep range (±2 std).
+    mu : numpy.ndarray
+        Mean shape, shape ``(1, n_markers, 3)``.
+    colour_list : list of str
+        Hex colour per PC (0-indexed). Must have at least ``pc_number``
+        entries.
+    num_frames : int, optional
+        Number of animation frames (default 25).
+    unilateral : bool, optional
+        If True (default), mirror reconstructed frames from unilateral to
+        bilateral using :func:`~morphing_birds.bilateral.mirror_to_bilateral`.
+        Set False when the input data are already bilateral.
+    sign_fn : callable, optional
+        Function ``(score_frames) -> score_frames`` applied to the sweep
+        scores before they are used as slider labels. Useful for applying
+        project-specific sign conventions to display values without affecting
+        reconstruction. If None (default), raw scores are used as labels.
+
+    Returns
+    -------
+    plotly.graph_objects.Figure
+        The animation figure (also calls ``fig.show()``).
+    """
+    from morphing_birds.bilateral import mirror_to_bilateral
+
+    # --- Score sweep (triangle wave, ±2 std) ---
+    n_components = scores.shape[1]
+    s_mean = np.mean(scores, axis=0)
+    s_std = np.std(scores, axis=0)
+    s_min = s_mean - 2 * s_std
+    s_max = s_mean + 2 * s_std
+
+    half = num_frames // 2 + 1
+    t = np.linspace(0, 1, half)
+    t = np.concatenate([t, t[-2:0:-1]])
+    score_frames = s_min + (s_max - s_min) * t[:, np.newaxis]
+
+    # Zero out all components except the one being animated
+    sweep = np.zeros_like(score_frames)
+    sweep[:, pc_number - 1] = score_frames[:, pc_number - 1]
+
+    # --- Reconstruct ---
+    n_markers = mu.shape[1]
+    n_dims = mu.shape[2]
+    recon = np.dot(sweep, principal_components).reshape(-1, n_markers, n_dims) + mu
+
+    if unilateral:
+        recon = mirror_to_bilateral(recon)
+
+    # --- Slider labels ---
+    slider_scores = sign_fn(score_frames)[:, pc_number - 1] if sign_fn else score_frames[:, pc_number - 1]
+
+    fig = animate_plotly(
+        hawk3d,
+        recon,
+        colour=colour_list[pc_number - 1],
+        score_vals=slider_scores,
+    )
+    fig.show()
+    return fig
 
 
 def animate_plotly(animal3d_instance, keypoints_frames, alpha=0.3, colour=None,

@@ -19,6 +19,7 @@ from .data_loading import (
 from .plotting import (
     animate,
     animate_compare,
+    animate_mode,
     animate_plotly,
     animate_plotly_compare,
     animate_plotly_partial,
@@ -73,6 +74,7 @@ __all__ = (
     "plot_plotly_with_trace",
     "animate",
     "animate_compare",
+    "animate_mode",
     "animate_plotly",
     "animate_plotly_compare",
     "animate_plotly_partial",
