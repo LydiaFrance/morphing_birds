@@ -248,6 +248,13 @@ class Animal3D:
     def update_to_frame(self, motion_data: np.ndarray, frame_idx: int) -> None:
         """Update the current shape to a specific frame from motion data.
 
+        Analysis markers come from the motion frame; display-only
+        (``analysis_exclude``) markers stay at their ``default_shape``
+        values.  This matches the convention used by ``update_keypoints``
+        and ``overwrite_keypoints`` — display-only markers are fixed
+        landmarks that don't vary across frames, so whatever's at their
+        indices in ``motion_data`` (NaN, zero, stale) is ignored.
+
         Parameters
         ----------
         motion_data : np.ndarray
@@ -261,8 +268,11 @@ class Animal3D:
                 f"(max {motion_data.shape[0] - 1})."
             )
             raise ValueError(msg)
-        self.current_shape = motion_data[frame_idx : frame_idx + 1].copy()
-        self.untransformed_shape = self.current_shape.copy()
+        frame = motion_data[frame_idx : frame_idx + 1]
+        new_shape = self.default_shape.copy()
+        new_shape[:, self.analysis_indices, :] = frame[:, self.analysis_indices, :]
+        self.current_shape = new_shape
+        self.untransformed_shape = new_shape.copy()
 
     # ------------------------------------------------------------------
     # Marker access
@@ -813,21 +823,41 @@ class Animal3D:
     # NaN handling
     # ------------------------------------------------------------------
 
-    @staticmethod
-    def remove_nan_frames(motion_data: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    def remove_nan_frames(
+        self,
+        motion_data: np.ndarray,
+        analysis_only: bool = True,
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Remove frames containing NaN values.
+
+        By default only analysis markers are checked for NaN — occlusions
+        on display-only markers (e.g. ``head``, ``centre_backpack``,
+        ``left_tailbase``) won't cause a frame to be dropped.  This matches
+        what most downstream analyses actually need: if a marker is
+        excluded from analysis, a missing value there shouldn't throw out
+        an otherwise-good frame.  Set ``analysis_only=False`` to require
+        every marker to be finite.
 
         Parameters
         ----------
         motion_data : np.ndarray
-            Shape ``(n_frames, n_markers, 3)``.
+            Shape ``(n_frames, n_markers, 3)`` where ``n_markers`` matches
+            ``self.skeleton.n_markers``.
+        analysis_only : bool, default True
+            If True, only inspect analysis markers when deciding which
+            frames to drop.  If False, any NaN anywhere drops the frame.
 
         Returns
         -------
         tuple[np.ndarray, np.ndarray]
-            ``(clean_data, valid_frames_mask)``
+            ``(clean_data, valid_frames_mask)``.  ``clean_data`` retains
+            all markers — only frames are removed, not markers.
         """
-        valid = np.asarray(~np.isnan(motion_data).any(axis=(1, 2)))
+        if analysis_only and motion_data.shape[1] == self.skeleton.n_markers:
+            check = motion_data[:, self.analysis_indices, :]
+        else:
+            check = motion_data
+        valid = np.asarray(~np.isnan(check).any(axis=(1, 2)))
         return motion_data[valid], valid
 
     # ------------------------------------------------------------------

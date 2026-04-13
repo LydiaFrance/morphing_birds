@@ -302,7 +302,8 @@ class TestNanValuesInCsv:
         path = _make_csv(tmp_path, names, n_frames=5, nan_indices=nan_positions)
         result = load_from_csv(str(path), skel)
 
-        clean, mask = Animal3D.remove_nan_frames(result)
+        animal = Animal3D(skel)
+        clean, mask = animal.remove_nan_frames(result, analysis_only=False)
         assert clean.shape[0] == 3  # frames 0, 2, 4 survive
         assert mask.sum() == 3
 
