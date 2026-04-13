@@ -11,7 +11,11 @@ import numpy as np
 import pytest
 
 from morphing_birds import Animal3D, SkeletonDefinition
-from morphing_birds.bilateral import make_bilateral, make_unilateral
+from morphing_birds.bilateral import (
+    _analysis_pairs_and_centres,
+    make_bilateral,
+    make_unilateral,
+)
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
@@ -73,8 +77,10 @@ class TestPigeonEndToEnd:
         uni, is_left, _ = make_unilateral(data, skel)
         reconstructed = make_bilateral(uni, skel, is_left)
 
+        pairs, centres = _analysis_pairs_and_centres(skel)
+
         # Check all paired markers survive the round-trip
-        for left, right in skel.get_marker_pairs():
+        for left, right in pairs:
             l_idx = skel.marker_index(left)
             r_idx = skel.marker_index(right)
             np.testing.assert_array_almost_equal(
@@ -87,7 +93,7 @@ class TestPigeonEndToEnd:
             )
 
         # Check centre markers survive
-        for c in skel.get_centre_markers():
+        for c in centres:
             if c in skel.all_marker_names:
                 c_idx = skel.marker_index(c)
                 np.testing.assert_array_almost_equal(
@@ -144,7 +150,9 @@ class TestSpiderEndToEnd:
         uni, is_left, _ = make_unilateral(data, skel)
         reconstructed = make_bilateral(uni, skel, is_left)
 
-        for left, right in skel.get_marker_pairs():
+        pairs, centres = _analysis_pairs_and_centres(skel)
+
+        for left, right in pairs:
             l_idx = skel.marker_index(left)
             r_idx = skel.marker_index(right)
             np.testing.assert_array_almost_equal(
@@ -157,7 +165,7 @@ class TestSpiderEndToEnd:
             )
 
         # Check centre markers survive
-        for c in skel.get_centre_markers():
+        for c in centres:
             if c in skel.all_marker_names:
                 c_idx = skel.marker_index(c)
                 np.testing.assert_array_almost_equal(
@@ -207,7 +215,9 @@ class TestKestrelEndToEnd:
         uni, is_left, _ = make_unilateral(data, skel)
         reconstructed = make_bilateral(uni, skel, is_left)
 
-        for left, right in skel.get_marker_pairs():
+        pairs, _centres = _analysis_pairs_and_centres(skel)
+
+        for left, right in pairs:
             l_idx = skel.marker_index(left)
             r_idx = skel.marker_index(right)
             np.testing.assert_array_almost_equal(

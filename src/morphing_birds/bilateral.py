@@ -12,6 +12,39 @@ import pandas as pd
 from .skeleton import SkeletonDefinition
 
 
+def _analysis_pairs_and_centres(
+    skeleton: SkeletonDefinition,
+) -> tuple[list[tuple[str, str]], list[str]]:
+    """Return marker pairs and centre markers with display-only markers removed.
+
+    ``make_unilateral`` and ``make_bilateral`` must agree on which markers
+    participate, otherwise round-tripping fails.  Both funnel through
+    here.
+
+    Parameters
+    ----------
+    skeleton : SkeletonDefinition
+        Skeleton providing pairs, centres, and ``analysis_exclude``.
+
+    Returns
+    -------
+    tuple
+        ``(pairs, centre_names)`` — pairs whose *both* markers are in the
+        analysis set, and centre markers that are in the skeleton and not
+        in ``analysis_exclude``.
+    """
+    exclude = skeleton.analysis_exclude
+    pairs = [
+        p for p in skeleton.get_marker_pairs()
+        if p[0] not in exclude and p[1] not in exclude
+    ]
+    centre_names = [
+        c for c in skeleton.get_centre_markers()
+        if c in skeleton.all_marker_names and c not in exclude
+    ]
+    return pairs, centre_names
+
+
 def mirror_to_bilateral(keypoints: np.ndarray) -> np.ndarray:
     """Mirror right-side markers across the x-axis to create the left side.
 
@@ -68,13 +101,9 @@ def make_unilateral(
     motion_data_copy = np.copy(motion_data)
     info_df_copy = info_df.copy() if info_df is not None else None
 
-    # Get marker pairs and centres
-    pairs = skeleton.get_marker_pairs()
+    pairs, centre_names = _analysis_pairs_and_centres(skeleton)
     left_names = [p[0] for p in pairs]
     right_names = [p[1] for p in pairs]
-    centre_names = skeleton.get_centre_markers()
-    # Filter to markers actually in the skeleton
-    centre_names = [c for c in centre_names if c in skeleton.all_marker_names]
 
     all_names = skeleton.all_marker_names
     left_indices = [all_names.index(m) for m in left_names]
@@ -158,11 +187,9 @@ def make_bilateral(
     if is_left.dtype.kind in "iu":
         is_left = is_left.astype(bool)
 
-    pairs = skeleton.get_marker_pairs()
+    pairs, centre_names = _analysis_pairs_and_centres(skeleton)
     left_names = [p[0] for p in pairs]
     right_names = [p[1] for p in pairs]
-    centre_names = skeleton.get_centre_markers()
-    centre_names = [c for c in centre_names if c in skeleton.all_marker_names]
 
     n_pairs = len(pairs)
     n_centres = len(centre_names)

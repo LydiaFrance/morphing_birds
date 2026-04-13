@@ -8,6 +8,7 @@ import pytest
 
 from morphing_birds import Animal3D, SkeletonDefinition
 from morphing_birds.bilateral import (
+    _analysis_pairs_and_centres,
     make_bilateral,
     make_unilateral,
     validate_left_right,
@@ -66,8 +67,7 @@ class TestBilateralRoundTrip:
         uni, is_left, _ = make_unilateral(data, hawk_skel)
         reconstructed = make_bilateral(uni, hawk_skel, is_left)
 
-        pairs = hawk_skel.get_marker_pairs()
-        centres = hawk_skel.get_centre_markers()
+        pairs, centres = _analysis_pairs_and_centres(hawk_skel)
 
         for left, right in pairs:
             l_idx = hawk_skel.marker_index(left)
@@ -106,7 +106,8 @@ class TestBilateralRoundTrip:
         uni, is_left, _ = make_unilateral(data, pigeon_skel)
         reconstructed = make_bilateral(uni, pigeon_skel, is_left)
 
-        for left, right in pigeon_skel.get_marker_pairs():
+        pairs, _ = _analysis_pairs_and_centres(pigeon_skel)
+        for left, right in pairs:
             l_idx = pigeon_skel.marker_index(left)
             r_idx = pigeon_skel.marker_index(right)
             np.testing.assert_array_almost_equal(
@@ -125,7 +126,8 @@ class TestBilateralRoundTrip:
         uni, is_left, _ = make_unilateral(data, kestrel_skel)
         reconstructed = make_bilateral(uni, kestrel_skel, is_left)
 
-        for left, right in kestrel_skel.get_marker_pairs():
+        pairs, _ = _analysis_pairs_and_centres(kestrel_skel)
+        for left, right in pairs:
             l_idx = kestrel_skel.marker_index(left)
             r_idx = kestrel_skel.marker_index(right)
             np.testing.assert_array_almost_equal(
@@ -144,7 +146,8 @@ class TestBilateralRoundTrip:
         uni, is_left, _ = make_unilateral(data, spider_skel)
         reconstructed = make_bilateral(uni, spider_skel, is_left)
 
-        for left, right in spider_skel.get_marker_pairs():
+        pairs, _ = _analysis_pairs_and_centres(spider_skel)
+        for left, right in pairs:
             l_idx = spider_skel.marker_index(left)
             r_idx = spider_skel.marker_index(right)
             np.testing.assert_array_almost_equal(
@@ -180,7 +183,8 @@ class TestBilateralRoundTrip:
         uni, is_left, _ = make_unilateral(data, skel)
         reconstructed = make_bilateral(uni, skel, is_left)
 
-        for left, right in skel.get_marker_pairs():
+        pairs, _ = _analysis_pairs_and_centres(skel)
+        for left, right in pairs:
             l_idx = skel.marker_index(left)
             r_idx = skel.marker_index(right)
             np.testing.assert_array_almost_equal(
@@ -200,23 +204,14 @@ class TestBilateralRoundTrip:
 class TestCentreMarkerRoundTrip:
     """Verify centre (unpaired) markers survive the round-trip."""
 
-    def test_pigeon_centre_markers_preserved(self):
-        """Pigeon has centre_body_base, head, centre_backpack as centres."""
+    def test_pigeon_has_no_analysis_centres(self):
+        """Pigeon's centre markers are all display-only (in analysis_exclude)."""
         skel = SkeletonDefinition.from_builtin("pigeon")
-        data = _make_valid_bilateral(skel)
-
-        uni, is_left, _ = make_unilateral(data, skel)
-        reconstructed = make_bilateral(uni, skel, is_left)
-
-        centres = skel.get_centre_markers()
-        assert len(centres) > 0, "Pigeon should have centre markers"
-
-        for c in centres:
-            c_idx = skel.marker_index(c)
-            np.testing.assert_array_almost_equal(
-                reconstructed[:, c_idx, :], data[:, c_idx, :],
-                err_msg=f"Centre marker {c} not preserved",
-            )
+        _, centres = _analysis_pairs_and_centres(skel)
+        assert centres == [], (
+            "Pigeon centres (centre_body_base, head, centre_backpack) are "
+            "all display-only and should be excluded from bilateral analysis"
+        )
 
     def test_spider_centre_markers_preserved(self):
         """Spider has clypeus, pedicel, spinneret, center as centres."""
@@ -226,9 +221,7 @@ class TestCentreMarkerRoundTrip:
         uni, is_left, _ = make_unilateral(data, skel)
         reconstructed = make_bilateral(uni, skel, is_left)
 
-        centres = skel.get_centre_markers()
-        # center is in analysis_exclude but still in all_marker_names
-        centre_in_all = [c for c in centres if c in skel.all_marker_names]
+        _, centre_in_all = _analysis_pairs_and_centres(skel)
         assert len(centre_in_all) > 0
 
         for c in centre_in_all:
@@ -359,7 +352,8 @@ class TestEdgeCases:
         reconstructed = make_bilateral(uni, skel, is_left)
         assert reconstructed.shape[0] == 1
 
-        for left, right in skel.get_marker_pairs():
+        pairs, _ = _analysis_pairs_and_centres(skel)
+        for left, right in pairs:
             l_idx = skel.marker_index(left)
             r_idx = skel.marker_index(right)
             np.testing.assert_array_almost_equal(
