@@ -22,6 +22,11 @@ markers:
   - left_tailbase
   - right_tailbase
 
+# Display-only (analysis_exclude) markers are not used in analysis and
+# do not move between frames — they take their positions from the mean
+# shape.  The tailbase markers in particular are not captured directly
+# by the motion capture system; their positions in the mean shape are
+# derived from the shoulder positions and held fixed.
 analysis_exclude:
   - head
   - centre_backpack
@@ -62,6 +67,12 @@ column_mapping:
   left_wingtip: Left_Tip
   left_wrist: Left_Wrist_Leading_Edge
   left_secondary: Left_Wrist_Trailing_Edge
+  # left_tailbase and right_tailbase are display-only markers.  The
+  # motion capture CSV typically does not contain these columns (they
+  # are derived landmarks, not tracked markers), but the mean shape CSV
+  # does — their fixed positions are read from there and reused for
+  # every motion frame.  A load-time warning about missing motion-CSV
+  # columns for these two is expected and harmless.
   left_tailbase: Left_Tailbase
   right_tailbase: Right_Tailbase
 
