@@ -88,7 +88,7 @@ motion_data = hawk.load_motion_data("data/hawk_flight.csv")
 hawk.update_to_frame(motion_data, frame_idx=42)
 
 # Remove NaN frames
-clean_data, valid_mask = Animal3D.remove_nan_frames(motion_data)
+clean_data, valid_mask = hawk.remove_nan_frames(motion_data)
 ```
 
 #### Scaling

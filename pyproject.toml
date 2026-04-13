@@ -79,7 +79,6 @@ testpaths = [
   "tests",
 ]
 
-
 [tool.coverage]
 run.source = ["morphing_birds"]
 port.exclude_lines = [
@@ -87,6 +86,7 @@ port.exclude_lines = [
   '\.\.\.',
   'if typing.TYPE_CHECKING:',
 ]
+
 
 
 [tool.ty.rules]
