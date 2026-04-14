@@ -14,6 +14,7 @@ from .skeleton import SkeletonDefinition
 
 def _analysis_pairs_and_centres(
     skeleton: SkeletonDefinition,
+    exclude: set[str] | None = None,
 ) -> tuple[list[tuple[str, str]], list[str]]:
     """Return marker pairs and centre markers with display-only markers removed.
 
@@ -25,15 +26,19 @@ def _analysis_pairs_and_centres(
     ----------
     skeleton : SkeletonDefinition
         Skeleton providing pairs, centres, and ``analysis_exclude``.
+    exclude : set[str], optional
+        Override for the skeleton's ``analysis_exclude``. Used internally
+        by ``Animal3D`` methods to pass runtime exclusions.
 
     Returns
     -------
     tuple
         ``(pairs, centre_names)`` — pairs whose *both* markers are in the
         analysis set, and centre markers that are in the skeleton and not
-        in ``analysis_exclude``.
+        in the exclusion set.
     """
-    exclude = skeleton.analysis_exclude
+    if exclude is None:
+        exclude = skeleton.analysis_exclude
     pairs = [
         p for p in skeleton.get_marker_pairs()
         if p[0] not in exclude and p[1] not in exclude
@@ -74,6 +79,8 @@ def make_unilateral(
     motion_data: np.ndarray,
     skeleton: SkeletonDefinition,
     info_df: pd.DataFrame | None = None,
+    *,
+    exclude: set[str] | None = None,
 ) -> tuple[np.ndarray, np.ndarray, pd.DataFrame | None]:
     """Split bilateral data into doubled unilateral observations.
 
@@ -88,6 +95,9 @@ def make_unilateral(
         Skeleton definition (used for marker pairing).
     info_df : pd.DataFrame, optional
         Per-frame metadata.  If provided, rows are doubled to match.
+    exclude : set[str], optional
+        Override for the skeleton's ``analysis_exclude``. Used internally
+        by ``Animal3D.make_unilateral()`` to pass runtime exclusions.
 
     Returns
     -------
@@ -101,7 +111,7 @@ def make_unilateral(
     motion_data_copy = np.copy(motion_data)
     info_df_copy = info_df.copy() if info_df is not None else None
 
-    pairs, centre_names = _analysis_pairs_and_centres(skeleton)
+    pairs, centre_names = _analysis_pairs_and_centres(skeleton, exclude)
     left_names = [p[0] for p in pairs]
     right_names = [p[1] for p in pairs]
 
@@ -164,6 +174,8 @@ def make_bilateral(
     unilateral_data: np.ndarray,
     skeleton: SkeletonDefinition,
     is_left: np.ndarray,
+    *,
+    exclude: set[str] | None = None,
 ) -> np.ndarray:
     """Reconstruct bilateral data from unilateral observations.
 
@@ -178,6 +190,9 @@ def make_bilateral(
         Skeleton definition.
     is_left : np.ndarray
         Boolean or integer array indicating which frames were originally left.
+    exclude : set[str], optional
+        Override for the skeleton's ``analysis_exclude``. Used internally
+        by ``Animal3D.make_bilateral()`` to pass runtime exclusions.
 
     Returns
     -------
@@ -187,7 +202,7 @@ def make_bilateral(
     if is_left.dtype.kind in "iu":
         is_left = is_left.astype(bool)
 
-    pairs, centre_names = _analysis_pairs_and_centres(skeleton)
+    pairs, centre_names = _analysis_pairs_and_centres(skeleton, exclude)
     left_names = [p[0] for p in pairs]
     right_names = [p[1] for p in pairs]
 

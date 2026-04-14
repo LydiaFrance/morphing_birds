@@ -545,3 +545,168 @@ class TestInfoDfDoubling:
 
         expected_index = list(range(2 * 2))
         assert list(info_out.index) == expected_index
+
+
+# ==================================================================
+# Animal3D wrapper methods
+# ==================================================================
+
+class TestAnimal3DWrapperMethods:
+    """Tests for Animal3D.make_unilateral() and make_bilateral().
+
+    These wrapper methods exist so that runtime marker exclusions
+    (via exclude_markers()) are respected by bilateral conversion.
+    """
+
+    @pytest.fixture
+    def pigeon_csv(self):
+        csv_path = DATA_DIR / "mean_pigeon_shape.csv"
+        if not csv_path.exists():
+            pytest.skip("mean_pigeon_shape.csv not found")
+        return str(csv_path)
+
+    def test_wrapper_respects_runtime_exclusions(self, pigeon_csv):
+        """Animal3D.make_unilateral() uses current _analysis_exclude.
+
+        This is the bug Charlie hit: after calling exclude_markers(),
+        the direct make_unilateral() function ignores the exclusions,
+        but the Animal3D wrapper method should respect them.
+        """
+        pigeon = Animal3D("pigeon", data=pigeon_csv)
+
+        # Get initial marker counts
+        initial_analysis = len(pigeon.analysis_indices)
+        assert initial_analysis == 14, "Pigeon should have 14 analysis markers"
+
+        # Exclude some markers
+        pigeon.exclude_markers([
+            "left_shoulder", "right_shoulder",
+            "left_lastsecondary_tip", "right_lastsecondary_tip",
+        ])
+        reduced_analysis = len(pigeon.analysis_indices)
+        assert reduced_analysis == 10, "Should have 10 markers after exclusion"
+
+        # Create fake motion data
+        data = _make_valid_bilateral(pigeon.skeleton, n_frames=5)
+
+        # Using the wrapper method should respect exclusions
+        uni_wrapper, is_left, _ = pigeon.make_unilateral(data)
+
+        # Using the direct function should use skeleton's original excludes
+        uni_direct, _, _ = make_unilateral(data, pigeon.skeleton)
+
+        # The wrapper should produce fewer unilateral markers
+        # because it excludes the 4 extra markers (2 pairs)
+        assert uni_wrapper.shape[1] < uni_direct.shape[1], (
+            "Wrapper should produce fewer markers due to exclusions"
+        )
+
+        # Specifically: 10 bilateral markers / 2 = 5 unilateral pairs
+        # (pigeon has no centre markers in analysis set)
+        assert uni_wrapper.shape[1] == 5, (
+            f"Expected 5 unilateral markers from 10 bilateral, got {uni_wrapper.shape[1]}"
+        )
+
+    def test_wrapper_round_trip_with_exclusions(self, pigeon_csv):
+        """Wrapper methods round-trip correctly after exclude_markers()."""
+        pigeon = Animal3D("pigeon", data=pigeon_csv)
+
+        pigeon.exclude_markers([
+            "left_shoulder", "right_shoulder",
+            "left_lastsecondary_tip", "right_lastsecondary_tip",
+        ])
+
+        data = _make_valid_bilateral(pigeon.skeleton, n_frames=5)
+        uni, is_left, _ = pigeon.make_unilateral(data)
+        reconstructed = pigeon.make_bilateral(uni, is_left)
+
+        # Reconstructed should have same shape as original
+        assert reconstructed.shape == data.shape
+
+        # Check that non-excluded pairs round-trip correctly
+        pairs, _ = _analysis_pairs_and_centres(
+            pigeon.skeleton, exclude=pigeon._analysis_exclude
+        )
+        for left, right in pairs:
+            l_idx = pigeon.skeleton.marker_index(left)
+            r_idx = pigeon.skeleton.marker_index(right)
+            np.testing.assert_array_almost_equal(
+                reconstructed[:, l_idx, :], data[:, l_idx, :],
+                err_msg=f"Left marker {left} mismatch after wrapper round trip",
+            )
+            np.testing.assert_array_almost_equal(
+                reconstructed[:, r_idx, :], data[:, r_idx, :],
+                err_msg=f"Right marker {right} mismatch after wrapper round trip",
+            )
+
+    def test_pca_animation_after_exclude_markers(self, pigeon_csv):
+        """E2E test: PCA + animation works after exclude_markers().
+
+        This is the exact workflow that was broken:
+        1. Create Animal3D
+        2. exclude_markers()
+        3. make_unilateral() for PCA
+        4. Run PCA
+        5. Reconstruct and animate
+
+        The bug was that step 3 ignored the exclusions, causing
+        marker count mismatch at step 5.
+        """
+        from sklearn.decomposition import PCA
+        from morphing_birds.bilateral import mirror_to_bilateral
+
+        pigeon = Animal3D("pigeon", data=pigeon_csv)
+
+        # Exclude markers (like Charlie did)
+        pigeon.exclude_markers([
+            "left_shoulder", "right_shoulder",
+            "left_lastsecondary_tip", "right_lastsecondary_tip",
+        ])
+        n_analysis = len(pigeon.analysis_indices)
+        assert n_analysis == 10
+
+        # Create fake motion and convert to unilateral
+        data = _make_valid_bilateral(pigeon.skeleton, n_frames=50)
+        uni, is_left, _ = pigeon.make_unilateral(data)
+
+        # Run PCA on flattened unilateral data
+        flat = uni.reshape(uni.shape[0], -1)
+        pca = PCA(n_components=3)
+        scores = pca.fit_transform(flat)
+        mu = pca.mean_.reshape(1, -1, 3)
+
+        # Reconstruct a frame from PCA
+        recon_flat = pca.inverse_transform(scores[:1])
+        recon_uni = recon_flat.reshape(1, -1, 3)
+
+        # Mirror to bilateral (this is what animate_mode does)
+        recon_bilateral = mirror_to_bilateral(recon_uni)
+
+        # The critical check: marker count must match what pigeon expects
+        assert recon_bilateral.shape[1] == n_analysis, (
+            f"Mirrored reconstruction has {recon_bilateral.shape[1]} markers, "
+            f"but Animal3D expects {n_analysis}. "
+            "This is the bug where exclude_markers() wasn't respected."
+        )
+
+        # Verify we can update keypoints without error
+        # (this was raising ValueError before the fix)
+        pigeon.update_keypoints(recon_bilateral[0])
+
+    def test_direct_function_with_exclude_override(self, pigeon_csv):
+        """Direct functions accept exclude parameter for advanced use."""
+        pigeon = Animal3D("pigeon", data=pigeon_csv)
+
+        custom_exclude = pigeon._analysis_exclude | {
+            "left_shoulder", "right_shoulder",
+        }
+
+        data = _make_valid_bilateral(pigeon.skeleton, n_frames=3)
+
+        uni_with_exclude, _, _ = make_unilateral(
+            data, pigeon.skeleton, exclude=custom_exclude
+        )
+        uni_without, _, _ = make_unilateral(data, pigeon.skeleton)
+
+        # With custom exclude should have fewer markers
+        assert uni_with_exclude.shape[1] < uni_without.shape[1]

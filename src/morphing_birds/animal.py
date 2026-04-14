@@ -13,7 +13,6 @@ import pandas as pd
 
 from .data_loading import (
     get_matched_csv_columns,
-    load_from_csv,
     load_from_dataframe,
     load_from_dict,
     load_mean_shape_csv,
@@ -446,6 +445,68 @@ class Animal3D:
             print(f"Analysis data: {n_total} of {n_total} markers (all included)")
 
         return motion_data[:, indices, :]
+
+    def make_unilateral(
+        self,
+        motion_data: np.ndarray,
+        info_df: "pd.DataFrame | None" = None,
+    ) -> tuple[np.ndarray, np.ndarray, "pd.DataFrame | None"]:
+        """Convert bilateral motion data to unilateral observations.
+
+        Wraps :func:`~morphing_birds.bilateral.make_unilateral` with the
+        current analysis exclusion set, so runtime ``exclude_markers()``
+        calls are respected.
+
+        Parameters
+        ----------
+        motion_data : np.ndarray
+            Bilateral motion data, shape ``(n_frames, n_markers, 3)``.
+        info_df : pd.DataFrame, optional
+            Per-frame metadata.  If provided, rows are doubled to match.
+
+        Returns
+        -------
+        tuple
+            ``(unilateral_data, is_left, unilateral_info_df)``
+
+            - ``unilateral_data``: shape ``(n_frames * 2, n_right + n_centre, 3)``
+            - ``is_left``: boolean array, ``True`` for frames from the left side
+            - ``unilateral_info_df``: doubled info DataFrame, or ``None``
+        """
+        from morphing_birds.bilateral import make_unilateral as _make_unilateral
+
+        return _make_unilateral(
+            motion_data, self.skeleton, info_df, exclude=self._analysis_exclude
+        )
+
+    def make_bilateral(
+        self,
+        unilateral_data: np.ndarray,
+        is_left: np.ndarray,
+    ) -> np.ndarray:
+        """Reconstruct bilateral data from unilateral observations.
+
+        Wraps :func:`~morphing_birds.bilateral.make_bilateral` with the
+        current analysis exclusion set, so runtime ``exclude_markers()``
+        calls are respected.
+
+        Parameters
+        ----------
+        unilateral_data : np.ndarray
+            Unilateral data, shape ``(n_frames * 2, n_right + n_centre, 3)``.
+        is_left : np.ndarray
+            Boolean or integer array indicating which frames were originally left.
+
+        Returns
+        -------
+        np.ndarray
+            Reconstructed bilateral data, shape ``(n_frames, n_markers, 3)``.
+        """
+        from morphing_birds.bilateral import make_bilateral as _make_bilateral
+
+        return _make_bilateral(
+            unilateral_data, self.skeleton, is_left, exclude=self._analysis_exclude
+        )
 
     def set_variant(self, name: str) -> None:
         """Apply a named variant, updating exclusions and body sections.
