@@ -8,7 +8,11 @@ import numpy as np
 import plotly.graph_objs as go
 
 from .animation_frame_helpers import check_transformation_frames, format_keypoint_frames
-from .plotly_helpers import calculate_animation_limits, calculate_nice_tick_step
+from .plotly_helpers import (
+    calculate_animation_limits,
+    calculate_animation_limits_multi,
+    calculate_nice_tick_step,
+)
 from .plotly_plots import plot_keypoints_plotly, plot_sections_plotly
 
 
@@ -184,20 +188,30 @@ def animate_plotly(animal3d_instance, keypoints_frames, alpha=0.3, colour=None,
     return initial_fig
 
 
-def animate_plotly_compare(animal3d_instance, keypoints_frames_list, alpha=0.3,
+def animate_plotly_compare(animal3d_instances, keypoints_frames_list, alpha=0.3,
                            colours=None, horzDist_frames_list=None,
                            bodypitch_frames_list=None, vertDist_frames_list=None,
                            bodyyaw_frames_list=None, bodyroll_frames_list=None,
                            score_vals=None, axes_visible=True,
                            display_only_transform=False):
-    """Create an animated 3D comparison plot."""
+    """Create an animated 3D comparison plot.
+
+    Flexible input handling:
+    - Single instance + list of keypoints: overlay multiple animations on same skeleton
+    - List of instances + single keypoints: same animation on different skeletons
+    - List of instances + list of keypoints: each instance gets its own animation
+    """
     if colours is None:
         colours = [None, 'red']
 
-    # Format keypoints
+    animal3d_instances, keypoints_frames_list, colours = _normalise_compare_inputs(
+        animal3d_instances, keypoints_frames_list, colours
+    )
+
+    # Format keypoints for each instance
     formatted_list = []
-    for kf in keypoints_frames_list:
-        formatted = format_keypoint_frames(animal3d_instance, kf)
+    for animal, kf in zip(animal3d_instances, keypoints_frames_list, strict=True):
+        formatted = format_keypoint_frames(animal, kf)
         if formatted.shape[0] == 0:
             msg = "No frames in one of the keypoint sets."
             raise ValueError(msg)
@@ -208,45 +222,32 @@ def animate_plotly_compare(animal3d_instance, keypoints_frames_list, alpha=0.3,
         msg = "All keypoint sets must have the same number of frames."
         raise ValueError(msg)
 
-    # Check transforms
-    if horzDist_frames_list:
-        horzDist_frames_list = [check_transformation_frames(num_frames, f) for f in horzDist_frames_list]
-    if vertDist_frames_list:
-        vertDist_frames_list = [check_transformation_frames(num_frames, f) for f in vertDist_frames_list]
-    if bodypitch_frames_list:
-        bodypitch_frames_list = [check_transformation_frames(num_frames, f) for f in bodypitch_frames_list]
-    if bodyyaw_frames_list:
-        bodyyaw_frames_list = [check_transformation_frames(num_frames, f) for f in bodyyaw_frames_list]
-    if bodyroll_frames_list:
-        bodyroll_frames_list = [check_transformation_frames(num_frames, f) for f in bodyroll_frames_list]
+    transforms = _check_transform_lists(
+        num_frames,
+        horzDist=horzDist_frames_list,
+        vertDist=vertDist_frames_list,
+        bodypitch=bodypitch_frames_list,
+        bodyyaw=bodyyaw_frames_list,
+        bodyroll=bodyroll_frames_list,
+    )
 
-    # Pre-compute limits across all datasets
-    all_kf = np.concatenate(formatted_list, axis=0)
-    fixed_range = calculate_animation_limits(animal3d_instance, all_kf)
+    # Pre-compute limits across all instances and keyframes
+    fixed_range = calculate_animation_limits_multi(animal3d_instances, formatted_list)
 
     # Create frames
-    transform = (animal3d_instance.transform_display_only if display_only_transform
-                 else animal3d_instance.transform_all)
     frames = []
     for frame in range(num_frames):
         fig = go.Figure()
-        for idx, keypoints in enumerate(formatted_list):
-            animal3d_instance.reset_transformation()
-            animal3d_instance.update_keypoints(keypoints[frame])
+        for idx, (animal, keypoints) in enumerate(zip(animal3d_instances, formatted_list, strict=True)):
+            transform = (animal.transform_display_only if display_only_transform
+                         else animal.transform_all)
+            animal.reset_transformation()
+            animal.update_keypoints(keypoints[frame])
 
-            horz = horzDist_frames_list[idx][frame] if horzDist_frames_list else 0
-            vert = vertDist_frames_list[idx][frame] if vertDist_frames_list else 0
-            pitch = bodypitch_frames_list[idx][frame] if bodypitch_frames_list else 0
-            yaw = bodyyaw_frames_list[idx][frame] if bodyyaw_frames_list else 0
-            roll = bodyroll_frames_list[idx][frame] if bodyroll_frames_list else 0
+            transform(**_get_frame_transforms(transforms, idx, frame))
 
-            transform(
-                bodypitch=pitch, horzDist=horz, vertDist=vert,
-                bodyyaw=yaw, bodyroll=roll,
-            )
-
-            fig = plot_sections_plotly(fig, animal3d_instance, colour=colours[idx], alpha=alpha)
-            fig = plot_keypoints_plotly(fig, animal3d_instance, colour=colours[idx], alpha=1)
+            fig = plot_sections_plotly(fig, animal, colour=colours[idx], alpha=alpha)
+            fig = plot_keypoints_plotly(fig, animal, colour=colours[idx], alpha=1)
 
         fig = _apply_animation_layout(fig, fixed_range, axes_visible)
         frames.append(go.Frame(data=fig.data, layout=fig.layout, name=str(frame)))
@@ -375,6 +376,42 @@ def save_plotly_animation(fig, filename, format='gif', fps=10, width=800, height
 # ------------------------------------------------------------------
 # Internal helpers
 # ------------------------------------------------------------------
+
+def _normalise_compare_inputs(animal3d_instances, keypoints_frames_list, colours):
+    """Normalise and broadcast inputs for comparison animation."""
+    if hasattr(animal3d_instances, 'current_shape'):
+        animal3d_instances = [animal3d_instances]
+    if isinstance(keypoints_frames_list, np.ndarray):
+        keypoints_frames_list = [keypoints_frames_list]
+
+    n_inst, n_kf = len(animal3d_instances), len(keypoints_frames_list)
+    if n_inst == 1:
+        animal3d_instances = animal3d_instances * n_kf
+    elif n_kf == 1:
+        keypoints_frames_list = keypoints_frames_list * n_inst
+    elif n_inst != n_kf:
+        msg = "Number of instances and keypoint sets must match (or one must be broadcastable)."
+        raise ValueError(msg)
+
+    n_items = len(animal3d_instances)
+    if len(colours) < n_items:
+        colours = colours * ((n_items // len(colours)) + 1)
+
+    return animal3d_instances, keypoints_frames_list, colours
+
+
+def _check_transform_lists(num_frames, **transform_lists):
+    """Validate all transform frame lists."""
+    return {
+        k: [check_transformation_frames(num_frames, f) for f in v] if v else None
+        for k, v in transform_lists.items()
+    }
+
+
+def _get_frame_transforms(transforms, idx, frame):
+    """Extract transform values for a specific instance and frame."""
+    return {k: v[idx][frame] if v else 0 for k, v in transforms.items()}
+
 
 def _apply_animation_layout(fig, fixed_range, axes_visible=True):
     """Apply consistent layout with pre-computed axis limits."""

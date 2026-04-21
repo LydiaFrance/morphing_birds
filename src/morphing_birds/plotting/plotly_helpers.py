@@ -127,6 +127,35 @@ def calculate_animation_limits(animal3d_instance, keypoints_frames, transform_fr
     ]
 
 
+def calculate_animation_limits_multi(animal3d_instances, keypoints_frames_list):
+    """Pre-compute axis limits that encompass ALL frames across multiple Animal3d instances."""
+    all_coords = []
+
+    for animal, keypoints_frames in zip(animal3d_instances, keypoints_frames_list, strict=True):
+        all_coords.append(keypoints_frames.reshape(-1, 3))
+        display_coords = animal.default_shape[0, animal.display_only_indices, :]
+        if len(display_coords) > 0:
+            all_coords.append(display_coords)
+
+    combined = np.concatenate(all_coords, axis=0)
+    all_min = combined.min(axis=0)
+    all_max = combined.max(axis=0)
+
+    ranges = all_max - all_min
+    max_range = np.max(ranges)
+    view_radius = max_range * 0.7
+
+    centres = (all_min + all_max) / 2
+    centres[0] = 0
+    centres[2] = 0
+
+    return [
+        [centres[0] - view_radius, centres[0] + view_radius],
+        [centres[1] - view_radius, centres[1] + view_radius],
+        [centres[2] - view_radius, centres[2] + view_radius],
+    ]
+
+
 def get_section_style(section_name, caller_colour, caller_alpha, animal3d_instance=None):
     """Resolve the final (colour, alpha) for a polygon section.
 
