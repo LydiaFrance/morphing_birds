@@ -51,6 +51,30 @@ def calculate_axis_limits(animal3d_instance):
     ]
 
 
+def calculate_compare_limits(animal3d_instances):
+    """Calculate axis limits that encompass all Animal3d instances."""
+    all_coords = []
+    for animal in animal3d_instances:
+        all_coords.append(animal.default_shape.copy())
+        all_coords.append(animal.current_shape.copy())
+
+    combined = np.concatenate(all_coords, axis=0)
+    overall_min = combined.min(axis=(0, 1))
+    overall_max = combined.max(axis=(0, 1))
+
+    ranges = overall_max - overall_min
+    natural_size = np.max(ranges)
+    view_radius = natural_size * 0.7
+
+    centres = (overall_min + overall_max) / 2
+
+    return [
+        [centres[0] - view_radius, centres[0] + view_radius],
+        [centres[1] - view_radius, centres[1] + view_radius],
+        [centres[2] - view_radius, centres[2] + view_radius],
+    ]
+
+
 def calculate_animation_limits(animal3d_instance, keypoints_frames, transform_frames=None):
     """Pre-compute axis limits that encompass ALL frames of an animation.
 

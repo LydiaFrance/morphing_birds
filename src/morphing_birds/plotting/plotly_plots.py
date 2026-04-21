@@ -5,6 +5,7 @@ import plotly.graph_objs as go
 
 from .plotly_helpers import (
     calculate_axis_limits,
+    calculate_compare_limits,
     calculate_nice_tick_step,
     get_section_style,
     is_surface_section,
@@ -90,17 +91,18 @@ def plot_plotly_compare(animal3d_instances, colours=None, alpha=0.5, axes_visibl
 
         fig = plot_sections_plotly(fig, animal3d_instance, colour, alpha)
 
-        if not axes_visible:
-            fig.update_layout(scene={
-                'xaxis': {'visible': False},
-                'yaxis': {'visible': False},
-                'zaxis': {'visible': False},
-            })
-
-        fig = plot_settings_plotly(fig, animal3d_instance)
-
         if has_transform:
             animal3d_instance.current_shape = current_state
+
+    if not axes_visible:
+        fig.update_layout(scene={
+            'xaxis': {'visible': False},
+            'yaxis': {'visible': False},
+            'zaxis': {'visible': False},
+        })
+
+    fixed_range = calculate_compare_limits(animal3d_instances)
+    fig = plot_settings_plotly(fig, fixed_range=fixed_range)
 
     return fig
 
@@ -308,9 +310,10 @@ def get_polygon_plotly(animal3d_instance, section_name, colour, alpha: float = 1
     return mesh, lines
 
 
-def plot_settings_plotly(fig, animal3d_instance):
+def plot_settings_plotly(fig, animal3d_instance=None, fixed_range=None):
     """Apply standard layout settings to a static Plotly figure."""
-    fixed_range = calculate_axis_limits(animal3d_instance)
+    if fixed_range is None:
+        fixed_range = calculate_axis_limits(animal3d_instance)
 
     x_span = fixed_range[0][1] - fixed_range[0][0]
     nice_step = calculate_nice_tick_step(x_span)
