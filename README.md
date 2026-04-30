@@ -1,5 +1,7 @@
 # Morphing Birds
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19917701.svg)](https://doi.org/10.5281/zenodo.19917701)
+
 A toolkit for plotting and animating morphing bird (and other animal) wing and tail shapes in 3D flight data.
 
 ## What's new in v0.2.0
