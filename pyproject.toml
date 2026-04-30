@@ -34,22 +34,26 @@ classifiers = [
 dependencies = ["numpy",
                 "pandas",
                 "matplotlib",
+                "pillow >=11.1.0",
                 "pyyaml",
                 "ipywidgets",
-                "ipynb",
-                "notebook",
                 "dash",
                 "plotly",
                 "imageio"
                 ]
 
 [project.optional-dependencies]
+notebook = [
+  "notebook >=7.3.3",
+  "nbconvert >=7.16.6",
+  "ipynb",
+]
 test = [
-  "pytest >=6",
+  "pytest >=8.4",
   "pytest-cov >=3",
 ]
 dev = [
-  "pytest >=6",
+  "pytest >=8.4",
   "pytest-cov >=3",
 ]
 
