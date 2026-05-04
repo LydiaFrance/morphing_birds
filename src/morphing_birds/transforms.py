@@ -39,26 +39,32 @@ class TransformState:
         c, s = np.cos(radians), np.sin(radians)
 
         if axis == "x":
-            rot = np.array([
-                [1, 0,  0, 0],
-                [0, c, -s, 0],
-                [0, s,  c, 0],
-                [0, 0,  0, 1],
-            ])
+            rot = np.array(
+                [
+                    [1, 0, 0, 0],
+                    [0, c, -s, 0],
+                    [0, s, c, 0],
+                    [0, 0, 0, 1],
+                ]
+            )
         elif axis == "y":
-            rot = np.array([
-                [ c, 0, s, 0],
-                [ 0, 1, 0, 0],
-                [-s, 0, c, 0],
-                [ 0, 0, 0, 1],
-            ])
+            rot = np.array(
+                [
+                    [c, 0, s, 0],
+                    [0, 1, 0, 0],
+                    [-s, 0, c, 0],
+                    [0, 0, 0, 1],
+                ]
+            )
         elif axis == "z":
-            rot = np.array([
-                [c, -s, 0, 0],
-                [s,  c, 0, 0],
-                [0,  0, 1, 0],
-                [0,  0, 0, 1],
-            ])
+            rot = np.array(
+                [
+                    [c, -s, 0, 0],
+                    [s, c, 0, 0],
+                    [0, 0, 1, 0],
+                    [0, 0, 0, 1],
+                ]
+            )
         else:
             msg = f"Unknown axis '{axis}'. Must be 'x', 'y', or 'z'."
             raise ValueError(msg)

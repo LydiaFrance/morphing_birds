@@ -75,7 +75,9 @@ def calculate_compare_limits(animal3d_instances):
     ]
 
 
-def calculate_animation_limits(animal3d_instance, keypoints_frames, transform_frames=None):
+def calculate_animation_limits(
+    animal3d_instance, keypoints_frames, transform_frames=None
+):
     """Pre-compute axis limits that encompass ALL frames of an animation.
 
     Called ONCE before the frame loop, not per-frame.  This fixes the
@@ -131,7 +133,9 @@ def calculate_animation_limits_multi(animal3d_instances, keypoints_frames_list):
     """Pre-compute axis limits that encompass ALL frames across multiple Animal3d instances."""
     all_coords = []
 
-    for animal, keypoints_frames in zip(animal3d_instances, keypoints_frames_list, strict=True):
+    for animal, keypoints_frames in zip(
+        animal3d_instances, keypoints_frames_list, strict=True
+    ):
         all_coords.append(keypoints_frames.reshape(-1, 3))
         display_coords = animal.default_shape[0, animal.display_only_indices, :]
         if len(display_coords) > 0:
@@ -156,7 +160,9 @@ def calculate_animation_limits_multi(animal3d_instances, keypoints_frames_list):
     ]
 
 
-def get_section_style(section_name, caller_colour, caller_alpha, animal3d_instance=None):
+def get_section_style(
+    section_name, caller_colour, caller_alpha, animal3d_instance=None
+):
     """Resolve the final (colour, alpha) for a polygon section.
 
     Default behaviour: every section gets the caller's colour.  Body, head,

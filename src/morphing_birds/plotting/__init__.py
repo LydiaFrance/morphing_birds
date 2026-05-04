@@ -32,5 +32,5 @@ __all__ = [
     "animate_plotly_compare",
     "animate_plotly_partial",
     "save_plotly_animation",
-    "create_dash_app"
+    "create_dash_app",
 ]

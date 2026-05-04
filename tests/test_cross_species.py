@@ -10,7 +10,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from morphing_birds import Animal3D, SkeletonDefinition
+from morphing_birds import Animal3D
 from morphing_birds.bilateral import (
     _analysis_pairs_and_centres,
     make_bilateral,
@@ -84,11 +84,13 @@ class TestPigeonEndToEnd:
             l_idx = skel.marker_index(left)
             r_idx = skel.marker_index(right)
             np.testing.assert_array_almost_equal(
-                reconstructed[:, l_idx, :], data[:, l_idx, :],
+                reconstructed[:, l_idx, :],
+                data[:, l_idx, :],
                 err_msg=f"Pigeon left marker {left} changed after round-trip",
             )
             np.testing.assert_array_almost_equal(
-                reconstructed[:, r_idx, :], data[:, r_idx, :],
+                reconstructed[:, r_idx, :],
+                data[:, r_idx, :],
                 err_msg=f"Pigeon right marker {right} changed after round-trip",
             )
 
@@ -97,7 +99,8 @@ class TestPigeonEndToEnd:
             if c in skel.all_marker_names:
                 c_idx = skel.marker_index(c)
                 np.testing.assert_array_almost_equal(
-                    reconstructed[:, c_idx, :], data[:, c_idx, :],
+                    reconstructed[:, c_idx, :],
+                    data[:, c_idx, :],
                     err_msg=f"Pigeon centre marker {c} changed after round-trip",
                 )
 
@@ -156,11 +159,13 @@ class TestSpiderEndToEnd:
             l_idx = skel.marker_index(left)
             r_idx = skel.marker_index(right)
             np.testing.assert_array_almost_equal(
-                reconstructed[:, l_idx, :], data[:, l_idx, :],
+                reconstructed[:, l_idx, :],
+                data[:, l_idx, :],
                 err_msg=f"Spider left marker {left} changed after round-trip",
             )
             np.testing.assert_array_almost_equal(
-                reconstructed[:, r_idx, :], data[:, r_idx, :],
+                reconstructed[:, r_idx, :],
+                data[:, r_idx, :],
                 err_msg=f"Spider right marker {right} changed after round-trip",
             )
 
@@ -169,7 +174,8 @@ class TestSpiderEndToEnd:
             if c in skel.all_marker_names:
                 c_idx = skel.marker_index(c)
                 np.testing.assert_array_almost_equal(
-                    reconstructed[:, c_idx, :], data[:, c_idx, :],
+                    reconstructed[:, c_idx, :],
+                    data[:, c_idx, :],
                     err_msg=f"Spider centre marker {c} changed after round-trip",
                 )
 
@@ -221,11 +227,13 @@ class TestKestrelEndToEnd:
             l_idx = skel.marker_index(left)
             r_idx = skel.marker_index(right)
             np.testing.assert_array_almost_equal(
-                reconstructed[:, l_idx, :], data[:, l_idx, :],
+                reconstructed[:, l_idx, :],
+                data[:, l_idx, :],
                 err_msg=f"Kestrel left marker {left} changed after round-trip",
             )
             np.testing.assert_array_almost_equal(
-                reconstructed[:, r_idx, :], data[:, r_idx, :],
+                reconstructed[:, r_idx, :],
+                data[:, r_idx, :],
                 err_msg=f"Kestrel right marker {right} changed after round-trip",
             )
 
@@ -253,7 +261,7 @@ class TestAnalysisIndicesConsistency:
     """Verify analysis_indices remain consistent through bilateral conversion."""
 
     @pytest.mark.parametrize(
-        "species,csv_name",
+        ("species", "csv_name"),
         [
             ("pigeon", "mean_pigeon_shape.csv"),
             ("kestrel", "mean_kestrel_shape.csv"),
@@ -285,12 +293,13 @@ class TestAnalysisIndicesConsistency:
         analysis_after = reconstructed[:, indices, :]
 
         np.testing.assert_array_almost_equal(
-            analysis_after, analysis_before,
+            analysis_after,
+            analysis_before,
             err_msg=f"{species} analysis data changed after bilateral round-trip",
         )
 
     @pytest.mark.parametrize(
-        "species,csv_name",
+        ("species", "csv_name"),
         [
             ("pigeon", "mean_pigeon_shape.csv"),
             ("kestrel", "mean_kestrel_shape.csv"),
@@ -303,7 +312,7 @@ class TestAnalysisIndicesConsistency:
         assert animal.analysis_indices == animal.skeleton.analysis_indices
 
     @pytest.mark.parametrize(
-        "species,csv_name",
+        ("species", "csv_name"),
         [
             ("pigeon", "mean_pigeon_shape.csv"),
             ("kestrel", "mean_kestrel_shape.csv"),
@@ -319,12 +328,12 @@ class TestAnalysisIndicesConsistency:
         display = set(animal.skeleton.display_only_indices)
 
         all_indices = set(range(animal.skeleton.n_markers))
-        assert analysis | display == all_indices, (
-            f"{species}: analysis + display indices do not cover all markers"
-        )
-        assert analysis & display == set(), (
-            f"{species}: analysis and display indices overlap"
-        )
+        assert (
+            analysis | display == all_indices
+        ), f"{species}: analysis + display indices do not cover all markers"
+        assert (
+            analysis & display == set()
+        ), f"{species}: analysis and display indices overlap"
 
 
 # ==================================================================
@@ -355,14 +364,13 @@ class TestCrossSpeciesComparison:
     def test_marker_counts_differ_across_species(self, all_species):
         """Each species should have a different total marker count."""
         counts = {
-            name: animal.skeleton.n_markers
-            for name, animal in all_species.items()
+            name: animal.skeleton.n_markers for name, animal in all_species.items()
         }
         # At least some species should differ in marker count
         unique_counts = set(counts.values())
-        assert len(unique_counts) > 1, (
-            f"Expected different marker counts across species, got {counts}"
-        )
+        assert (
+            len(unique_counts) > 1
+        ), f"Expected different marker counts across species, got {counts}"
 
     def test_section_names_differ_across_species(self, all_species):
         """Different species should have different body section layouts."""
@@ -371,20 +379,19 @@ class TestCrossSpeciesComparison:
             for name, animal in all_species.items()
         }
         unique_sections = set(section_sets.values())
-        assert len(unique_sections) > 1, (
-            "Expected different body sections across species"
-        )
+        assert (
+            len(unique_sections) > 1
+        ), "Expected different body sections across species"
 
     def test_analysis_marker_counts_differ(self, all_species):
         """Different species should have different analysis marker counts."""
         analysis_counts = {
-            name: len(animal.analysis_indices)
-            for name, animal in all_species.items()
+            name: len(animal.analysis_indices) for name, animal in all_species.items()
         }
         unique_counts = set(analysis_counts.values())
-        assert len(unique_counts) > 1, (
-            f"Expected different analysis marker counts, got {analysis_counts}"
-        )
+        assert (
+            len(unique_counts) > 1
+        ), f"Expected different analysis marker counts, got {analysis_counts}"
 
     def test_each_species_has_body_sections(self, all_species):
         """Every species should define at least one body section."""
@@ -403,12 +410,12 @@ class TestCrossSpeciesComparison:
         for name, animal in all_species.items():
             for section in animal.polygons:
                 coords = animal.get_polygon_coords(section)
-                assert coords.ndim == 2, (
-                    f"{name} section '{section}' has wrong dimensions"
-                )
-                assert coords.shape[1] == 3, (
-                    f"{name} section '{section}' should have xyz columns"
-                )
-                assert coords.shape[0] > 0, (
-                    f"{name} section '{section}' has no vertices"
-                )
+                assert (
+                    coords.ndim == 2
+                ), f"{name} section '{section}' has wrong dimensions"
+                assert (
+                    coords.shape[1] == 3
+                ), f"{name} section '{section}' should have xyz columns"
+                assert (
+                    coords.shape[0] > 0
+                ), f"{name} section '{section}' has no vertices"

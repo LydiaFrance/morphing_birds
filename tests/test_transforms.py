@@ -58,10 +58,12 @@ class TestTransformState:
     def test_apply_to_multiple_points(self):
         t = TransformState()
         t.add_translation(y=1.0)
-        coords = np.array([
-            [0.0, 0.0, 0.0],
-            [1.0, 1.0, 1.0],
-        ])
+        coords = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 1.0, 1.0],
+            ]
+        )
         result = t.apply_to(coords)
         np.testing.assert_array_almost_equal(
             result,
@@ -92,9 +94,9 @@ class TestTransformState:
         result_zx = t2.apply_to(coords)
 
         # The two orderings must produce different results
-        assert not np.allclose(result_xz, result_zx), (
-            "Rotation composition should be non-commutative"
-        )
+        assert not np.allclose(
+            result_xz, result_zx
+        ), "Rotation composition should be non-commutative"
 
     # ------------------------------------------------------------------
     # Full-circle and zero-degree rotations
@@ -108,7 +110,9 @@ class TestTransformState:
             t.add_rotation(360, axis=axis)
             result = t.apply_to(coords)
             np.testing.assert_array_almost_equal(
-                result, coords, decimal=10,
+                result,
+                coords,
+                decimal=10,
                 err_msg=f"360-degree rotation around {axis} should be identity",
             )
 
@@ -120,7 +124,9 @@ class TestTransformState:
             t.add_rotation(0, axis=axis)
             result = t.apply_to(coords)
             np.testing.assert_array_almost_equal(
-                result, coords, decimal=10,
+                result,
+                coords,
+                decimal=10,
                 err_msg=f"0-degree rotation around {axis} should be identity",
             )
 
@@ -129,7 +135,7 @@ class TestTransformState:
     # ------------------------------------------------------------------
 
     def test_negative_rotation_reverses_positive(self):
-        """Applying +θ then −θ should return to the original coordinates."""
+        """Applying +θ then -θ should return to the original coordinates."""
         coords = np.array([[1.0, 2.0, 3.0]])
         for axis in ("x", "y", "z"):
             t = TransformState()
@@ -137,9 +143,11 @@ class TestTransformState:
             t.add_rotation(-45, axis=axis)
             result = t.apply_to(coords)
             np.testing.assert_array_almost_equal(
-                result, coords, decimal=10,
+                result,
+                coords,
+                decimal=10,
                 err_msg=f"Positive then negative rotation around {axis} "
-                        f"should cancel out",
+                f"should cancel out",
             )
 
     # ------------------------------------------------------------------
@@ -154,7 +162,9 @@ class TestTransformState:
         t.add_translation(x=big, y=-big, z=big)
         result = t.apply_to(coords)
         np.testing.assert_array_almost_equal(
-            result, [[big, -big, big]], decimal=0,
+            result,
+            [[big, -big, big]],
+            decimal=0,
         )
 
     # ------------------------------------------------------------------
@@ -213,9 +223,9 @@ class TestTransformState:
         for n in (1, 5, 50):
             coords = np.zeros((n, 3))
             result = t.apply_to(coords)
-            assert result.shape == coords.shape, (
-                f"Shape mismatch for n={n}: {result.shape} != {coords.shape}"
-            )
+            assert (
+                result.shape == coords.shape
+            ), f"Shape mismatch for n={n}: {result.shape} != {coords.shape}"
 
     # ------------------------------------------------------------------
     # Per-axis rotation — expected coordinate changes

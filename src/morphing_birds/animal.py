@@ -191,9 +191,7 @@ class Animal3D:
         self._motion_frames_loaded = n_frames
 
         # Determine mapping source label
-        if column_mapping:
-            mapping_label = "custom"
-        elif self._column_mapping_override:
+        if column_mapping or self._column_mapping_override:
             mapping_label = "custom"
         else:
             mapping_label = f"'{skeleton_name}'"
@@ -281,9 +279,7 @@ class Animal3D:
     def analysis_marker_names(self) -> list[str]:
         """Ordered list of non-excluded marker names (convenience alias)."""
         return [
-            m
-            for m in self.skeleton.all_marker_names
-            if m not in self._analysis_exclude
+            m for m in self.skeleton.all_marker_names if m not in self._analysis_exclude
         ]
 
     @property
@@ -291,20 +287,14 @@ class Animal3D:
         """Indices of analysis markers in ``current_shape``."""
         exclude = self._analysis_exclude
         return [
-            i
-            for i, n in enumerate(self.skeleton.all_marker_names)
-            if n not in exclude
+            i for i, n in enumerate(self.skeleton.all_marker_names) if n not in exclude
         ]
 
     @property
     def display_only_indices(self) -> list[int]:
         """Indices of display-only (excluded) markers."""
         exclude = self._analysis_exclude
-        return [
-            i
-            for i, n in enumerate(self.skeleton.all_marker_names)
-            if n in exclude
-        ]
+        return [i for i, n in enumerate(self.skeleton.all_marker_names) if n in exclude]
 
     @property
     def markers(self) -> np.ndarray:
@@ -449,8 +439,8 @@ class Animal3D:
     def make_unilateral(
         self,
         motion_data: np.ndarray,
-        info_df: "pd.DataFrame | None" = None,
-    ) -> tuple[np.ndarray, np.ndarray, "pd.DataFrame | None"]:
+        info_df: pd.DataFrame | None = None,
+    ) -> tuple[np.ndarray, np.ndarray, pd.DataFrame | None]:
         """Convert bilateral motion data to unilateral observations.
 
         Wraps :func:`~morphing_birds.bilateral.make_unilateral` with the
@@ -598,7 +588,6 @@ class Animal3D:
             vertDist=vertDist,
         )
 
-
     def _apply_transform(
         self,
         indices: list[int],
@@ -651,7 +640,6 @@ class Animal3D:
         self.untransformed_shape = self.current_shape.copy()
         self._transform.reset()
 
-
     # ------------------------------------------------------------------
     # Keypoint update (backward compat)
     # ------------------------------------------------------------------
@@ -684,10 +672,13 @@ class Animal3D:
             keypoints = keypoints.reshape(1, -1, 3)
 
         n_analysis = len(self.analysis_indices)
-        n_right = len([
-            n for n in self.skeleton.get_right_markers()
-            if n not in self._analysis_exclude
-        ])
+        n_right = len(
+            [
+                n
+                for n in self.skeleton.get_right_markers()
+                if n not in self._analysis_exclude
+            ]
+        )
 
         # If half the expected markers, mirror to create both sides
         if keypoints.shape[1] == n_right:
@@ -846,9 +837,7 @@ class Animal3D:
             self._check_rule(rule, names, shape)
 
     @staticmethod
-    def _check_rule(
-        rule: str, names: list[str], shape: np.ndarray
-    ) -> None:
+    def _check_rule(rule: str, names: list[str], shape: np.ndarray) -> None:
         """Parse and check a single validation rule string."""
         # Rules are like "left_wingtip.x < right_wingtip.x"
         axis_map = {"x": 0, "y": 1, "z": 2}
@@ -939,4 +928,3 @@ class Animal3D:
             if "colour" not in style:
                 coloured.append(key)
         return coloured if coloured else ["handwing", "tail"]
-

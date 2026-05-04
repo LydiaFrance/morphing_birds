@@ -191,7 +191,6 @@ def load_mean_shape_csv(
     return np.nan_to_num(result, nan=0.0)
 
 
-
 # ------------------------------------------------------------------
 # Internal helpers
 # ------------------------------------------------------------------
@@ -213,11 +212,13 @@ def _extract_xyz(df: pd.DataFrame, base_name: str) -> np.ndarray | None:
     z_col = f"{base_name}_z"
 
     if x_col in df.columns and y_col in df.columns and z_col in df.columns:
-        return np.column_stack([
-            df[x_col].values,
-            df[y_col].values,
-            df[z_col].values,
-        ])
+        return np.column_stack(
+            [
+                df[x_col].values,
+                df[y_col].values,
+                df[z_col].values,
+            ]
+        )
 
     # Try no-underscore format: namex, namey, namez
     x_col = f"{base_name}x"
@@ -225,11 +226,13 @@ def _extract_xyz(df: pd.DataFrame, base_name: str) -> np.ndarray | None:
     z_col = f"{base_name}z"
 
     if x_col in df.columns and y_col in df.columns and z_col in df.columns:
-        return np.column_stack([
-            df[x_col].values,
-            df[y_col].values,
-            df[z_col].values,
-        ])
+        return np.column_stack(
+            [
+                df[x_col].values,
+                df[y_col].values,
+                df[z_col].values,
+            ]
+        )
 
     return None
 

@@ -13,11 +13,11 @@ from .plotly_plots import plot_plotly
 
 
 def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
-    from morphing_birds import Animal3D  # noqa: PLC0415
+    from morphing_birds import Animal3D
+
     # Initialise hawk
     hawk3d = Animal3D("hawk", data="../data/mean_hawk_shape.csv")
     hawk3d.restore_default()
-
 
     # Generate fake keypoints and mean scores data for testing purposes
     if new_keypoints is None:
@@ -43,81 +43,90 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
         nScores = 5
 
         # The specific colours for each score
-        colour_list = ['#B5E675', '#6ED8A9', '#51B3D4',
-                       '#4579AA', '#BC96C9', '#917AC2',
-                       '#5A488B', '#888888', '#888888',
-                       '#888888', '#888888', '#888888']
+        colour_list = [
+            "#B5E675",
+            "#6ED8A9",
+            "#51B3D4",
+            "#4579AA",
+            "#BC96C9",
+            "#917AC2",
+            "#5A488B",
+            "#888888",
+            "#888888",
+            "#888888",
+            "#888888",
+            "#888888",
+        ]
 
         # Define an 8x9 grid to accommodate the new column on the left for time
         specs = [
-            [{'type': 'scatter'} for _ in range(nScores+1)]  # Initialize all cells as scatter plot cells
-            for _ in range(nScores+1)
+            [
+                {"type": "scatter"} for _ in range(nScores + 1)
+            ]  # Initialize all cells as scatter plot cells
+            for _ in range(nScores + 1)
         ]
-
 
         # Create the subplots with the specified layout
         fig = make_subplots(
-            rows=nScores+1,
-            cols=nScores+1,  # Include the new column on the left
-            specs=specs
-            )
+            rows=nScores + 1,
+            cols=nScores + 1,  # Include the new column on the left
+            specs=specs,
+        )
 
         # Plot time as a straight line in the first column top row
         fig.add_trace(
             go.Scattergl(
-                x= binned_horzDist,
-                y= np.zeros_like(binned_horzDist),
-                mode='markers',
+                x=binned_horzDist,
+                y=np.zeros_like(binned_horzDist),
+                mode="markers",
                 marker={
                     "size": 3,
-                    "color": 'black',
-                    "line": {
-                    "width": 0  # No border around the markers
-                }},
+                    "color": "black",
+                    "line": {"width": 0},  # No border around the markers
+                },
                 showlegend=False,
-                hoverinfo='none'
+                hoverinfo="none",
             ),
-            row = 1,
-            col = 1)  # First column for time plots
+            row=1,
+            col=1,
+        )  # First column for time plots
 
         # Plotting variable against time in the first column
         for ii in range(nScores):
             fig.add_trace(
                 go.Scattergl(
-                    x= binned_horzDist,
-                    y= mean_scores[:, ii],
-                    mode='markers',
+                    x=binned_horzDist,
+                    y=mean_scores[:, ii],
+                    mode="markers",
                     marker={
                         "size": 3,
                         "color": colour_list[ii],
-                        "line": {
-                        "width": 0  # No border around the markers
-                    }},
+                        "line": {"width": 0},  # No border around the markers
+                    },
                     showlegend=False,
-                    hoverinfo='none'
+                    hoverinfo="none",
                 ),
-                row = ii + 2,
-                col = 1  # First column for time plots
+                row=ii + 2,
+                col=1,  # First column for time plots
             )
 
         # Plotting each variable against itself on the diagonal starting from column 3 (second position)
         for ii in range(nScores):
             fig.add_trace(
                 go.Scattergl(
-                    x= mean_scores[:, ii],
-                    y= mean_scores[:, ii],
-                    mode='markers',
+                    x=mean_scores[:, ii],
+                    y=mean_scores[:, ii],
+                    mode="markers",
                     marker={
                         "size": 3,
                         "color": colour_list[ii],
-                        "line": {
-                        "width": 0  # No border around the markers
-                    }},
+                        "line": {"width": 0},  # No border around the markers
+                    },
                     showlegend=False,
-                    hoverinfo='none'
+                    hoverinfo="none",
                 ),
-                row = ii + 2,
-                col = ii + 2  # Shift the self-comparison plot to the right
+                row=ii + 2,
+                col=ii + 2,  # Shift the self-comparison plot to the right
             )
 
         # Filling the lower triangle for variable vs variable plots, adjust as per new column arrangement
@@ -125,40 +134,38 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
             for jj in range(ii):
                 fig.add_trace(
                     go.Scattergl(
-                        x= mean_scores[:, ii],
-                        y= mean_scores[:, jj],
-                        mode='markers',
+                        x=mean_scores[:, ii],
+                        y=mean_scores[:, jj],
+                        mode="markers",
                         marker={
                             "size": 3,
                             "color": colour_list[ii],
-                            "line": {
-                            "width": 0  # No border around the markers
-                        }},
+                            "line": {"width": 0},  # No border around the markers
+                        },
                         showlegend=False,
-                        hoverinfo='none'
+                        hoverinfo="none",
                     ),
-                    row = ii + 2,
-                    col = jj + 2  # Adjust for the new first column
+                    row=ii + 2,
+                    col=jj + 2,  # Adjust for the new first column
                 )
 
         # Update axes and layout settings to clean up the plot appearance
         fig.update_xaxes(visible=False)
         fig.update_yaxes(visible=False)
-        fig.update_layout(height=800, width=900, hovermode='closest')
+        fig.update_layout(height=800, width=900, hovermode="closest")
 
         fig.update_layout(
-        plot_bgcolor='white',  # Background color within the plot area
-        paper_bgcolor='white',  # Background color around the plot area
-        xaxis={
-            "showgrid": False,  # No gridlines
-            "zeroline": True  # No zero line for the X-axis
-        },
-        yaxis={
-            "showgrid": False,  # No gridlines
-            "zeroline": True  # No zero line for the Y-axis
-        }
-    )
-
+            plot_bgcolor="white",  # Background color within the plot area
+            paper_bgcolor="white",  # Background color around the plot area
+            xaxis={
+                "showgrid": False,  # No gridlines
+                "zeroline": True,  # No zero line for the X-axis
+            },
+            yaxis={
+                "showgrid": False,  # No gridlines
+                "zeroline": True,  # No zero line for the Y-axis
+            },
+        )
 
         return fig
 
@@ -166,67 +173,76 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
     def create_3d_scatter_plot():
         hawk3d.restore_default()
         fig = plot_plotly(hawk3d)
-        fig.update_layout(height=400, width=400,
-                        scene={"camera": {"eye": {"x": 1.25, "y": 1.25, "z": 1.25}}})
+        fig.update_layout(
+            height=400,
+            width=400,
+            scene={"camera": {"eye": {"x": 1.25, "y": 1.25, "z": 1.25}}},
+        )
         return fig
-
 
     # Initialize figures
     fig_2d = create_2d_subplots(mean_scores, binned_horzDist)
     fig_3d = create_3d_scatter_plot()
 
     # Set up the layout for the Dash application
-    app.layout = html.Div([
-        dcc.Store(id='lock-store', data={'locked': False}),  # Adding the dcc.Store component
-
-        html.Div([
-            dcc.Graph(id='2d-subplots', figure=fig_2d)
-        ], style={
-            'flex': '1',  # Flex grow factor for the 3D plot
-            'min-width': '0',  # Ensure the div can shrink below its content size if needed
-            'padding-right': '-100px'  # Space between the figures
-        }),
-        html.Div([
-            dcc.Graph(id='3d-scatter-plot', figure=fig_3d)
-        ], style={
-            'flex': '1',
-            'min-width': '0',  # Similar to the 3D plot div
-            'padding-left': '-100px'  # Space between the figures
-        })
-    ], style={
-        'display': 'flex',  # This ensures that child divs are laid out as flex items
-        'flex-wrap': 'nowrap',  # Prevents the flex items from wrapping onto multiple lines
-        'align-items': 'stretch',  # Stretches the items to fill the container vertically
-        'justify-content': 'space-between',  # Distributes space between and around content items
-        'width': '100%'  # Ensures the container takes full width of its parent
-})
-
+    app.layout = html.Div(
+        [
+            dcc.Store(
+                id="lock-store", data={"locked": False}
+            ),  # Adding the dcc.Store component
+            html.Div(
+                [dcc.Graph(id="2d-subplots", figure=fig_2d)],
+                style={
+                    "flex": "1",  # Flex grow factor for the 3D plot
+                    "min-width": "0",  # Ensure the div can shrink below its content size if needed
+                    "padding-right": "-100px",  # Space between the figures
+                },
+            ),
+            html.Div(
+                [dcc.Graph(id="3d-scatter-plot", figure=fig_3d)],
+                style={
+                    "flex": "1",
+                    "min-width": "0",  # Similar to the 3D plot div
+                    "padding-left": "-100px",  # Space between the figures
+                },
+            ),
+        ],
+        style={
+            "display": "flex",  # This ensures that child divs are laid out as flex items
+            "flex-wrap": "nowrap",  # Prevents the flex items from wrapping onto multiple lines
+            "align-items": "stretch",  # Stretches the items to fill the container vertically
+            "justify-content": "space-between",  # Distributes space between and around content items
+            "width": "100%",  # Ensures the container takes full width of its parent
+        },
+    )
 
     # Callback to toggle the lock state
     @app.callback(
-        Output('lock-store', 'data'),
-        [Input('2d-subplots', 'clickData')],
-        [State('lock-store', 'data')]
+        Output("lock-store", "data"),
+        [Input("2d-subplots", "clickData")],
+        [State("lock-store", "data")],
     )
     def toggle_lock(clickData, lock_data):
         if clickData:
             # Toggle the lock state
-            lock_data['locked'] = not lock_data['locked']
+            lock_data["locked"] = not lock_data["locked"]
         return lock_data
-
 
     # Callback to update plots based on hover interactions and manage 3D plot camera settings
     @app.callback(
-        [Output('2d-subplots', 'figure'), Output('3d-scatter-plot', 'figure')],
-        [Input('2d-subplots', 'hoverData'), Input('3d-scatter-plot', 'relayoutData')],
-        [State('2d-subplots', 'figure'), State('3d-scatter-plot', 'figure'), State('lock-store', 'data')]
-        )
-
-
-    def update_plots(hoverData, relayoutData, current_2d_fig, current_3d_fig, lock_data):
-
+        [Output("2d-subplots", "figure"), Output("3d-scatter-plot", "figure")],
+        [Input("2d-subplots", "hoverData"), Input("3d-scatter-plot", "relayoutData")],
+        [
+            State("2d-subplots", "figure"),
+            State("3d-scatter-plot", "figure"),
+            State("lock-store", "data"),
+        ],
+    )
+    def update_plots(
+        hoverData, relayoutData, current_2d_fig, current_3d_fig, lock_data
+    ):
         # Check if the lock state is active
-        if lock_data['locked']:
+        if lock_data["locked"]:
             raise PreventUpdate
 
         # Determine if the update was triggered by a hover event
@@ -236,50 +252,58 @@ def create_dash_app(new_keypoints=None, mean_scores=None, binned_horzDist=None):
             # No input triggered yet, return the existing figures
             return [current_2d_fig, current_3d_fig]
 
-        input_id = ctx.triggered[0]['prop_id'].split('.')[0]
+        input_id = ctx.triggered[0]["prop_id"].split(".")[0]
 
         # Update 3D plot based on hover and apply the last known camera settings
-        if input_id == '2d-subplots' and hoverData:
+        if input_id == "2d-subplots" and hoverData:
             start_3d = timer()
-            point_index = hoverData['points'][0]['pointIndex']
+            point_index = hoverData["points"][0]["pointIndex"]
             hawk3d.update_keypoints(new_keypoints[point_index, :, :])
             updated_3d_fig = plot_plotly(hawk3d)
-            ctx.record_timing('update_3d_plot', timer() - start_3d, 'Time to update 3D plot')
+            ctx.record_timing(
+                "update_3d_plot", timer() - start_3d, "Time to update 3D plot"
+            )
 
         else:
             updated_3d_fig = current_3d_fig
 
         # Retrieve and apply the latest camera position from relayoutData
-        if relayoutData and 'scene.camera' in relayoutData:
-            camera = relayoutData['scene.camera']
+        if relayoutData and "scene.camera" in relayoutData:
+            camera = relayoutData["scene.camera"]
         else:
-            camera = current_3d_fig['layout']['scene']['camera']  # Use the last known camera
-
+            camera = current_3d_fig["layout"]["scene"][
+                "camera"
+            ]  # Use the last known camera
 
         start_camera = timer()
-        updated_3d_fig['layout']['scene']['camera'] = camera
-        ctx.record_timing('update_camera_settings', timer() - start_camera, 'Time to update camera settings')
+        updated_3d_fig["layout"]["scene"]["camera"] = camera
+        ctx.record_timing(
+            "update_camera_settings",
+            timer() - start_camera,
+            "Time to update camera settings",
+        )
 
         # Update the 2D subplot marker sizes based on hover
         nPoints = new_keypoints.shape[0]
-        if input_id == '2d-subplots' and hoverData:
+        if input_id == "2d-subplots" and hoverData:
             start_2d = timer()
             updated_2d_fig = go.Figure(current_2d_fig)
             for ii in range(len(updated_2d_fig.data)):
                 sizes = [8 if idx == point_index else 3 for idx in range(nPoints)]
                 updated_2d_fig.data[ii].marker.size = sizes
-            ctx.record_timing('update_2d_plots', timer() - start_2d, 'Time to update 2D plots')
+            ctx.record_timing(
+                "update_2d_plots", timer() - start_2d, "Time to update 2D plots"
+            )
 
             return [updated_2d_fig, updated_3d_fig]
 
         return [current_2d_fig, updated_3d_fig]
-
 
     return app
 
 
 # Create the Dash app
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app = create_dash_app()
     app.run_server(debug=True)

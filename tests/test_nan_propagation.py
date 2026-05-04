@@ -5,7 +5,6 @@ bilateral conversion, and plotting. These tests do not fix bugs —
 they record what actually happens when NaN values are present.
 """
 
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -14,7 +13,6 @@ import pytest
 
 from morphing_birds import Animal3D, SkeletonDefinition, plot_plotly
 from morphing_birds.bilateral import (
-    make_bilateral,
     make_unilateral,
     mirror_to_bilateral,
     validate_left_right,
@@ -22,13 +20,11 @@ from morphing_birds.bilateral import (
 from morphing_birds.data_loading import (
     load_from_csv,
     load_from_dataframe,
-    load_from_dict,
 )
 from morphing_birds.plotting.plotly_plots import (
     plot_sections_plotly,
 )
 from morphing_birds.transforms import TransformState
-
 
 # ------------------------------------------------------------------
 # Helpers
@@ -208,16 +204,16 @@ class TestNanAfterTransform:
         # NaN in x
         coords = np.array([[np.nan, 2.0, 3.0]])
         result = t.apply_to(coords)
-        assert np.all(np.isnan(result[0])), (
-            "NaN in x should taint all output coordinates via homogeneous multiply"
-        )
+        assert np.all(
+            np.isnan(result[0])
+        ), "NaN in x should taint all output coordinates via homogeneous multiply"
 
         # NaN in z — same behaviour
         coords_z = np.array([[1.0, 2.0, np.nan]])
         result_z = t.apply_to(coords_z)
-        assert np.all(np.isnan(result_z[0])), (
-            "NaN in z should also taint all output coordinates"
-        )
+        assert np.all(
+            np.isnan(result_z[0])
+        ), "NaN in z should also taint all output coordinates"
 
     def test_nan_propagates_through_translation(self):
         """NaN in any coordinate taints all outputs even for pure translation.
@@ -233,9 +229,9 @@ class TestNanAfterTransform:
         result = t.apply_to(coords)
 
         # All coordinates are tainted because of nan * 0 in homogeneous multiply
-        assert np.all(np.isnan(result[0])), (
-            "NaN in one coord taints all via homogeneous multiply"
-        )
+        assert np.all(
+            np.isnan(result[0])
+        ), "NaN in one coord taints all via homogeneous multiply"
 
     def test_nan_does_not_corrupt_other_points(self):
         """NaN in one point should not affect other points in the same batch.
@@ -247,11 +243,13 @@ class TestNanAfterTransform:
         t.add_rotation(30, axis="x")
         t.add_translation(x=1.0)
 
-        coords = np.array([
-            [1.0, 2.0, 3.0],
-            [np.nan, np.nan, np.nan],
-            [4.0, 5.0, 6.0],
-        ])
+        coords = np.array(
+            [
+                [1.0, 2.0, 3.0],
+                [np.nan, np.nan, np.nan],
+                [4.0, 5.0, 6.0],
+            ]
+        )
         result = t.apply_to(coords)
 
         assert np.all(np.isfinite(result[0])), "Clean point 0 should stay finite"
@@ -263,11 +261,13 @@ class TestNanAfterTransform:
         t = TransformState()
         t.add_rotation(45, axis="z")
 
-        coords = np.array([
-            [1.0, 2.0, 3.0],
-            [np.nan, 2.0, 3.0],  # Single NaN in x
-            [4.0, 5.0, 6.0],
-        ])
+        coords = np.array(
+            [
+                [1.0, 2.0, 3.0],
+                [np.nan, 2.0, 3.0],  # Single NaN in x
+                [4.0, 5.0, 6.0],
+            ]
+        )
         result = t.apply_to(coords)
 
         assert np.all(np.isfinite(result[0])), "Row 0 should be clean"
@@ -286,9 +286,9 @@ class TestNanAfterTransform:
         coords = np.array([[np.nan, 1.0, 2.0]])
         result = t.apply_to(coords)
 
-        assert np.all(np.isnan(result[0])), (
-            "Identity transform still taints all coords via nan * 0"
-        )
+        assert np.all(
+            np.isnan(result[0])
+        ), "Identity transform still taints all coords via nan * 0"
 
     def test_all_nan_point_stays_all_nan(self):
         """A fully NaN point remains fully NaN after any transform."""
@@ -313,9 +313,9 @@ class TestNanAfterTransform:
         coords = np.array([[np.nan, 5.0, 5.0]])
         result = t.apply_to(coords)
 
-        assert np.all(np.isnan(result[0])), (
-            "NaN in one coord taints all outputs via homogeneous multiply"
-        )
+        assert np.all(
+            np.isnan(result[0])
+        ), "NaN in one coord taints all outputs via homogeneous multiply"
 
 
 # ==================================================================
@@ -413,10 +413,12 @@ class TestNanInBilateralConversion:
     def test_mirror_to_bilateral_preserves_nan(self):
         """mirror_to_bilateral should propagate NaN without corruption."""
         # 2 frames, 3 markers, 3 coords
-        right_data = np.array([
-            [[1.0, 2.0, 3.0], [np.nan, 5.0, 6.0], [7.0, 8.0, 9.0]],
-            [[10.0, 11.0, 12.0], [13.0, 14.0, 15.0], [16.0, np.nan, 18.0]],
-        ])
+        right_data = np.array(
+            [
+                [[1.0, 2.0, 3.0], [np.nan, 5.0, 6.0], [7.0, 8.0, 9.0]],
+                [[10.0, 11.0, 12.0], [13.0, 14.0, 15.0], [16.0, np.nan, 18.0]],
+            ]
+        )
 
         result = mirror_to_bilateral(right_data)
         assert result.shape == (2, 6, 3)
@@ -535,6 +537,6 @@ class TestNanInPlotting:
         scatter = fig.data[0]
         x_vals = np.array(scatter.x, dtype=float)
         # The NaN marker's x coordinate should produce a NaN in the trace
-        assert np.any(np.isnan(x_vals)), (
-            "Scatter trace should contain NaN from the NaN marker"
-        )
+        assert np.any(
+            np.isnan(x_vals)
+        ), "Scatter trace should contain NaN from the NaN marker"

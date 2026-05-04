@@ -55,15 +55,88 @@ analysis_exclude:
   - center
 
 body_sections:
-  leg_1: [claw1, tibiametatarsus1, patella1, coxa1, patella1, tibiametatarsus1, claw1]
-  leg_2: [claw2, tibiametatarsus2, patella2, coxa2, patella2, tibiametatarsus2, claw2]
-  leg_3: [claw3, tibiametatarsus3, patella3, coxa3, patella3, tibiametatarsus3, claw3]
-  leg_4: [claw4, tibiametatarsus4, patella4, coxa4, patella4, tibiametatarsus4, claw4]
-  leg_5: [claw5, tibiametatarsus5, patella5, coxa5, patella5, tibiametatarsus5, claw5]
-  leg_6: [claw6, tibiametatarsus6, patella6, coxa6, patella6, tibiametatarsus6, claw6]
-  leg_7: [claw7, tibiametatarsus7, patella7, coxa7, patella7, tibiametatarsus7, claw7]
-  leg_8: [claw8, tibiametatarsus8, patella8, coxa8, patella8, tibiametatarsus8, claw8]
-  body: [clypeus, coxa1, coxa2, coxa3, coxa4, spinneret, coxa5, coxa6, coxa7, coxa8]
+  leg_1:
+    [
+      claw1,
+      tibiametatarsus1,
+      patella1,
+      coxa1,
+      patella1,
+      tibiametatarsus1,
+      claw1,
+    ]
+  leg_2:
+    [
+      claw2,
+      tibiametatarsus2,
+      patella2,
+      coxa2,
+      patella2,
+      tibiametatarsus2,
+      claw2,
+    ]
+  leg_3:
+    [
+      claw3,
+      tibiametatarsus3,
+      patella3,
+      coxa3,
+      patella3,
+      tibiametatarsus3,
+      claw3,
+    ]
+  leg_4:
+    [
+      claw4,
+      tibiametatarsus4,
+      patella4,
+      coxa4,
+      patella4,
+      tibiametatarsus4,
+      claw4,
+    ]
+  leg_5:
+    [
+      claw5,
+      tibiametatarsus5,
+      patella5,
+      coxa5,
+      patella5,
+      tibiametatarsus5,
+      claw5,
+    ]
+  leg_6:
+    [
+      claw6,
+      tibiametatarsus6,
+      patella6,
+      coxa6,
+      patella6,
+      tibiametatarsus6,
+      claw6,
+    ]
+  leg_7:
+    [
+      claw7,
+      tibiametatarsus7,
+      patella7,
+      coxa7,
+      patella7,
+      tibiametatarsus7,
+      claw7,
+    ]
+  leg_8:
+    [
+      claw8,
+      tibiametatarsus8,
+      patella8,
+      coxa8,
+      patella8,
+      tibiametatarsus8,
+      claw8,
+    ]
+  body:
+    [clypeus, coxa1, coxa2, coxa3, coxa4, spinneret, coxa5, coxa6, coxa7, coxa8]
 
 section_styles:
   default: { alpha: 0.2 }

@@ -7,11 +7,9 @@ import pytest
 from morphing_birds import Animal3D, SkeletonDefinition
 from morphing_birds.data_loading import (
     load_from_csv,
-    load_from_dataframe,
     load_from_dict,
     load_mean_shape_csv,
 )
-
 
 # ------------------------------------------------------------------
 # Helpers
@@ -189,9 +187,9 @@ class TestMismatchedSkeleton:
         pigeon_only = set(pigeon_skel.all_marker_names) - set(hawk_names)
         for name in pigeon_only:
             idx = pigeon_skel.all_marker_names.index(name)
-            assert np.all(np.isnan(result[:, idx, :])), (
-                f"Expected NaN for pigeon-only marker '{name}'"
-            )
+            assert np.all(
+                np.isnan(result[:, idx, :])
+            ), f"Expected NaN for pigeon-only marker '{name}'"
 
     def test_hawk_csv_pigeon_skeleton_shared_markers_load(self, tmp_path):
         """Shared markers without column remapping should load fine.
@@ -211,15 +209,14 @@ class TestMismatchedSkeleton:
         # will match the hawk CSV columns (which use canonical names).
         shared = set(pigeon_skel.all_marker_names) & set(hawk_names)
         unmapped_shared = {
-            n for n in shared
-            if pigeon_skel.column_mapping.get(n, n) == n
+            n for n in shared if pigeon_skel.column_mapping.get(n, n) == n
         }
         # If no unmapped shared markers exist, the test is still valid
         for name in unmapped_shared:
             idx = pigeon_skel.all_marker_names.index(name)
-            assert not np.all(np.isnan(result[:, idx, :])), (
-                f"Shared unmapped marker '{name}' should have loaded data"
-            )
+            assert not np.all(
+                np.isnan(result[:, idx, :])
+            ), f"Shared unmapped marker '{name}' should have loaded data"
 
 
 # ------------------------------------------------------------------
@@ -386,9 +383,9 @@ class TestColumnMappingOverride:
         result = load_from_csv(str(path), skel, column_mapping=mapping)
 
         head_idx = skel.all_marker_names.index("head")
-        assert not np.any(np.isnan(result[:, head_idx, :])), (
-            "Custom mapping should override skeleton default"
-        )
+        assert not np.any(
+            np.isnan(result[:, head_idx, :])
+        ), "Custom mapping should override skeleton default"
 
     def test_column_mapping_via_animal_constructor(self, tmp_path):
         """column_mapping passed to Animal3D constructor should be used."""

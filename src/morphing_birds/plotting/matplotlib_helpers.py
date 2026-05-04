@@ -11,8 +11,15 @@ from .plotly_helpers import calculate_nice_tick_step, get_section_style
 
 # ....... Helper Plot Functions ........
 
-def plot_keypoints(ax, animal3d_instance, colour='k', alpha: float = 1.0, indices=None,
-                   show_display_markers=False):
+
+def plot_keypoints(
+    ax,
+    animal3d_instance,
+    colour="k",
+    alpha: float = 1.0,
+    indices=None,
+    show_display_markers=False,
+):
     """Plot keypoints of the animal using matplotlib.
 
     Parameters
@@ -31,9 +38,14 @@ def plot_keypoints(ax, animal3d_instance, colour='k', alpha: float = 1.0, indice
     coords = animal3d_instance.current_shape[:, plot_indices, :][0]
 
     ax.scatter(
-        coords[:, 0], coords[:, 1], coords[:, 2],
-        s=30, color=colour, alpha=alpha,
-        edgecolor='none', antialiased=True,
+        coords[:, 0],
+        coords[:, 1],
+        coords[:, 2],
+        s=30,
+        color=colour,
+        alpha=alpha,
+        edgecolor="none",
+        antialiased=True,
     )
     return ax
 
@@ -69,7 +81,7 @@ def get_polygon(animal3d_instance, section_name, colour, alpha: float = 1.0):
         [coords],
         alpha=resolved_alpha,
         facecolor=resolved_colour,
-        edgecolor='black',
+        edgecolor="black",
         linewidth=1.0,
         antialiased=True,
         rasterized=False,
@@ -82,20 +94,20 @@ def plot_settings(ax, origin, lims=None):
     ax.xaxis.pane.fill = False
     ax.yaxis.pane.fill = False
     ax.zaxis.pane.fill = True
-    ax.xaxis.pane.set_edgecolor('w')
-    ax.yaxis.pane.set_edgecolor('w')
-    ax.zaxis.pane.set_edgecolor('w')
+    ax.xaxis.pane.set_edgecolor("w")
+    ax.yaxis.pane.set_edgecolor("w")
+    ax.zaxis.pane.set_edgecolor("w")
 
     # Grid style
     grid_props = {
-        'color': 'grey',
-        'linestyle': ':',
-        'linewidth': 0.3,
-        'alpha': 0.5,
+        "color": "grey",
+        "linestyle": ":",
+        "linewidth": 0.3,
+        "alpha": 0.5,
     }
-    ax.xaxis._axinfo['grid'].update(**grid_props)
-    ax.yaxis._axinfo['grid'].update(**grid_props)
-    ax.zaxis._axinfo['grid'].update(**grid_props)
+    ax.xaxis._axinfo["grid"].update(**grid_props)
+    ax.yaxis._axinfo["grid"].update(**grid_props)
+    ax.zaxis._axinfo["grid"].update(**grid_props)
 
     # Set axis limits
     if lims is not None:
@@ -117,13 +129,13 @@ def plot_settings(ax, origin, lims=None):
     )
 
     # Labels and ticks
-    label_props = {'fontsize': 10, 'fontweight': 'normal', 'fontfamily': 'sans-serif'}
-    ax.set_xlabel('x (m)', **label_props)
-    ax.set_ylabel('y (m)', **label_props)
-    ax.set_zlabel('z (m)', **label_props)
+    label_props = {"fontsize": 10, "fontweight": "normal", "fontfamily": "sans-serif"}
+    ax.set_xlabel("x (m)", **label_props)
+    ax.set_ylabel("y (m)", **label_props)
+    ax.set_zlabel("z (m)", **label_props)
 
-    ax.tick_params(axis='both', which='major', labelsize=8, width=0.5, length=3)
-    ax.tick_params(axis='both', which='minor', labelsize=8, width=0.5, length=2)
+    ax.tick_params(axis="both", which="major", labelsize=8, width=0.5, length=3)
+    ax.tick_params(axis="both", which="minor", labelsize=8, width=0.5, length=2)
 
     step = calculate_nice_tick_step(2 * increment)
     ticks = np.arange(0, increment + step / 2, step)
@@ -134,8 +146,8 @@ def plot_settings(ax, origin, lims=None):
     ax.set_yticks(ticks)
     ax.set_zticks(ticks)
 
-    ax.set_aspect('equal', 'box')
-    ax.set_facecolor('white')
+    ax.set_aspect("equal", "box")
+    ax.set_facecolor("white")
     ax.figure.set_dpi(150)
 
     return ax
@@ -145,17 +157,17 @@ def get_plot3d_view(fig=None, rows=1, cols=1, index=1):
     """Create a 3D matplotlib axis."""
     if fig is None:
         fig = plt.figure(figsize=(6, 6))
-    ax = fig.add_subplot(rows, cols, index, projection='3d')
-    ax.set_xlabel('X')
-    ax.set_ylabel('Z')
-    ax.set_zlabel('Y')
+    ax = fig.add_subplot(rows, cols, index, projection="3d")
+    ax.set_xlabel("X")
+    ax.set_ylabel("Z")
+    ax.set_zlabel("Y")
     return fig, ax
 
 
 def save_plot_as_image(fig, cut_off=0.2):
     """Save a matplotlib figure to a cropped PIL Image."""
     buf = io.BytesIO()
-    fig.savefig(buf, format='png', dpi=500, bbox_inches='tight')
+    fig.savefig(buf, format="png", dpi=500, bbox_inches="tight")
     buf.seek(0)
 
     img = Image.open(buf)

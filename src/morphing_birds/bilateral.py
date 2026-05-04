@@ -40,11 +40,13 @@ def _analysis_pairs_and_centres(
     if exclude is None:
         exclude = skeleton.analysis_exclude
     pairs = [
-        p for p in skeleton.get_marker_pairs()
+        p
+        for p in skeleton.get_marker_pairs()
         if p[0] not in exclude and p[1] not in exclude
     ]
     centre_names = [
-        c for c in skeleton.get_centre_markers()
+        c
+        for c in skeleton.get_centre_markers()
         if c in skeleton.all_marker_names and c not in exclude
     ]
     return pairs, centre_names
@@ -70,7 +72,7 @@ def mirror_to_bilateral(keypoints: np.ndarray) -> np.ndarray:
 
     n_frames, n_markers, n_coords = keypoints.shape
     full = np.empty((n_frames, n_markers * 2, n_coords), dtype=keypoints.dtype)
-    full[:, 0::2, :] = mirrored   # left at even indices
+    full[:, 0::2, :] = mirrored  # left at even indices
     full[:, 1::2, :] = keypoints  # right at odd indices
     return full
 
@@ -137,9 +139,7 @@ def make_unilateral(
     # Extract left and right data
     left_data = motion_data_copy[:, left_indices, :]
     right_data = motion_data_copy[:, right_indices, :]
-    centre_data = (
-        motion_data_copy[:, centre_indices, :] if centre_indices else None
-    )
+    centre_data = motion_data_copy[:, centre_indices, :] if centre_indices else None
 
     # Mirror left side across x-axis
     left_mirrored = np.copy(left_data)

@@ -12,9 +12,18 @@ from .plotly_helpers import (
 )
 
 
-def plot_plotly(animal3d_instance, colour='lightblue', alpha=0.5, axes_visible=True,
-                horzDist=None, vertDist=None, bodypitch=None, bodyroll=None, bodyyaw=None,
-                show_display_markers=False):
+def plot_plotly(
+    animal3d_instance,
+    colour="lightblue",
+    alpha=0.5,
+    axes_visible=True,
+    horzDist=None,
+    vertDist=None,
+    bodypitch=None,
+    bodyroll=None,
+    bodyyaw=None,
+    show_display_markers=False,
+):
     """Create a static 3D plot of an animal using Plotly.
 
     Parameters
@@ -30,7 +39,9 @@ def plot_plotly(animal3d_instance, colour='lightblue', alpha=0.5, axes_visible=T
     show_display_markers : bool
         Whether to show display-only marker dots. Default ``False``.
     """
-    has_transform = any(p is not None for p in [bodypitch, bodyyaw, bodyroll, horzDist, vertDist])
+    has_transform = any(
+        p is not None for p in [bodypitch, bodyyaw, bodyroll, horzDist, vertDist]
+    )
     current_state = animal3d_instance.current_shape.copy()
 
     if has_transform:
@@ -45,18 +56,36 @@ def plot_plotly(animal3d_instance, colour='lightblue', alpha=0.5, axes_visible=T
 
     fig = go.Figure()
     fig = plot_sections_plotly(fig, animal3d_instance, colour, alpha)
-    fig = plot_keypoints_plotly(fig, animal3d_instance, colour, alpha,
-                                show_display_markers=show_display_markers)
+    fig = plot_keypoints_plotly(
+        fig, animal3d_instance, colour, alpha, show_display_markers=show_display_markers
+    )
 
     if not axes_visible:
-        fig.update_layout(scene={
-            'xaxis': {'visible': False, 'showgrid': False, 'showticklabels': False,
-                       'showline': False, 'showbackground': False},
-            'yaxis': {'visible': False, 'showgrid': False, 'showticklabels': False,
-                       'showline': False, 'showbackground': False},
-            'zaxis': {'visible': False, 'showgrid': False, 'showticklabels': False,
-                       'showline': False, 'showbackground': False},
-        })
+        fig.update_layout(
+            scene={
+                "xaxis": {
+                    "visible": False,
+                    "showgrid": False,
+                    "showticklabels": False,
+                    "showline": False,
+                    "showbackground": False,
+                },
+                "yaxis": {
+                    "visible": False,
+                    "showgrid": False,
+                    "showticklabels": False,
+                    "showline": False,
+                    "showbackground": False,
+                },
+                "zaxis": {
+                    "visible": False,
+                    "showgrid": False,
+                    "showticklabels": False,
+                    "showline": False,
+                    "showbackground": False,
+                },
+            }
+        )
 
     fig = plot_settings_plotly(fig, animal3d_instance)
 
@@ -66,16 +95,27 @@ def plot_plotly(animal3d_instance, colour='lightblue', alpha=0.5, axes_visible=T
     return fig
 
 
-def plot_plotly_compare(animal3d_instances, colours=None, alpha=0.5, axes_visible=True,
-                        horzDist=None, vertDist=None, bodypitch=None, bodyroll=None,
-                        bodyyaw=None, show_display_markers=False):
+def plot_plotly_compare(
+    animal3d_instances,
+    colours=None,
+    alpha=0.5,
+    axes_visible=True,
+    horzDist=None,
+    vertDist=None,
+    bodypitch=None,
+    bodyroll=None,
+    bodyyaw=None,
+    show_display_markers=False,
+):
     """Create a static 3D comparison plot of multiple animals."""
     fig = go.Figure()
 
     if colours is None:
-        colours = ['red', None]
+        colours = ["red", None]
 
-    has_transform = any(p is not None for p in [bodypitch, bodyyaw, bodyroll, horzDist, vertDist])
+    has_transform = any(
+        p is not None for p in [bodypitch, bodyyaw, bodyroll, horzDist, vertDist]
+    )
 
     for animal3d_instance, colour in zip(animal3d_instances, colours, strict=True):
         current_state = animal3d_instance.current_shape.copy()
@@ -95,27 +135,38 @@ def plot_plotly_compare(animal3d_instances, colours=None, alpha=0.5, axes_visibl
             animal3d_instance.current_shape = current_state
 
     if not axes_visible:
-        fig.update_layout(scene={
-            'xaxis': {'visible': False},
-            'yaxis': {'visible': False},
-            'zaxis': {'visible': False},
-        })
+        fig.update_layout(
+            scene={
+                "xaxis": {"visible": False},
+                "yaxis": {"visible": False},
+                "zaxis": {"visible": False},
+            }
+        )
 
     fixed_range = calculate_compare_limits(animal3d_instances)
-    fig = plot_settings_plotly(fig, fixed_range=fixed_range)
-
-    return fig
+    return plot_settings_plotly(fig, fixed_range=fixed_range)
 
 
-def plot_compare_plotly(animal3d_instance, keypoints_list, alpha=0.5, colours=None,
-                        horzDist=None, bodypitch=None, vertDist=None, bodyyaw=None,
-                        bodyroll=None, axes_visible=True, show_display_markers=False,
+def plot_compare_plotly(
+    animal3d_instance,
+    keypoints_list,
+    alpha=0.5,
+    colours=None,
+    horzDist=None,
+    bodypitch=None,
+    vertDist=None,
+    bodyyaw=None,
+    bodyroll=None,
+    axes_visible=True,
+    show_display_markers=False,
 ):
     """Create a static 3D comparison of multiple poses."""
     if colours is None:
-        colours = [None, 'red']
+        colours = [None, "red"]
 
-    has_transform = any(p is not None for p in [bodypitch, bodyyaw, bodyroll, horzDist, vertDist])
+    has_transform = any(
+        p is not None for p in [bodypitch, bodyyaw, bodyroll, horzDist, vertDist]
+    )
     current_state = animal3d_instance.current_shape.copy()
     fig = go.Figure()
 
@@ -131,16 +182,25 @@ def plot_compare_plotly(animal3d_instance, keypoints_list, alpha=0.5, colours=No
                 bodyroll=bodyroll or 0,
             )
 
-        fig = plot_sections_plotly(fig, animal3d_instance, colour=colours[idx], alpha=alpha)
-        fig = plot_keypoints_plotly(fig, animal3d_instance, colour=colours[idx], alpha=1,
-                                    show_display_markers=show_display_markers)
+        fig = plot_sections_plotly(
+            fig, animal3d_instance, colour=colours[idx], alpha=alpha
+        )
+        fig = plot_keypoints_plotly(
+            fig,
+            animal3d_instance,
+            colour=colours[idx],
+            alpha=1,
+            show_display_markers=show_display_markers,
+        )
 
     if not axes_visible:
-        fig.update_layout(scene={
-            'xaxis': {'visible': False},
-            'yaxis': {'visible': False},
-            'zaxis': {'visible': False},
-        })
+        fig.update_layout(
+            scene={
+                "xaxis": {"visible": False},
+                "yaxis": {"visible": False},
+                "zaxis": {"visible": False},
+            }
+        )
 
     fig = plot_settings_plotly(fig, animal3d_instance)
     animal3d_instance.current_shape = current_state
@@ -148,13 +208,24 @@ def plot_compare_plotly(animal3d_instance, keypoints_list, alpha=0.5, colours=No
     return fig
 
 
-def plot_partial_plotly(animal3d_instance, section_name=None, leg_number=None,
-                        colour='blue', alpha=1, axes_visible=True,
-                        horzDist=None, vertDist=None, bodypitch=None,
-                        bodyroll=None, bodyyaw=None, show_display_markers=False,
+def plot_partial_plotly(
+    animal3d_instance,
+    section_name=None,
+    leg_number=None,
+    colour="blue",
+    alpha=1,
+    axes_visible=True,
+    horzDist=None,
+    vertDist=None,
+    bodypitch=None,
+    bodyroll=None,
+    bodyyaw=None,
+    show_display_markers=False,
 ):
     """Plot a specific section or leg of the animal."""
-    has_transform = any(p is not None for p in [bodypitch, bodyyaw, bodyroll, horzDist, vertDist])
+    has_transform = any(
+        p is not None for p in [bodypitch, bodyyaw, bodyroll, horzDist, vertDist]
+    )
     current_state = animal3d_instance.current_shape.copy()
 
     if has_transform:
@@ -169,20 +240,36 @@ def plot_partial_plotly(animal3d_instance, section_name=None, leg_number=None,
 
     fig = go.Figure()
 
-    if leg_number is not None and any("leg" in key for key in animal3d_instance.polygons):
+    if leg_number is not None and any(
+        "leg" in key for key in animal3d_instance.polygons
+    ):
         section_name = f"leg_{leg_number}"
-        fig = plot_sections_plotly(fig, animal3d_instance, colour=colour, alpha=alpha, section_name=section_name)
+        fig = plot_sections_plotly(
+            fig,
+            animal3d_instance,
+            colour=colour,
+            alpha=alpha,
+            section_name=section_name,
+        )
     elif section_name is not None:
-        fig = plot_sections_plotly(fig, animal3d_instance, colour=colour, alpha=alpha, section_name=section_name)
+        fig = plot_sections_plotly(
+            fig,
+            animal3d_instance,
+            colour=colour,
+            alpha=alpha,
+            section_name=section_name,
+        )
     else:
         fig = plot_sections_plotly(fig, animal3d_instance, colour=colour, alpha=alpha)
 
     if not axes_visible:
-        fig.update_layout(scene={
-            'xaxis': {'visible': False},
-            'yaxis': {'visible': False},
-            'zaxis': {'visible': False},
-        })
+        fig.update_layout(
+            scene={
+                "xaxis": {"visible": False},
+                "yaxis": {"visible": False},
+                "zaxis": {"visible": False},
+            }
+        )
 
     fig = plot_settings_plotly(fig, animal3d_instance)
 
@@ -192,17 +279,34 @@ def plot_partial_plotly(animal3d_instance, section_name=None, leg_number=None,
     return fig
 
 
-def plot_plotly_with_trace(animal3d_instance, keypoints_frames, colour='lightblue',
-                           alpha=0.5, trace_colour='red', trace_marker_size=2,
-                           axes_visible=True, horzDist=None, vertDist=None,
-                           bodypitch=None, bodyroll=None, bodyyaw=None,
-                           show_display_markers=False):
+def plot_plotly_with_trace(
+    animal3d_instance,
+    keypoints_frames,
+    colour="lightblue",
+    alpha=0.5,
+    trace_colour="red",
+    trace_marker_size=2,
+    axes_visible=True,
+    horzDist=None,
+    vertDist=None,
+    bodypitch=None,
+    bodyroll=None,
+    bodyyaw=None,
+    show_display_markers=False,
+):
     """Create a static 3D plot with a trace of keypoint frames."""
-    fig = plot_plotly(animal3d_instance, colour=colour, alpha=alpha,
-                      axes_visible=axes_visible, horzDist=horzDist,
-                      vertDist=vertDist, bodypitch=bodypitch,
-                      bodyroll=bodyroll, bodyyaw=bodyyaw,
-                      show_display_markers=show_display_markers)
+    fig = plot_plotly(
+        animal3d_instance,
+        colour=colour,
+        alpha=alpha,
+        axes_visible=axes_visible,
+        horzDist=horzDist,
+        vertDist=vertDist,
+        bodypitch=bodypitch,
+        bodyroll=bodyroll,
+        bodyyaw=bodyyaw,
+        show_display_markers=show_display_markers,
+    )
 
     trace_coords = keypoints_frames.reshape(-1, 3)
     n_points = trace_coords.shape[0]
@@ -211,14 +315,14 @@ def plot_plotly_with_trace(animal3d_instance, keypoints_frames, colour='lightblu
         x=trace_coords[:, 0],
         y=trace_coords[:, 1],
         z=trace_coords[:, 2],
-        mode='markers',
+        mode="markers",
         marker={
-            'size': trace_marker_size,
-            'color': np.linspace(0, 1, n_points),
-            'colorscale': 'plasma_r',
-            'showscale': False,
+            "size": trace_marker_size,
+            "color": np.linspace(0, 1, n_points),
+            "colorscale": "plasma_r",
+            "showscale": False,
         },
-        hoverinfo='none',
+        hoverinfo="none",
     )
     fig.add_trace(scatter_trace)
 
@@ -229,8 +333,15 @@ def plot_plotly_with_trace(animal3d_instance, keypoints_frames, colour='lightblu
 #       Helper functions
 # ------------------------------------------------------------
 
-def plot_keypoints_plotly(fig, animal3d_instance, colour='black', alpha: float = 1.0,
-                          indices=None, show_display_markers=False):
+
+def plot_keypoints_plotly(
+    fig,
+    animal3d_instance,
+    colour="black",
+    alpha: float = 1.0,
+    indices=None,
+    show_display_markers=False,
+):
     """Plot keypoints as a scatter on a Plotly figure.
 
     Parameters
@@ -249,20 +360,26 @@ def plot_keypoints_plotly(fig, animal3d_instance, colour='black', alpha: float =
     coords = animal3d_instance.current_shape[:, plot_indices, :][0]
 
     scatter = go.Scatter3d(
-        x=coords[:, 0], y=coords[:, 1], z=coords[:, 2],
-        mode='markers',
-        marker={'size': 2.5, 'color': colour, 'opacity': alpha},
-        hoverinfo='none',
+        x=coords[:, 0],
+        y=coords[:, 1],
+        z=coords[:, 2],
+        mode="markers",
+        marker={"size": 2.5, "color": colour, "opacity": alpha},
+        hoverinfo="none",
     )
     fig.add_trace(scatter)
     return fig
 
 
-def plot_sections_plotly(fig, animal3d_instance, colour, alpha: float = 1.0, section_name=None):
+def plot_sections_plotly(
+    fig, animal3d_instance, colour, alpha: float = 1.0, section_name=None
+):
     """Plot body section polygons on a Plotly figure."""
     if section_name is not None:
         if section_name in animal3d_instance.polygons:
-            mesh, lines = get_polygon_plotly(animal3d_instance, section_name, colour, alpha)
+            mesh, lines = get_polygon_plotly(
+                animal3d_instance, section_name, colour, alpha
+            )
             if mesh is not None:
                 fig.add_trace(mesh)
             if lines is not None:
@@ -290,8 +407,12 @@ def get_polygon_plotly(animal3d_instance, section_name, colour, alpha: float = 1
 
     if is_surface_section(section_name, animal3d_instance):
         mesh = go.Mesh3d(
-            x=coords[:, 0], y=coords[:, 1], z=coords[:, 2],
-            color=resolved_colour, opacity=resolved_alpha, hoverinfo='none',
+            x=coords[:, 0],
+            y=coords[:, 1],
+            z=coords[:, 2],
+            color=resolved_colour,
+            opacity=resolved_alpha,
+            hoverinfo="none",
         )
     else:
         mesh = None
@@ -301,10 +422,10 @@ def get_polygon_plotly(animal3d_instance, section_name, colour, alpha: float = 1
         x=coords_closed[:, 0],
         y=coords_closed[:, 1],
         z=coords_closed[:, 2],
-        mode='lines',
-        name=f'{section_name} {resolved_colour}',
-        line={'color': 'grey', 'width': 1.5},
-        hoverinfo='name',
+        mode="lines",
+        name=f"{section_name} {resolved_colour}",
+        line={"color": "grey", "width": 1.5},
+        hoverinfo="name",
     )
 
     return mesh, lines
@@ -319,25 +440,25 @@ def plot_settings_plotly(fig, animal3d_instance=None, fixed_range=None):
     nice_step = calculate_nice_tick_step(x_span)
 
     axes_config = {
-        'gridcolor': "grey",
-        'zerolinecolor': "grey",
-        'showbackground': True,
-        'backgroundcolor': "white",
-        'gridwidth': 0.5,
-        'dtick': nice_step,
-        'tick0': 0,
+        "gridcolor": "grey",
+        "zerolinecolor": "grey",
+        "showbackground": True,
+        "backgroundcolor": "white",
+        "gridwidth": 0.5,
+        "dtick": nice_step,
+        "tick0": 0,
     }
 
     fig.update_layout(
-        font={'family': "Andale Mono, Courier New, sans-serif"},
+        font={"family": "Andale Mono, Courier New, sans-serif"},
         scene={
-            'xaxis': dict(range=fixed_range[0], **axes_config),
-            'yaxis': dict(range=fixed_range[1], **axes_config),
-            'zaxis': dict(range=fixed_range[2], **axes_config),
-            'aspectmode': 'cube',
-            'aspectratio': {'x': 1, 'y': 1, 'z': 1},
+            "xaxis": dict(range=fixed_range[0], **axes_config),
+            "yaxis": dict(range=fixed_range[1], **axes_config),
+            "zaxis": dict(range=fixed_range[2], **axes_config),
+            "aspectmode": "cube",
+            "aspectratio": {"x": 1, "y": 1, "z": 1},
         },
-        margin={'r': 10, 'l': 10, 'b': 10, 't': 10},
+        margin={"r": 10, "l": 10, "b": 10, "t": 10},
         showlegend=False,
     )
     return fig

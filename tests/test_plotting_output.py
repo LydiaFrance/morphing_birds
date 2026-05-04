@@ -16,13 +16,15 @@ from morphing_birds import (
     plot_plotly_compare,
     plot_plotly_with_trace,
 )
-from morphing_birds.plotting.plotly_helpers import calculate_axis_limits, is_surface_section
+from morphing_birds.plotting.plotly_helpers import (
+    calculate_axis_limits,
+)
 from morphing_birds.plotting.plotly_plots import get_polygon_plotly
-
 
 # ------------------------------------------------------------------
 # Fixtures
 # ------------------------------------------------------------------
+
 
 @pytest.fixture
 def hawk():
@@ -38,6 +40,7 @@ def spider():
 # 1. Plot functions return valid Plotly Figure objects with expected
 #    trace counts
 # ------------------------------------------------------------------
+
 
 class TestPlotReturnsValidFigures:
     """All plot functions must return ``go.Figure`` with sensible traces."""
@@ -102,6 +105,7 @@ class TestPlotReturnsValidFigures:
 # 2. Section polygon vertex counts per species
 # ------------------------------------------------------------------
 
+
 class TestPolygonVertexCounts:
     """Polygon vertex counts must match the body_sections config."""
 
@@ -162,6 +166,7 @@ class TestPolygonVertexCounts:
 # 3. Non-surface sections render as lines only
 # ------------------------------------------------------------------
 
+
 class TestNonSurfaceSections:
     """Sections with ``surface: false`` must produce line traces only,
     never ``Mesh3d`` traces."""
@@ -207,6 +212,7 @@ class TestNonSurfaceSections:
 # 4. plot_partial_plotly with invalid section name or leg number
 # ------------------------------------------------------------------
 
+
 class TestPlotPartialInvalidInputs:
     """plot_partial_plotly should handle invalid inputs gracefully."""
 
@@ -214,7 +220,9 @@ class TestPlotPartialInvalidInputs:
         """An unrecognised section name should produce a figure with
         no section traces (sections are silently skipped when the name
         is not found in the polygons dict)."""
-        fig = plot_partial_plotly(hawk, section_name="nonexistent_section", colour="blue")
+        fig = plot_partial_plotly(
+            hawk, section_name="nonexistent_section", colour="blue"
+        )
         assert isinstance(fig, go.Figure)
         # No section traces added — figure should have 0 data traces
         assert len(fig.data) == 0
@@ -238,6 +246,7 @@ class TestPlotPartialInvalidInputs:
 # ------------------------------------------------------------------
 # 5. Animate functions produce correct number of frames
 # ------------------------------------------------------------------
+
 
 class TestAnimationFrameCounts:
     """Animation functions must produce the correct number of frames."""
@@ -283,6 +292,7 @@ class TestAnimationFrameCounts:
 # 6. Axis limits are sensible for hawk-scale and spider-scale data
 # ------------------------------------------------------------------
 
+
 class TestAxisLimits:
     """Axis limits should be centred, symmetric, and proportional to
     the animal's size."""
@@ -302,12 +312,12 @@ class TestAxisLimits:
         coords = hawk.current_shape[0]  # (n_markers, 3)
         for dim in range(3):
             low, high = limits[dim]
-            assert np.all(coords[:, dim] >= low), (
-                f"Dimension {dim}: markers below lower limit"
-            )
-            assert np.all(coords[:, dim] <= high), (
-                f"Dimension {dim}: markers above upper limit"
-            )
+            assert np.all(
+                coords[:, dim] >= low
+            ), f"Dimension {dim}: markers below lower limit"
+            assert np.all(
+                coords[:, dim] <= high
+            ), f"Dimension {dim}: markers above upper limit"
 
     def test_spider_axis_limits_contain_all_markers(self, spider):
         """All spider marker coordinates must fall within the axis limits."""
@@ -315,12 +325,12 @@ class TestAxisLimits:
         coords = spider.current_shape[0]
         for dim in range(3):
             low, high = limits[dim]
-            assert np.all(coords[:, dim] >= low), (
-                f"Dimension {dim}: markers below lower limit"
-            )
-            assert np.all(coords[:, dim] <= high), (
-                f"Dimension {dim}: markers above upper limit"
-            )
+            assert np.all(
+                coords[:, dim] >= low
+            ), f"Dimension {dim}: markers below lower limit"
+            assert np.all(
+                coords[:, dim] <= high
+            ), f"Dimension {dim}: markers above upper limit"
 
     def test_hawk_limits_are_reasonable_scale(self, hawk):
         """Hawk data is in metres, so axis range should be under 2m."""
@@ -337,9 +347,9 @@ class TestAxisLimits:
         spider_limits = calculate_axis_limits(spider)
         hawk_span = hawk_limits[0][1] - hawk_limits[0][0]
         spider_span = spider_limits[0][1] - spider_limits[0][0]
-        assert hawk_span != pytest.approx(spider_span, rel=0.01), (
-            "Hawk and spider should have different axis scales"
-        )
+        assert hawk_span != pytest.approx(
+            spider_span, rel=0.01
+        ), "Hawk and spider should have different axis scales"
 
     def test_plot_plotly_applies_axis_limits(self, hawk):
         """The returned figure should have axis ranges set."""

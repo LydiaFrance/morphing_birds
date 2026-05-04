@@ -1,7 +1,7 @@
 """Matplotlib static plotting functions for Animal3D."""
 
 import ipywidgets as widgets
-import matplotlib
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from IPython.display import clear_output, display
@@ -15,8 +15,16 @@ from .matplotlib_helpers import (
 )
 
 
-def plot(animal3d_instance, ax=None, el=20, az=60, colour=None, alpha=0.5,
-         axes_visible=True, show_display_markers=False):
+def plot(
+    animal3d_instance,
+    ax=None,
+    el=20,
+    az=60,
+    colour=None,
+    alpha=0.5,
+    axes_visible=True,
+    show_display_markers=False,
+):
     """Create a static 3D matplotlib plot of an animal.
 
     Parameters
@@ -31,8 +39,9 @@ def plot(animal3d_instance, ax=None, el=20, az=60, colour=None, alpha=0.5,
         _fig, ax = get_plot3d_view()
 
     ax = plot_sections(ax, animal3d_instance, colour, alpha)
-    ax = plot_keypoints(ax, animal3d_instance, colour, alpha,
-                        show_display_markers=show_display_markers)
+    ax = plot_keypoints(
+        ax, animal3d_instance, colour, alpha, show_display_markers=show_display_markers
+    )
     ax.view_init(elev=el, azim=az)
 
     if axes_visible:
@@ -44,8 +53,16 @@ def plot(animal3d_instance, ax=None, el=20, az=60, colour=None, alpha=0.5,
     return ax
 
 
-def interactive_plot(animal3d_instance, keypoints=None, fig=None, ax=None,
-                     el=20, az=60, colour=None, alpha=0.3):
+def interactive_plot(
+    animal3d_instance,
+    keypoints=None,
+    fig=None,
+    ax=None,
+    el=20,
+    az=60,
+    colour=None,
+    alpha=0.3,
+):
     """Create an interactive 3D plot with sliders."""
     if keypoints is not None:
         animal3d_instance.update_keypoints(keypoints)
@@ -56,13 +73,23 @@ def interactive_plot(animal3d_instance, keypoints=None, fig=None, ax=None,
         fig, ax = get_plot3d_view()
     plt.ion()
 
-    az_slider = widgets.IntSlider(min=-90, max=90, step=5, value=az, description='azimuth')
-    el_slider = widgets.IntSlider(min=-15, max=90, step=5, value=el, description='elevation')
+    az_slider = widgets.IntSlider(
+        min=-90, max=90, step=5, value=az, description="azimuth"
+    )
+    el_slider = widgets.IntSlider(
+        min=-15, max=90, step=5, value=el, description="elevation"
+    )
     plot_output = widgets.Output()
 
     with plot_output:
-        plot(animal3d_instance, ax=ax, el=el_slider.value, az=az_slider.value,
-             colour=colour, alpha=alpha)
+        plot(
+            animal3d_instance,
+            ax=ax,
+            el=el_slider.value,
+            az=az_slider.value,
+            colour=colour,
+            alpha=alpha,
+        )
 
     def update_plot(change):
         with plot_output:
@@ -71,19 +98,29 @@ def interactive_plot(animal3d_instance, keypoints=None, fig=None, ax=None,
             fig.canvas.draw_idle()
             display(fig)
 
-    az_slider.observe(update_plot, names='value')
-    el_slider.observe(update_plot, names='value')
+    az_slider.observe(update_plot, names="value")
+    el_slider.observe(update_plot, names="value")
 
     display(az_slider, el_slider)
     display(plot_output)
     update_plot(None)
 
 
-def plot_multiple(animal3d_instance, keypoints, num_plots, spacing=(0.4, 0.7),
-                  cut_off=0.2, el=20, az=0, rot=90, colour_list=None, alpha=0.5):
+def plot_multiple(
+    animal3d_instance,
+    keypoints,
+    num_plots,
+    spacing=(0.4, 0.7),
+    cut_off=0.2,
+    el=20,
+    az=0,
+    rot=90,
+    colour_list=None,
+    alpha=0.5,
+):
     """Plot multiple frames of the animal in a grid."""
     fig = plt.figure(figsize=(10, 10))
-    ax = fig.add_subplot(projection='3d')
+    ax = fig.add_subplot(projection="3d")
 
     grid_cols = int(np.ceil(np.sqrt(num_plots)))
     grid_rows = int(np.ceil(num_plots / grid_cols))
@@ -99,15 +136,25 @@ def plot_multiple(animal3d_instance, keypoints, num_plots, spacing=(0.4, 0.7),
         col = i % grid_cols
 
         if colour_list is None:
-            colour = matplotlib.colormaps["Set3"](i)
+            colour = mpl.colormaps["Set3"](i)
         else:
             colour = colour_list[i]
 
         vertDist = (row - middle_row) * spacing[0]
         horzDist = (col - middle_col) * spacing[1]
 
-        animal3d_instance.transform_display_only(vertDist=vertDist, horzDist=horzDist, bodyyaw=rot)
-        plot(animal3d_instance, ax=ax, el=el, az=az, colour=colour, alpha=alpha, axes_visible=False)
+        animal3d_instance.transform_display_only(
+            vertDist=vertDist, horzDist=horzDist, bodyyaw=rot
+        )
+        plot(
+            animal3d_instance,
+            ax=ax,
+            el=el,
+            az=az,
+            colour=colour,
+            alpha=alpha,
+            axes_visible=False,
+        )
 
     max_vert = (num_plots * 0.15) * spacing[0]
     max_horz = (num_plots * 0.15) * spacing[1]
@@ -115,8 +162,8 @@ def plot_multiple(animal3d_instance, keypoints, num_plots, spacing=(0.4, 0.7),
     ax.set_zlim(-max_vert, max_vert)
     ax.set_xlim(-0.5, 0.5)
 
-    ax.set_aspect('equal', 'box')
-    ax.axis('off')
+    ax.set_aspect("equal", "box")
+    ax.axis("off")
     ax.set_xticklabels([])
     ax.set_yticklabels([])
     ax.set_zticklabels([])

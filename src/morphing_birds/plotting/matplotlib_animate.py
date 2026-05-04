@@ -1,7 +1,6 @@
 """Matplotlib animation functions for Animal3D."""
 
-import matplotlib
-import matplotlib.pyplot as plt
+import matplotlib as mpl
 from matplotlib.animation import FuncAnimation
 
 from .animation_frame_helpers import check_transformation_frames, format_keypoint_frames
@@ -9,11 +8,24 @@ from .matplotlib_helpers import get_camera_angles, get_plot3d_view, plot_setting
 from .matplotlib_plots import plot
 
 
-def animate(animal3d_instance, keypoints_frames, fig=None, ax=None,
-            rotation_type="static", el=20, az=60, alpha=0.3, colour=None,
-            horzDist_frames=None, bodypitch_frames=None, vertDist_frames=None,
-            bodyyaw_frames=None, bodyroll_frames=None, score_vals=None,
-            axes_visible=True):
+def animate(
+    animal3d_instance,
+    keypoints_frames,
+    fig=None,
+    ax=None,
+    rotation_type="static",
+    el=20,
+    az=60,
+    alpha=0.3,
+    colour=None,
+    horzDist_frames=None,
+    bodypitch_frames=None,
+    vertDist_frames=None,
+    bodyyaw_frames=None,
+    bodyroll_frames=None,
+    score_vals=None,
+    axes_visible=True,
+):
     """Create an animated 3D plot using matplotlib."""
     keypoints_frames = format_keypoint_frames(animal3d_instance, keypoints_frames)
     if keypoints_frames.shape[0] == 0:
@@ -26,7 +38,10 @@ def animate(animal3d_instance, keypoints_frames, fig=None, ax=None,
         fig, ax = get_plot3d_view(fig)
 
     el_frames, az_frames = get_camera_angles(
-        num_frames=num_frames, rotation_type=rotation_type, el=el, az=az,
+        num_frames=num_frames,
+        rotation_type=rotation_type,
+        el=el,
+        az=az,
     )
 
     horzDist_frames = check_transformation_frames(num_frames, horzDist_frames)
@@ -50,22 +65,44 @@ def animate(animal3d_instance, keypoints_frames, fig=None, ax=None,
             bodyyaw=bodyyaw_frames[frame],
             bodyroll=bodyroll_frames[frame],
         )
-        plot(animal3d_instance, ax=ax, el=el_frames[frame], az=az_frames[frame],
-             alpha=alpha, colour=colour, axes_visible=axes_visible)
+        plot(
+            animal3d_instance,
+            ax=ax,
+            el=el_frames[frame],
+            az=az_frames[frame],
+            alpha=alpha,
+            colour=colour,
+            axes_visible=axes_visible,
+        )
         plot_settings(ax, animal3d_instance.origin, lims)
         return fig, ax
 
     animal3d_instance.restore_default()
 
     return FuncAnimation(
-        fig, update_animated_plot, frames=num_frames, interval=20, repeat=True,
+        fig,
+        update_animated_plot,
+        frames=num_frames,
+        interval=20,
+        repeat=True,
     )
 
 
-def animate_compare(animal3d_instance, keypoints_frames_list, fig=None, ax=None,
-                    rotation_type="static", el=20, az=60, alpha=0.3, colour=None,
-                    horzDist_frames=None, bodypitch_frames=None, vertDist_frames=None,
-                    axes_visible=True):
+def animate_compare(
+    animal3d_instance,
+    keypoints_frames_list,
+    fig=None,
+    ax=None,
+    rotation_type="static",
+    el=20,
+    az=60,
+    alpha=0.3,
+    colour=None,
+    horzDist_frames=None,
+    bodypitch_frames=None,
+    vertDist_frames=None,
+    axes_visible=True,
+):
     """Create an animated 3D comparison plot using matplotlib."""
     formatted_list = []
     for kf in keypoints_frames_list:
@@ -81,7 +118,10 @@ def animate_compare(animal3d_instance, keypoints_frames_list, fig=None, ax=None,
         fig, ax = get_plot3d_view(fig)
 
     el_frames, az_frames = get_camera_angles(
-        num_frames=num_frames, rotation_type=rotation_type, el=el, az=az,
+        num_frames=num_frames,
+        rotation_type=rotation_type,
+        el=el,
+        az=az,
     )
 
     horzDist_frames = check_transformation_frames(num_frames, horzDist_frames)
@@ -90,9 +130,11 @@ def animate_compare(animal3d_instance, keypoints_frames_list, fig=None, ax=None,
 
     ax = plot_settings(ax, animal3d_instance.origin)
 
-    colours = colour if colour is not None else [
-        matplotlib.colormaps["Set1"](ii) for ii in range(len(formatted_list))
-    ]
+    colours = (
+        colour
+        if colour is not None
+        else [mpl.colormaps["Set1"](ii) for ii in range(len(formatted_list))]
+    )
 
     def update_animated_plot(frame):
         ax.clear()
@@ -105,13 +147,24 @@ def animate_compare(animal3d_instance, keypoints_frames_list, fig=None, ax=None,
                 horzDist=horzDist_frames[frame],
                 vertDist=vertDist_frames[frame],
             )
-            plot(animal3d_instance, ax=ax, el=el_frames[frame], az=az_frames[frame],
-                 alpha=alpha, colour=c, axes_visible=axes_visible)
+            plot(
+                animal3d_instance,
+                ax=ax,
+                el=el_frames[frame],
+                az=az_frames[frame],
+                alpha=alpha,
+                colour=c,
+                axes_visible=axes_visible,
+            )
         plot_settings(ax, animal3d_instance.origin)
         return fig, ax
 
     animal3d_instance.restore_default()
 
     return FuncAnimation(
-        fig, update_animated_plot, frames=num_frames, interval=20, repeat=True,
+        fig,
+        update_animated_plot,
+        frames=num_frames,
+        interval=20,
+        repeat=True,
     )

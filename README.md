@@ -2,17 +2,25 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19917701.svg)](https://doi.org/10.5281/zenodo.19917701)
 
-A toolkit for plotting and animating morphing bird (and other animal) wing and tail shapes in 3D flight data.
+A toolkit for plotting and animating morphing bird (and other animal) wing and
+tail shapes in 3D flight data.
 
 ## What's new in v0.2.0
 
-Version 0.2.0 is a major restructure. The old per-species class hierarchy (`Hawk3D`, `Kestrel3D`, `Pigeon3D`, `Spider3D`, `ArbitraryBird3D`) and hard-coded Python skeleton definitions have been replaced with a single **config-driven** architecture.
+Version 0.2.0 is a major restructure. The old per-species class hierarchy
+(`Hawk3D`, `Kestrel3D`, `Pigeon3D`, `Spider3D`, `ArbitraryBird3D`) and
+hard-coded Python skeleton definitions have been replaced with a single
+**config-driven** architecture.
 
 ### Key changes
 
-- **One class for all animals.** `Animal3D` now takes a config name or a `SkeletonDefinition` — no more species subclasses.
-- **YAML configs instead of Python files.** Skeleton definitions (markers, body sections, laterality, variants) live in declarative YAML files under `morphing_birds/configs/`.
-- **Cleaner module layout.** Transforms, scaling, bilateral symmetry, and data loading are now separate, importable modules.
+- **One class for all animals.** `Animal3D` now takes a config name or a
+  `SkeletonDefinition` — no more species subclasses.
+- **YAML configs instead of Python files.** Skeleton definitions (markers, body
+  sections, laterality, variants) live in declarative YAML files under
+  `morphing_birds/configs/`.
+- **Cleaner module layout.** Transforms, scaling, bilateral symmetry, and data
+  loading are now separate, importable modules.
 
 ### Migration from v0.1.x
 
@@ -26,13 +34,17 @@ from morphing_birds import Animal3D
 hawk = Animal3D("hawk", data="data/mean_hawk_shape.csv")
 ```
 
-The existing methods — `update_keypoints`, `transform_keypoints`, `restore_keypoints_to_average` — still work as before. No changes needed for downstream plotting or animation code.
+The existing methods — `update_keypoints`, `transform_keypoints`,
+`restore_keypoints_to_average` — still work as before. No changes needed for
+downstream plotting or animation code.
 
 ## Architecture
 
 ### SkeletonDefinition
 
-A pure data container loaded from a YAML config. Defines markers, body sections, laterality, display names, section styles, validation rules, and named variants. No subclassing needed — different animals are different configs.
+A pure data container loaded from a YAML config. Defines markers, body sections,
+laterality, display names, section styles, validation rules, and named variants.
+No subclassing needed — different animals are different configs.
 
 ```python
 from morphing_birds import SkeletonDefinition
@@ -48,7 +60,8 @@ Builtin configs: `hawk`, `pigeon`, `kestrel`, `spider`.
 
 ### Animal3D
 
-The main class for creating and manipulating 3D animal models. Pass a builtin name or a `SkeletonDefinition`, plus your data.
+The main class for creating and manipulating 3D animal models. Pass a builtin
+name or a `SkeletonDefinition`, plus your data.
 
 ```python
 from morphing_birds import Animal3D
@@ -156,7 +169,7 @@ Create a YAML file following this structure:
 
 ```yaml
 name: my_animal
-laterality: prefix  # "prefix" for left_/right_ naming, or dict for suffix-based
+laterality: prefix # "prefix" for left_/right_ naming, or dict for suffix-based
 
 markers:
   - left_wingtip
@@ -165,27 +178,27 @@ markers:
   # ... all markers in order
 
 analysis_exclude:
-  - hood  # markers not used in shape analysis
+  - hood # markers not used in shape analysis
 
 body_sections:
   left_wing: [left_wingtip, left_primary, left_secondary]
   right_wing: [right_wingtip, right_primary, right_secondary]
   # ... polygons for visualisation
 
-column_mapping:  # optional: map CSV column names to marker names
+column_mapping: # optional: map CSV column names to marker names
   csv_column_name: marker_name
 
-display_names:  # optional: human-readable names for plots
+display_names: # optional: human-readable names for plots
   left_wingtip: L Wingtip
 
-section_styles:  # optional: default colours/alpha per section
-  default: {alpha: 0.3}
-  left_wing: {colour: blue}
+section_styles: # optional: default colours/alpha per section
+  default: { alpha: 0.3 }
+  left_wing: { colour: blue }
 
-validation_rules:  # optional: spatial sanity checks
+validation_rules: # optional: spatial sanity checks
   - "left_wingtip.x < right_wingtip.x"
 
-variants:  # optional: named subsets
+variants: # optional: named subsets
   simple:
     analysis_exclude: [hood, tailpack, left_shoulder, right_shoulder]
 ```
@@ -204,6 +217,7 @@ python -m pip install morphing_birds
 ```
 
 From source:
+
 ```bash
 git clone https://github.com/LydiaFrance/morphing_birds
 cd morphing_birds
@@ -211,11 +225,13 @@ python -m pip install .
 ```
 
 To add to pyproject.toml:
+
 ```toml
 dependencies = ["morphing_birds @ git+https://github.com/LydiaFrance/morphing_birds"]
 ```
 
-Then to install the dependencies, navigate to your directory, create and/or activate your Python environment, then install.
+Then to install the dependencies, navigate to your directory, create and/or
+activate your Python environment, then install.
 
 ```bash
 cd path/to/TargetProject
@@ -226,7 +242,8 @@ pip install -e .
 
 ## Examples
 
-See the [examples/](examples/) directory for Jupyter notebooks demonstrating each builtin animal:
+See the [examples/](examples/) directory for Jupyter notebooks demonstrating
+each builtin animal:
 
 - `showcase_hawk.ipynb`
 - `showcase_kestrel.ipynb`
@@ -240,7 +257,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for instructions on how to contribute.
 ## License
 
 Distributed under the terms of the [MIT license](LICENSE).
-
 
 <!-- prettier-ignore-start -->
 [actions-badge]:            https://github.com/LydiaFrance/morphing_birds/workflows/CI/badge.svg

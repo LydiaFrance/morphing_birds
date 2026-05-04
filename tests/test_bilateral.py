@@ -21,6 +21,7 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 # Helper: create valid bilateral data for a given skeleton
 # ------------------------------------------------------------------
 
+
 def _make_valid_bilateral(skeleton, n_frames=10, seed=42):
     """Create synthetic bilateral data with correct left/right x-positions."""
     rng = np.random.default_rng(seed)
@@ -38,6 +39,7 @@ def _make_valid_bilateral(skeleton, n_frames=10, seed=42):
 # ==================================================================
 # Round-trip tests for multiple species
 # ==================================================================
+
 
 class TestBilateralRoundTrip:
     """Test that make_unilateral -> make_bilateral is invertible."""
@@ -73,11 +75,13 @@ class TestBilateralRoundTrip:
             l_idx = hawk_skel.marker_index(left)
             r_idx = hawk_skel.marker_index(right)
             np.testing.assert_array_almost_equal(
-                reconstructed[:, l_idx, :], data[:, l_idx, :],
+                reconstructed[:, l_idx, :],
+                data[:, l_idx, :],
                 err_msg=f"Left marker {left} mismatch after round trip",
             )
             np.testing.assert_array_almost_equal(
-                reconstructed[:, r_idx, :], data[:, r_idx, :],
+                reconstructed[:, r_idx, :],
+                data[:, r_idx, :],
                 err_msg=f"Right marker {right} mismatch after round trip",
             )
 
@@ -85,7 +89,8 @@ class TestBilateralRoundTrip:
             if c in hawk_skel.all_marker_names:
                 c_idx = hawk_skel.marker_index(c)
                 np.testing.assert_array_almost_equal(
-                    reconstructed[:, c_idx, :], data[:, c_idx, :],
+                    reconstructed[:, c_idx, :],
+                    data[:, c_idx, :],
                     err_msg=f"Centre marker {c} mismatch after round trip",
                 )
 
@@ -111,11 +116,13 @@ class TestBilateralRoundTrip:
             l_idx = pigeon_skel.marker_index(left)
             r_idx = pigeon_skel.marker_index(right)
             np.testing.assert_array_almost_equal(
-                reconstructed[:, l_idx, :], data[:, l_idx, :],
+                reconstructed[:, l_idx, :],
+                data[:, l_idx, :],
                 err_msg=f"Pigeon left marker {left} mismatch",
             )
             np.testing.assert_array_almost_equal(
-                reconstructed[:, r_idx, :], data[:, r_idx, :],
+                reconstructed[:, r_idx, :],
+                data[:, r_idx, :],
                 err_msg=f"Pigeon right marker {right} mismatch",
             )
 
@@ -131,11 +138,13 @@ class TestBilateralRoundTrip:
             l_idx = kestrel_skel.marker_index(left)
             r_idx = kestrel_skel.marker_index(right)
             np.testing.assert_array_almost_equal(
-                reconstructed[:, l_idx, :], data[:, l_idx, :],
+                reconstructed[:, l_idx, :],
+                data[:, l_idx, :],
                 err_msg=f"Kestrel left marker {left} mismatch",
             )
             np.testing.assert_array_almost_equal(
-                reconstructed[:, r_idx, :], data[:, r_idx, :],
+                reconstructed[:, r_idx, :],
+                data[:, r_idx, :],
                 err_msg=f"Kestrel right marker {right} mismatch",
             )
 
@@ -151,18 +160,20 @@ class TestBilateralRoundTrip:
             l_idx = spider_skel.marker_index(left)
             r_idx = spider_skel.marker_index(right)
             np.testing.assert_array_almost_equal(
-                reconstructed[:, l_idx, :], data[:, l_idx, :],
+                reconstructed[:, l_idx, :],
+                data[:, l_idx, :],
                 err_msg=f"Spider left marker {left} mismatch",
             )
             np.testing.assert_array_almost_equal(
-                reconstructed[:, r_idx, :], data[:, r_idx, :],
+                reconstructed[:, r_idx, :],
+                data[:, r_idx, :],
                 err_msg=f"Spider right marker {right} mismatch",
             )
 
     # -- Round-trip using real mean-shape CSVs via Animal3D --
 
     @pytest.mark.parametrize(
-        "species,csv_name",
+        ("species", "csv_name"),
         [
             ("pigeon", "mean_pigeon_shape.csv"),
             ("kestrel", "mean_kestrel_shape.csv"),
@@ -188,11 +199,13 @@ class TestBilateralRoundTrip:
             l_idx = skel.marker_index(left)
             r_idx = skel.marker_index(right)
             np.testing.assert_array_almost_equal(
-                reconstructed[:, l_idx, :], data[:, l_idx, :],
+                reconstructed[:, l_idx, :],
+                data[:, l_idx, :],
                 err_msg=f"{species} real-data left marker {left} mismatch",
             )
             np.testing.assert_array_almost_equal(
-                reconstructed[:, r_idx, :], data[:, r_idx, :],
+                reconstructed[:, r_idx, :],
+                data[:, r_idx, :],
                 err_msg=f"{species} real-data right marker {right} mismatch",
             )
 
@@ -200,6 +213,7 @@ class TestBilateralRoundTrip:
 # ==================================================================
 # Centre markers
 # ==================================================================
+
 
 class TestCentreMarkerRoundTrip:
     """Verify centre (unpaired) markers survive the round-trip."""
@@ -227,7 +241,8 @@ class TestCentreMarkerRoundTrip:
         for c in centre_in_all:
             c_idx = skel.marker_index(c)
             np.testing.assert_array_almost_equal(
-                reconstructed[:, c_idx, :], data[:, c_idx, :],
+                reconstructed[:, c_idx, :],
+                data[:, c_idx, :],
                 err_msg=f"Spider centre marker {c} not preserved",
             )
 
@@ -243,6 +258,7 @@ class TestCentreMarkerRoundTrip:
 # ==================================================================
 # validate_left_right
 # ==================================================================
+
 
 class TestValidateLeftRight:
     """Tests for the validate_left_right function."""
@@ -287,7 +303,7 @@ class TestValidateLeftRight:
         right_indices = [skel.marker_index(p[1]) for p in pairs]
 
         # Set left x == right x on frame 1 (below min_separation)
-        for li, ri in zip(left_indices, right_indices):
+        for li, ri in zip(left_indices, right_indices, strict=False):
             data[1, li, 0] = 0.0
             data[1, ri, 0] = 0.0
 
@@ -304,7 +320,7 @@ class TestValidateLeftRight:
         right_indices = [skel.marker_index(p[1]) for p in pairs]
 
         # Set small but non-zero separation on all frames
-        for li, ri in zip(left_indices, right_indices):
+        for li, ri in zip(left_indices, right_indices, strict=False):
             data[:, li, 0] = -0.0001
             data[:, ri, 0] = 0.0001
 
@@ -314,7 +330,10 @@ class TestValidateLeftRight:
 
         # Lower threshold should accept
         valid_low = validate_left_right(
-            data, left_indices, right_indices, min_separation=0.0001,
+            data,
+            left_indices,
+            right_indices,
+            min_separation=0.0001,
         )
         assert valid_low.all()
 
@@ -338,6 +357,7 @@ class TestValidateLeftRight:
 # Edge cases
 # ==================================================================
 
+
 class TestEdgeCases:
     """Edge-case tests for bilateral conversion."""
 
@@ -357,10 +377,12 @@ class TestEdgeCases:
             l_idx = skel.marker_index(left)
             r_idx = skel.marker_index(right)
             np.testing.assert_array_almost_equal(
-                reconstructed[:, l_idx, :], data[:, l_idx, :],
+                reconstructed[:, l_idx, :],
+                data[:, l_idx, :],
             )
             np.testing.assert_array_almost_equal(
-                reconstructed[:, r_idx, :], data[:, r_idx, :],
+                reconstructed[:, r_idx, :],
+                data[:, r_idx, :],
             )
 
     def test_nan_frames_dropped_before_conversion(self):
@@ -408,6 +430,7 @@ class TestEdgeCases:
 # is_left as integer array vs boolean
 # ==================================================================
 
+
 class TestIsLeftTypes:
     """Verify make_bilateral accepts both boolean and integer is_left."""
 
@@ -434,7 +457,8 @@ class TestIsLeftTypes:
         reconstructed_int = make_bilateral(uni.copy(), skel, is_left_int)
 
         np.testing.assert_array_almost_equal(
-            reconstructed_bool, reconstructed_int,
+            reconstructed_bool,
+            reconstructed_int,
             err_msg="Integer and boolean is_left should produce identical output",
         )
 
@@ -454,6 +478,7 @@ class TestIsLeftTypes:
 # info_df doubling
 # ==================================================================
 
+
 class TestInfoDfDoubling:
     """Verify info_df is correctly doubled and ordered."""
 
@@ -462,10 +487,12 @@ class TestInfoDfDoubling:
         skel = SkeletonDefinition.from_builtin("hawk")
         data = _make_valid_bilateral(skel, n_frames=4)
 
-        info = pd.DataFrame({
-            "frame": [10, 20, 30, 40],
-            "label": ["a", "b", "c", "d"],
-        })
+        info = pd.DataFrame(
+            {
+                "frame": [10, 20, 30, 40],
+                "label": ["a", "b", "c", "d"],
+            }
+        )
 
         _, _, info_out = make_unilateral(data, skel, info_df=info)
 
@@ -477,10 +504,12 @@ class TestInfoDfDoubling:
         skel = SkeletonDefinition.from_builtin("hawk")
         data = _make_valid_bilateral(skel, n_frames=3)
 
-        info = pd.DataFrame({
-            "frame": [1, 2, 3],
-            "trial": ["x", "y", "z"],
-        })
+        info = pd.DataFrame(
+            {
+                "frame": [1, 2, 3],
+                "trial": ["x", "y", "z"],
+            }
+        )
 
         _, _, info_out = make_unilateral(data, skel, info_df=info)
 
@@ -509,10 +538,12 @@ class TestInfoDfDoubling:
         r0 = skel.marker_index(pairs[0][1])
         data[1, l0, 0] = data[1, r0, 0] + 1.0
 
-        info = pd.DataFrame({
-            "frame": [10, 20, 30, 40],
-            "label": ["a", "b", "c", "d"],
-        })
+        info = pd.DataFrame(
+            {
+                "frame": [10, 20, 30, 40],
+                "label": ["a", "b", "c", "d"],
+            }
+        )
 
         _, _, info_out = make_unilateral(data, skel, info_df=info)
 
@@ -551,6 +582,7 @@ class TestInfoDfDoubling:
 # Animal3D wrapper methods
 # ==================================================================
 
+
 class TestAnimal3DWrapperMethods:
     """Tests for Animal3D.make_unilateral() and make_bilateral().
 
@@ -579,10 +611,14 @@ class TestAnimal3DWrapperMethods:
         assert initial_analysis == 14, "Pigeon should have 14 analysis markers"
 
         # Exclude some markers
-        pigeon.exclude_markers([
-            "left_shoulder", "right_shoulder",
-            "left_lastsecondary_tip", "right_lastsecondary_tip",
-        ])
+        pigeon.exclude_markers(
+            [
+                "left_shoulder",
+                "right_shoulder",
+                "left_lastsecondary_tip",
+                "right_lastsecondary_tip",
+            ]
+        )
         reduced_analysis = len(pigeon.analysis_indices)
         assert reduced_analysis == 10, "Should have 10 markers after exclusion"
 
@@ -597,24 +633,28 @@ class TestAnimal3DWrapperMethods:
 
         # The wrapper should produce fewer unilateral markers
         # because it excludes the 4 extra markers (2 pairs)
-        assert uni_wrapper.shape[1] < uni_direct.shape[1], (
-            "Wrapper should produce fewer markers due to exclusions"
-        )
+        assert (
+            uni_wrapper.shape[1] < uni_direct.shape[1]
+        ), "Wrapper should produce fewer markers due to exclusions"
 
         # Specifically: 10 bilateral markers / 2 = 5 unilateral pairs
         # (pigeon has no centre markers in analysis set)
-        assert uni_wrapper.shape[1] == 5, (
-            f"Expected 5 unilateral markers from 10 bilateral, got {uni_wrapper.shape[1]}"
-        )
+        assert (
+            uni_wrapper.shape[1] == 5
+        ), f"Expected 5 unilateral markers from 10 bilateral, got {uni_wrapper.shape[1]}"
 
     def test_wrapper_round_trip_with_exclusions(self, pigeon_csv):
         """Wrapper methods round-trip correctly after exclude_markers()."""
         pigeon = Animal3D("pigeon", data=pigeon_csv)
 
-        pigeon.exclude_markers([
-            "left_shoulder", "right_shoulder",
-            "left_lastsecondary_tip", "right_lastsecondary_tip",
-        ])
+        pigeon.exclude_markers(
+            [
+                "left_shoulder",
+                "right_shoulder",
+                "left_lastsecondary_tip",
+                "right_lastsecondary_tip",
+            ]
+        )
 
         data = _make_valid_bilateral(pigeon.skeleton, n_frames=5)
         uni, is_left, _ = pigeon.make_unilateral(data)
@@ -631,11 +671,13 @@ class TestAnimal3DWrapperMethods:
             l_idx = pigeon.skeleton.marker_index(left)
             r_idx = pigeon.skeleton.marker_index(right)
             np.testing.assert_array_almost_equal(
-                reconstructed[:, l_idx, :], data[:, l_idx, :],
+                reconstructed[:, l_idx, :],
+                data[:, l_idx, :],
                 err_msg=f"Left marker {left} mismatch after wrapper round trip",
             )
             np.testing.assert_array_almost_equal(
-                reconstructed[:, r_idx, :], data[:, r_idx, :],
+                reconstructed[:, r_idx, :],
+                data[:, r_idx, :],
                 err_msg=f"Right marker {right} mismatch after wrapper round trip",
             )
 
@@ -653,15 +695,20 @@ class TestAnimal3DWrapperMethods:
         marker count mismatch at step 5.
         """
         from sklearn.decomposition import PCA
+
         from morphing_birds.bilateral import mirror_to_bilateral
 
         pigeon = Animal3D("pigeon", data=pigeon_csv)
 
         # Exclude markers (like Charlie did)
-        pigeon.exclude_markers([
-            "left_shoulder", "right_shoulder",
-            "left_lastsecondary_tip", "right_lastsecondary_tip",
-        ])
+        pigeon.exclude_markers(
+            [
+                "left_shoulder",
+                "right_shoulder",
+                "left_lastsecondary_tip",
+                "right_lastsecondary_tip",
+            ]
+        )
         n_analysis = len(pigeon.analysis_indices)
         assert n_analysis == 10
 
@@ -673,7 +720,7 @@ class TestAnimal3DWrapperMethods:
         flat = uni.reshape(uni.shape[0], -1)
         pca = PCA(n_components=3)
         scores = pca.fit_transform(flat)
-        mu = pca.mean_.reshape(1, -1, 3)
+        _mu = pca.mean_.reshape(1, -1, 3)
 
         # Reconstruct a frame from PCA
         recon_flat = pca.inverse_transform(scores[:1])
@@ -698,7 +745,8 @@ class TestAnimal3DWrapperMethods:
         pigeon = Animal3D("pigeon", data=pigeon_csv)
 
         custom_exclude = pigeon._analysis_exclude | {
-            "left_shoulder", "right_shoulder",
+            "left_shoulder",
+            "right_shoulder",
         }
 
         data = _make_valid_bilateral(pigeon.skeleton, n_frames=3)

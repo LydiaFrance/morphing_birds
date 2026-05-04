@@ -244,6 +244,7 @@ class TestAnimalScaling:
 # Helper to create a temporary multi-frame CSV for hawk markers
 # ------------------------------------------------------------------
 
+
 def _make_hawk_csv(
     n_frames: int = 5,
     extra_columns: dict[str, list] | None = None,
@@ -268,9 +269,8 @@ def _make_hawk_csv(
         data.update(extra_columns)
 
     df = pd.DataFrame(data)
-    tmp = tempfile.NamedTemporaryFile(suffix=".csv", delete=False, mode="w")
-    df.to_csv(tmp.name, index=False)
-    tmp.close()
+    with tempfile.NamedTemporaryFile(suffix=".csv", delete=False, mode="w") as tmp:
+        df.to_csv(tmp.name, index=False)
     return tmp.name
 
 
@@ -350,4 +350,3 @@ class TestAnimalRepr:
         r = repr(hawk)
         # Initial data via constructor doesn't set motion frames
         assert "no motion data loaded" in r
-

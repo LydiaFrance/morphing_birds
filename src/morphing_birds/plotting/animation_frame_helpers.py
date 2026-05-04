@@ -16,8 +16,7 @@ def format_keypoint_frames(animal3d_instance, keypoints_frames):
     right_markers = animal3d_instance.skeleton.get_right_markers()
     # Filter to analysis markers
     right_analysis = [
-        n for n in right_markers
-        if n not in animal3d_instance._analysis_exclude
+        n for n in right_markers if n not in animal3d_instance._analysis_exclude
     ]
     if keypoints_frames.shape[1] == len(right_analysis):
         keypoints_frames = animal3d_instance.mirror_keypoints(keypoints_frames)

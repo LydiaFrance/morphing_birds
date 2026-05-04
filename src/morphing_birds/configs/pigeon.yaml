@@ -1,5 +1,5 @@
 name: pigeon
-laterality: prefix  # left_/right_/centre_ naming convention
+laterality: prefix # left_/right_/centre_ naming convention
 
 markers:
   - left_wingtip
@@ -36,10 +36,40 @@ analysis_exclude:
 
 body_sections:
   head: [right_shoulder, head, left_shoulder]
-  body: [right_shoulder, right_tailbase, centre_body_base, left_tailbase, left_shoulder]
-  tail: [right_tailbase, centre_body_base, left_tailbase, left_tailtip, right_tailtip]
-  right_armwing: [right_shoulder, right_elbow, right_wrist, right_secondary, right_lastsecondary_tip, right_tailbase]
-  left_armwing: [left_shoulder, left_elbow, left_wrist, left_secondary, left_lastsecondary_tip, left_tailbase]
+  body:
+    [
+      right_shoulder,
+      right_tailbase,
+      centre_body_base,
+      left_tailbase,
+      left_shoulder,
+    ]
+  tail:
+    [
+      right_tailbase,
+      centre_body_base,
+      left_tailbase,
+      left_tailtip,
+      right_tailtip,
+    ]
+  right_armwing:
+    [
+      right_shoulder,
+      right_elbow,
+      right_wrist,
+      right_secondary,
+      right_lastsecondary_tip,
+      right_tailbase,
+    ]
+  left_armwing:
+    [
+      left_shoulder,
+      left_elbow,
+      left_wrist,
+      left_secondary,
+      left_lastsecondary_tip,
+      left_tailbase,
+    ]
   left_handwing: [left_wrist, left_secondary, left_wingtip]
   right_handwing: [right_wrist, right_secondary, right_wingtip]
 
@@ -105,6 +135,7 @@ variants:
       body: [right_shoulder, left_shoulder, left_tailbase, right_tailbase]
       tail: [left_tailbase, left_tailtip, right_tailtip, right_tailbase]
       left_armwing: [left_wrist, left_secondary, left_tailbase, left_shoulder]
-      right_armwing: [right_wrist, right_secondary, right_tailbase, right_shoulder]
+      right_armwing:
+        [right_wrist, right_secondary, right_tailbase, right_shoulder]
       left_handwing: [left_wrist, left_secondary, left_wingtip]
       right_handwing: [right_wrist, right_secondary, right_wingtip]

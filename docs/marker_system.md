@@ -1,19 +1,25 @@
 # Kestrel3D Marker System Documentation
 
 ## Overview
-The Kestrel3D class uses a sophisticated marker system to represent and visualize the bird's anatomy. Markers are organized into three distinct categories and can operate in two modes (simple and full).
+
+The Kestrel3D class uses a sophisticated marker system to represent and
+visualize the bird's anatomy. Markers are organized into three distinct
+categories and can operate in two modes (simple and full).
 
 ## Marker Categories
 
 ### 1. Ignored Markers
+
 - These markers are completely ignored by the system
 - Not loaded from CSV, not stored, and not used in visualization
 - Examples:
   - Extra head markers (head_mid, left_head, right_head)
   - Pack markers (backpack and tailpack markers)
-- Purpose: Excludes markers that are present in the data but not relevant for analysis
+- Purpose: Excludes markers that are present in the data but not relevant for
+  analysis
 
 ### 2. Fixed Markers
+
 - Loaded from CSV and kept at fixed positions
 - Used for visualization but not included in motion analysis
 - Stored in `self.fixed_marker_index` and accessed through `self.current_shape`
@@ -21,9 +27,11 @@ The Kestrel3D class uses a sophisticated marker system to represent and visualiz
   - head
   - left_shoulder
   - right_shoulder
-- Purpose: Provides structural reference points that don't move relative to each other
+- Purpose: Provides structural reference points that don't move relative to each
+  other
 
 ### 3. Active Markers
+
 - Main markers used for both visualization and analysis
 - Stored in `self.markers` and `self.marker_names`
 - Position can be updated and transformed
@@ -32,6 +40,7 @@ The Kestrel3D class uses a sophisticated marker system to represent and visualiz
 ## Operating Modes
 
 ### Simple Mode (`use_simple=True`)
+
 - Used for basic analysis and compatibility with hawk data
 - Contains 8 active markers in canonical order:
   1. left_secondprimary_tip, right_secondprimary_tip
@@ -42,10 +51,12 @@ The Kestrel3D class uses a sophisticated marker system to represent and visualiz
   - head
   - left_shoulder, right_shoulder
   - left_lastsecondary_tip, right_lastsecondary_tip
-- Body sections end with '_simple' suffix in definition but displayed without suffix
+- Body sections end with '\_simple' suffix in definition but displayed without
+  suffix
 - Purpose: Provides compatibility with hawk analysis and simpler visualization
 
 ### Full Mode (`use_simple=False`)
+
 - Used for detailed analysis of kestrel-specific features
 - Contains 34 active markers following anatomical structure:
   1. Hand wing (primaries) from outermost to innermost
@@ -56,12 +67,13 @@ The Kestrel3D class uses a sophisticated marker system to represent and visualiz
 - Fixed markers in full mode:
   - head
   - left_shoulder, right_shoulder
-- More detailed body sections without '_simple' suffix
+- More detailed body sections without '\_simple' suffix
 - Purpose: Provides detailed analysis of kestrel-specific morphology
 
 ## Implementation Details
 
 ### Marker Loading
+
 ```python
 # Markers are loaded from CSV with flexible column name handling
 x_col = f"{csv_name}_x" if f"{csv_name}_x" in self.data.columns else f"{csv_name}x"
@@ -70,12 +82,14 @@ z_col = f"{csv_name}_z" if f"{csv_name}_z" in self.data.columns else f"{csv_name
 ```
 
 ### Marker Storage
+
 - Active markers: `self._markers` (accessed via property)
 - Fixed markers: Part of `self.current_shape` accessed via `fixed_marker_index`
 - Marker names: `self.marker_names` for active markers
 - Fixed marker names: `self.skeleton_definition.fixed_marker_names(_simple)`
 
 ### Polygon Handling
+
 ```python
 # Polygons store marker names, not indices
 self.polygons = {
@@ -98,4 +112,4 @@ self.polygons = {
 2. Forgetting to handle fixed markers in polygon visualization
 3. Assuming all markers in CSV should be loaded
 4. Not maintaining marker order in transformations
-5. Confusing section names with/without '_simple' suffix 
+5. Confusing section names with/without '\_simple' suffix
