@@ -1,8 +1,9 @@
 """Tests for SkeletonDefinition config loading."""
 
+import numpy as np
 import pytest
 
-from morphing_birds import SkeletonDefinition
+from morphing_birds import Animal3D, SkeletonDefinition, animate_plotly
 from morphing_birds.configs import list_configs
 
 
@@ -19,6 +20,59 @@ class TestSkeletonFromBuiltin:
     def test_unknown_builtin_raises(self):
         with pytest.raises(ValueError, match="Unknown builtin config"):
             SkeletonDefinition.from_builtin("unicorn")
+
+
+class TestCustomSkeleton:
+    """Test workshop-style custom skeleton construction."""
+
+    def test_from_markers_with_explicit_pairs(self):
+        skel = SkeletonDefinition.from_markers(
+            "toy",
+            markers=["nose", "left_paw", "right_paw", "tail_base"],
+            body_sections={
+                "body": ["nose", "tail_base"],
+                "front": ["left_paw", "nose", "right_paw"],
+            },
+            analysis_exclude=["tail_base"],
+            marker_pairs=[("left_paw", "right_paw")],
+            centre_markers=["nose", "tail_base"],
+        )
+
+        assert skel.name == "toy"
+        assert skel.analysis_markers == ["nose", "left_paw", "right_paw"]
+        assert skel.get_marker_pairs() == [("left_paw", "right_paw")]
+        assert skel.get_centre_markers() == ["nose", "tail_base"]
+        assert skel.get_body_section_indices()["front"] == [1, 0, 2]
+
+    def test_from_markers_rejects_unknown_names(self):
+        with pytest.raises(ValueError, match="Unknown marker"):
+            SkeletonDefinition.from_markers(
+                "toy",
+                markers=["nose"],
+                body_sections={"body": ["nose", "tail"]},
+            )
+
+    def test_from_markers_animates_full_keypoint_frames(self):
+        skel = SkeletonDefinition.from_markers(
+            "toy",
+            markers=["nose", "left_paw", "right_paw", "tail_base"],
+            body_sections={"front": ["left_paw", "nose", "right_paw"]},
+            analysis_exclude=["tail_base"],
+            marker_pairs=[("left_paw", "right_paw")],
+            centre_markers=["nose", "tail_base"],
+        )
+        frames = np.array(
+            [
+                [[0, 1, 0], [-1, 0, 0], [1, 0, 0], [0, -1, 0]],
+                [[0, 1, 0], [-1, 0, 0.1], [1, 0, -0.1], [0, -1, 0]],
+            ],
+            dtype=float,
+        )
+
+        animal = Animal3D(skel, data=frames[0])
+        fig = animate_plotly(animal, frames, axes_visible=False)
+
+        assert len(fig.frames) == 2
 
 
 class TestHawkSkeleton:

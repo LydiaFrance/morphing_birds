@@ -79,6 +79,60 @@ class SkeletonDefinition:
         cfg = load_config(name)
         return cls(cfg)
 
+    @classmethod
+    def from_markers(
+        cls,
+        name: str,
+        markers: list[str],
+        *,
+        body_sections: dict[str, list[str]] | None = None,
+        analysis_exclude: list[str] | None = None,
+        marker_pairs: list[tuple[str, str]] | None = None,
+        centre_markers: list[str] | None = None,
+    ) -> SkeletonDefinition:
+        """Build a small custom skeleton directly from marker names.
+
+        ``marker_pairs`` should be ``(left, right)`` pairs. Markers listed in
+        ``analysis_exclude`` are still displayed, but skipped by analysis.
+        """
+        cfg = {
+            "name": name,
+            "markers": list(markers),
+            "analysis_exclude": list(analysis_exclude or []),
+            "body_sections": dict(body_sections or {}),
+        }
+
+        if marker_pairs is not None:
+            cfg["laterality"] = {
+                "pairs": [list(pair) for pair in marker_pairs],
+                "centre": list(centre_markers or []),
+            }
+
+        cls._validate_custom_config(cfg)
+        return cls(cfg)
+
+    @staticmethod
+    def _validate_custom_config(cfg: dict) -> None:
+        markers = cfg["markers"]
+        marker_set = set(markers)
+        if len(marker_set) != len(markers):
+            msg = "Marker names must be unique."
+            raise ValueError(msg)
+
+        names = set(cfg.get("analysis_exclude", []))
+        for section_markers in cfg.get("body_sections", {}).values():
+            names.update(section_markers)
+        laterality = cfg.get("laterality", {})
+        if isinstance(laterality, dict):
+            for left, right in laterality.get("pairs", []):
+                names.update((left, right))
+            names.update(laterality.get("centre", []))
+
+        unknown = sorted(names - marker_set)
+        if unknown:
+            msg = f"Unknown marker(s) in custom skeleton: {unknown}"
+            raise ValueError(msg)
+
     # ------------------------------------------------------------------
     # Marker lists (order matters — determines array column order)
     # ------------------------------------------------------------------
@@ -174,6 +228,8 @@ class SkeletonDefinition:
 
     def get_left_markers(self) -> list[str]:
         """Return left-side marker names based on *laterality* config."""
+        if isinstance(self.laterality, dict) and "pairs" in self.laterality:
+            return [left for left, _right in self.laterality["pairs"]]
         if self.laterality == "prefix":
             return [n for n in self._all_marker_names if n.startswith("left_")]
         if isinstance(self.laterality, dict) and "left" in self.laterality:
@@ -183,6 +239,8 @@ class SkeletonDefinition:
 
     def get_right_markers(self) -> list[str]:
         """Return right-side marker names based on *laterality* config."""
+        if isinstance(self.laterality, dict) and "pairs" in self.laterality:
+            return [right for _left, right in self.laterality["pairs"]]
         if self.laterality == "prefix":
             return [n for n in self._all_marker_names if n.startswith("right_")]
         if isinstance(self.laterality, dict) and "right" in self.laterality:
@@ -192,6 +250,10 @@ class SkeletonDefinition:
 
     def get_centre_markers(self) -> list[str]:
         """Return markers with no left/right counterpart."""
+        if isinstance(self.laterality, dict) and "pairs" in self.laterality:
+            centres = self.laterality.get("centre")
+            if centres is not None:
+                return [n for n in self._all_marker_names if n in centres]
         left = set(self.get_left_markers())
         right = set(self.get_right_markers())
         sided = left | right
@@ -205,6 +267,8 @@ class SkeletonDefinition:
         laterality (e.g. spiders), pairing is by base name with matching
         suffix numbers.
         """
+        if isinstance(self.laterality, dict) and "pairs" in self.laterality:
+            return [tuple(pair) for pair in self.laterality["pairs"]]
         if self.laterality == "prefix":
             pairs: list[tuple[str, str]] = []
             rights = set(self.get_right_markers())

@@ -12,6 +12,9 @@ def format_keypoint_frames(animal3d_instance, keypoints_frames):
     if len(np.shape(keypoints_frames)) == 2:
         keypoints_frames = keypoints_frames.reshape(1, -1, 3)
 
+    if keypoints_frames.shape[1] == animal3d_instance.skeleton.n_markers:
+        return keypoints_frames[:, animal3d_instance.analysis_indices, :]
+
     # Mirror if only right side given
     right_markers = animal3d_instance.skeleton.get_right_markers()
     # Filter to analysis markers

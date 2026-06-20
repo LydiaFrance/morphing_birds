@@ -210,6 +210,42 @@ skel = SkeletonDefinition.from_yaml("my_animal.yaml")
 animal = Animal3D(skel, data="data/my_animal.csv")
 ```
 
+For a quick Colab/workshop example, define the skeleton inline and animate any
+array shaped `(n_frames, n_markers, 3)`:
+
+```python
+import numpy as np
+from morphing_birds import Animal3D, SkeletonDefinition, animate_plotly
+
+skel = SkeletonDefinition.from_markers(
+    "my_animal",
+    markers=["nose", "left_paw", "right_paw", "tail_base"],
+    body_sections={
+        "body": ["nose", "tail_base"],
+        "front": ["left_paw", "nose", "right_paw"],
+    },
+    analysis_exclude=["tail_base"],  # displayed, but skipped by analysis helpers
+    marker_pairs=[("left_paw", "right_paw")],
+    centre_markers=["nose", "tail_base"],
+)
+
+rest_pose = np.array(
+    [
+        [0.0, 1.0, 0.0],   # nose
+        [-1.0, 0.0, 0.0],  # left_paw
+        [1.0, 0.0, 0.0],   # right_paw
+        [0.0, -1.0, 0.0],  # tail_base
+    ]
+)
+motion = np.repeat(rest_pose[None, :, :], 40, axis=0)
+motion[:, 1, 2] = 0.2 * np.sin(np.linspace(0, 2 * np.pi, len(motion)))
+motion[:, 2, 2] = -motion[:, 1, 2]
+
+animal = Animal3D(skel, data=rest_pose)
+fig = animate_plotly(animal, motion, axes_visible=False)
+fig.show()
+```
+
 ## Installation
 
 ```bash
