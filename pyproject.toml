@@ -13,7 +13,7 @@ authors = [
 ]
 description = "Plot and animate morphing bird wings and tail shapes in flight."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11.5"
 classifiers = [
   "Development Status :: 1 - Planning",
   "Intended Audience :: Science/Research",
@@ -23,9 +23,6 @@ classifiers = [
   "Programming Language :: Python",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Topic :: Scientific/Engineering",
@@ -34,7 +31,7 @@ classifiers = [
 dependencies = ["numpy",
                 "pandas",
                 "matplotlib",
-                "pillow >=11.1.0",
+                "pillow >=13.0.0",
                 "pyyaml",
                 "ipywidgets",
                 "dash",
@@ -44,8 +41,8 @@ dependencies = ["numpy",
 
 [project.optional-dependencies]
 notebook = [
-  "notebook >=7.3.3",
-  "nbconvert >=7.16.6",
+  "notebook >=7.6.3",
+  "nbconvert >=7.17.2",
   "ipynb",
 ]
 test = [

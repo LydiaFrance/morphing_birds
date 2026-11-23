@@ -2,9 +2,9 @@
 name = "morphing-birds-tutorials"
 version = "0"
 description = "Tutorial notebooks for morphing_birds + kinematic_morphospace."
-requires-python = ">=3.10"
+requires-python = ">=3.11.5"
 dependencies = [
     "morphing-birds @ git+https://github.com/LydiaFrance/morphing_birds.git",
     "kinematic-morphospace @ git+https://github.com/LydiaFrance/kinematic-morphospace.git",
-    "jupyterlab",
+    "jupyterlab>=4.5.11",
 ]
