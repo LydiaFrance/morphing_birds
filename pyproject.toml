@@ -51,6 +51,7 @@ notebook = [
 test = [
   "pytest >=8.4",
   "pytest-cov >=3",
+  "scikit-learn",
 ]
 dev = [
   "pytest >=8.4",
