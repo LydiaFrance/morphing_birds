@@ -20,7 +20,10 @@ jobs:
           python-version: "3.x"
       - uses: pre-commit/action@v3.0.1
         with:
-          extra_args: --hook-stage manual --all-files
+          extra_args: >-
+            --hook-stage manual --from-ref ${{
+            github.event.pull_request.base.sha || github.event.before || 'HEAD^'
+            }} --to-ref HEAD
 
   checks:
     name:
@@ -30,7 +33,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.11, 3.12]
+        python-version: ["3.11", "3.12"]
         runs-on: [ubuntu-latest] # can be extended to other OSes, e.g. macOS/Windows if needed
 
     steps:
