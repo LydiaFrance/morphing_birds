@@ -51,6 +51,7 @@ notebook = [
 test = [
   "pytest >=8.4",
   "pytest-cov >=3",
+  "scikit-learn",
 ]
 dev = [
   "pytest >=8.4",
@@ -73,7 +74,7 @@ envs.default.dependencies = [
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = ["-ra", "--showlocals", "--strict-markers", "--strict-config"]
+addopts = ["-p", "no:dash", "-ra", "--showlocals", "--strict-markers", "--strict-config"]
 xfail_strict = true
 filterwarnings = [
   "error",
